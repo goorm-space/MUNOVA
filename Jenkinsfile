@@ -71,4 +71,5 @@ pipeline {
             title: "Jenkins CI/CD - 실패",
             webhookURL: env.WEBHOOK_URL
         }
+    }
 }

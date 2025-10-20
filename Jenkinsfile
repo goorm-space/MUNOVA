@@ -1,0 +1,45 @@
+pipeline {
+    agent any
+
+    environment {
+            TAG = "${env.BUILD_NUMBER}"
+            DOCKER_IMAGE_NAME = 'goorm-space/MUNOVA-api'
+//             DOCKER_CREDENTIALS_ID = 'dockerhub-access'
+        }
+
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'dev',
+                    url: 'https://github.com/goorm-space/MUNOVA.git',
+                    credentialsId: 'MUNOVA-Access-Token'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                // Gradle clean build
+                sh './gradlew clean build'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                // Docker 이미지 생성
+                def dockerImageVersion = "${env.BUILD_NUMBER}"
+                sh "docker build --no-cache -t ${DOCKER_IMAGE_NAME}:${dockerImageVersion} ./"
+                sh "docker image inspect ${DOCKER_IMAGE_NAME}:${dockerImageVersion}"
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Pipeline completed successfully'
+        }
+        failure {
+            echo '❌ Pipeline failed'
+        }
+    }
+}

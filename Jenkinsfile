@@ -26,8 +26,8 @@ pipeline {
                 [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
             ],
             tokenCredentialId: 'MUNOVA-jenkins-Hook',
-            regexpFilterText: '$mergeTo',
-            regexpFilterExpression: '.*'
+            regexpFilterText: '$action',
+            regexpFilterExpression: '^(closed)$'
         )
     }
 
@@ -98,21 +98,23 @@ pipeline {
    post {
        success {
            script {
-               def commitMsg = sh(script: "git log -1 --pretty=%B", returnStdout: true).trim()
                def gitUrl = sh(script: "git config --get remote.origin.url", returnStdout: true).trim()
                def commitHash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
                def commitUrl = gitUrl.replace('.git','') + "/commit/" + commitHash
 
-               def fromTo = "Merge From: ${mergeFrom} → Merge To: ${mergeTo}"
+               def fromTo = "Merge From: ${mergeFrom} ➡️ Merge To: ${mergeTo}"
                def prInfo = prHtmlLink != "null" ? "<${prHtmlLink} | PR #${prNumber}>" : "PR 없음"
 
                // 최종 메시지
                def finalMsg = """빌드가 성공했습니다! ✅
-                   커밋 메시지: ${commitMsg}
+
+                   PR 제목: ${prTitle}
+
                    커밋 바로가기: ${commitUrl}
+
                    ${fromTo}
-                   PR 링크: ${prInfo}
-                   Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}"""
+
+                   PR 링크: ${prInfo}"""
 
                discordSend(
                    webhookURL: env.WEBHOOK_URL,
@@ -126,21 +128,23 @@ pipeline {
        }
        failure {
            script {
-               def commitMsg = sh(script: "git log -1 --pretty=%B", returnStdout: true).trim()
                def gitUrl = sh(script: "git config --get remote.origin.url", returnStdout: true).trim()
                def commitHash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
                def commitUrl = gitUrl.replace('.git','') + "/commit/" + commitHash
 
-               def fromTo = "Merge From: ${mergeFrom} → Merge To: ${mergeTo}"
+               def fromTo = "Merge From: ${mergeFrom} ➡️ Merge To: ${mergeTo}"
                def prInfo = prHtmlLink != "null" ? "<${prHtmlLink} | PR #${prNumber}>" : "PR 없음"
 
                // 최종 메시지
                def errorMessage = """빌드가 실패했습니다! ❌
-                   커밋 메시지: ${commitMsg}
+
+                   PR 제목: ${prTitle}
+
                    커밋 바로가기: ${commitUrl}
+
                    ${fromTo}
-                   PR 링크: ${prInfo}
-                   Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}"""
+
+                   PR 링크: ${prInfo}"""
 
                discordSend(
                    webhookURL: env.WEBHOOK_URL,

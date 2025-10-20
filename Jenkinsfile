@@ -10,18 +10,18 @@ pipeline {
 //             DOCKER_CREDENTIALS_ID = 'dockerhub-access'
             WEBHOOK_URL = credentials("MUNOVA-Jenkins-webhook")
     }
-    triggers {
-        GenericTrigger(
-            genericVariables: [
-                [key: 'mergeTo', value: '$.pull_request.base.ref', defaultValue: 'null'],
-                [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
-                [key: 'prHtmlLink', value: '$.pull_request.html_url', defaultValue: 'null']
-            ],
-            tokenCredentialId: 'MUNOVA-webhook-secret',
-            regexpFilterText: '$mergeTo',
-            regexpFilterExpression: '.*'  // 모든 이벤트 허용, Pipeline에서 머지 여부 체크
-        )
-    }
+//     triggers {
+//         GenericTrigger(
+//             genericVariables: [
+//                 [key: 'mergeTo', value: '$.pull_request.base.ref', defaultValue: 'null'],
+//                 [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
+//                 [key: 'prHtmlLink', value: '$.pull_request.html_url', defaultValue: 'null']
+//             ],
+//             tokenCredentialId: 'MUNOVA-webhook-secret',
+//             regexpFilterText: '$mergeTo',
+//             regexpFilterExpression: '.*'  // 모든 이벤트 허용, Pipeline에서 머지 여부 체크
+//         )
+//     }
 
 
     stages {

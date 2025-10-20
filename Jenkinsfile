@@ -33,7 +33,7 @@ pipeline {
 
 
     tools {
-            jdk 'JDK21'
+           jdk 'JDK21'
     }
 
     environment {

@@ -29,10 +29,12 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                // Docker 이미지 생성
-                def dockerImageVersion = "${env.BUILD_NUMBER}"
-                sh "docker build --no-cache -t ${DOCKER_IMAGE_NAME}:${dockerImageVersion} ./"
-                sh "docker image inspect ${DOCKER_IMAGE_NAME}:${dockerImageVersion}"
+                script {
+                    // Docker 이미지 생성
+                    def dockerImageVersion = "${env.BUILD_NUMBER}"
+                    sh "docker build --no-cache -t ${DOCKER_IMAGE_NAME}:${dockerImageVersion} ./"
+                    sh "docker image inspect ${DOCKER_IMAGE_NAME}:${dockerImageVersion}"
+                }
             }
         }
     }

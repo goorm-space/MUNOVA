@@ -15,7 +15,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'dev',
+                git branch: 'devtest',
                     url: 'https://github.com/goorm-space/MUNOVA.git',
                     credentialsId: 'MUNOVA-Access-Token'
             }

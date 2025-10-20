@@ -26,8 +26,8 @@ pipeline {
                 [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
             ],
             tokenCredentialId: 'MUNOVA-jenkins-Hook',
-            regexpFilterText: '$action',
-            regexpFilterExpression: '^(closed)$'
+            regexpFilterText: '$prIsMerged',
+            regexpFilterExpression: '^true$'
         )
     }
 

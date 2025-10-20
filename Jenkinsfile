@@ -23,7 +23,7 @@ pipeline {
             TAG = "${env.BUILD_NUMBER}"
             DOCKER_IMAGE_NAME = 'goorm-space/MUNOVA-api'
 //             DOCKER_CREDENTIALS_ID = 'dockerhub-access'
-            WEBHOOK_URL = credentials("MUNOVA-Jenkins-webhook")
+            WEBHOOK_URL = credentials("MUNOVA-dico-Hook")
         }
 
 

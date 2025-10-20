@@ -48,10 +48,12 @@ pipeline {
                 def commitHash = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                 def commitUrl = "${env.GIT_URL.replace('.git','')}/commit/${commitHash}"
 
-                def prUrl = "https://github.com/goorm-space/MUNOVA/pull/${env.BUILD_NUMBER}"
-                def targetBranch = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
+                def sourceBranch = env.CHANGE_BRANCH ?: "unknown"
+                def targetBranch = env.CHANGE_TARGET ?: "unknown"
 
-                def prDisplay = "merge : ➡️ ${targetBranch}"
+                def prId = env.CHANGE_ID ?: "unknown"
+                def prUrl = "https://github.com/goorm-space/MUNOVA/pull/${prId}"
+                def prDisplay = "merge : ${sourceBranch} ➡️ ${targetBranch}"
 
                 discordSend(
                     webhookURL: env.WEBHOOK_URL,
@@ -69,10 +71,12 @@ pipeline {
                 def commitHash = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                 def commitUrl = "${env.GIT_URL.replace('.git','')}/commit/${commitHash}"
 
-                def prUrl = "https://github.com/goorm-space/MUNOVA/pull/${env.BUILD_NUMBER}"
-                def targetBranch = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
+                def sourceBranch = env.CHANGE_BRANCH ?: "unknown"
+                def targetBranch = env.CHANGE_TARGET ?: "unknown"
+                def prId = env.CHANGE_ID ?: "unknown"
+                def prUrl = "https://github.com/goorm-space/MUNOVA/pull/${prId}"
 
-                def prDisplay = "merge : ➡️ ${targetBranch}"
+                def prDisplay = "merge : ${sourceBranch} ➡️ ${targetBranch}"
 
                 discordSend(
                     webhookURL: env.WEBHOOK_URL,

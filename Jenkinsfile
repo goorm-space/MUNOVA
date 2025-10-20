@@ -20,6 +20,19 @@ pipeline {
             }
         }
 
+        stage('Copy application.properties') {
+            steps {
+                withCredentials([file(credentialsId: 'MUNOVA-SECRET', variable: 'SECRET_FILE')]) {
+                    script {
+                         sh '''
+                            rm -f src/main/resources/application.properties
+                            cp SECRET_FILE src/main/resources/application.properties
+                         '''
+                    }
+                }
+            }
+        }
+
         stage('Build') {
             steps {
                 // Gradle clean build

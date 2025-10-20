@@ -28,6 +28,26 @@ properties([
 ])
 
 node {
+
+    stage('Print Webhook Variables') {
+        steps {
+            script {
+                echo "===== 🔔 GitHub Webhook Variables ====="
+                echo "repository: ${env.repository}"
+                echo "repositoryLink: ${env.repositoryLink}"
+                echo "action: ${env.action}"
+                echo "prIsMerged: ${env.prIsMerged}"
+                echo "prNumber: ${env.prNumber}"
+                echo "prHtmlLink: ${env.prHtmlLink}"
+                echo "prTitle: ${env.prTitle}"
+                echo "prRequester: ${env.prRequester}"
+                echo "prLabelList: ${env.prLabelList}"
+                echo "mergeTo: ${env.mergeTo}"
+                echo "mergeFrom: ${env.mergeFrom}"
+                echo "======================================="
+            }
+        }
+    }
     stage('Setup') {
         env.TAG = "${env.BUILD_NUMBER}"
         env.DOCKER_IMAGE_NAME = 'goorm-space/MUNOVA-api'

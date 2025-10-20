@@ -48,21 +48,16 @@ pipeline {
                 def commitHash = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                 def commitUrl = "${env.GIT_URL.replace('.git','')}/commit/${commitHash}"
 
-                // 브랜치 정보
-                def currentBranch = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
-                def baseBranch = env.GIT_BRANCH ?: 'unknown' // Jenkins Branch Specifier에서 가져오기
+                def sourceBranch = env.CHANGE_BRANCH ?: "unknown"
+                def targetBranch = env.CHANGE_TARGET ?: "unknown"
+                def prNumber    = env.CHANGE_ID ?: "?"
+                def prUrl       = "https://github.com/goorm-space/MUNOVA/pull/${prNumber}"
 
-                // PR 스타일 표시
-                def prInfo = "merge : ${currentBranch} ➡️ ${baseBranch}"
-                def prUrl = "${env.GIT_URL.replace('.git','')}/compare/${baseBranch}...${currentBranch}"
+                def prDisplay   = "merge : ${sourceBranch} ➡️ ${targetBranch}"
 
                 discordSend(
                     webhookURL: env.WEBHOOK_URL,
-                    description: """빌드가 성공했습니다! ✅
-                        커밋 메시지: ${commitMsg}
-                        [커밋 바로가기](${commitUrl})
-                        ${prInfo}
-                        [머지 결과 바로가기](${prUrl})""",
+                    description: "빌드가 성공했습니다! ✅\n커밋 메시지: ${commitMsg}\n[커밋 바로가기](${commitUrl})\n${prDisplay}\n[머지 결과 바로가기](${prUrl})",
                     title: "Jenkins CI/CD - 성공",
                     footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
                     link: env.BUILD_URL,
@@ -70,26 +65,22 @@ pipeline {
                 )
             }
         }
-
         failure {
             script {
                 def commitMsg = sh(script: "git log -1 --pretty=%B", returnStdout: true).trim()
                 def commitHash = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                 def commitUrl = "${env.GIT_URL.replace('.git','')}/commit/${commitHash}"
 
-                def currentBranch = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
-                def baseBranch = env.GIT_BRANCH ?: 'unknown'
+                def sourceBranch = env.CHANGE_BRANCH ?: "unknown"
+                def targetBranch = env.CHANGE_TARGET ?: "unknown"
+                def prNumber    = env.CHANGE_ID ?: "?"
+                def prUrl       = "https://github.com/goorm-space/MUNOVA/pull/${prNumber}"
 
-                def prInfo = "merge : ${currentBranch} ➡️ ${baseBranch}"
-                def prUrl = "${env.GIT_URL.replace('.git','')}/compare/${baseBranch}...${currentBranch}"
+                def prDisplay   = "merge : ${sourceBranch} ➡️ ${targetBranch}"
 
                 discordSend(
                     webhookURL: env.WEBHOOK_URL,
-                    description: """빌드가 실패했습니다! ❌
-                        커밋 메시지: ${commitMsg}
-                        [커밋 바로가기](${commitUrl})
-                        ${prInfo}
-                        [머지 결과 바로가기](${prUrl})""",
+                    description: "빌드가 실패했습니다! ❌\n커밋 메시지: ${commitMsg}\n[커밋 바로가기](${commitUrl})\n${prDisplay}\n[머지 결과 바로가기](${prUrl})",
                     title: "Jenkins CI/CD - 실패",
                     footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
                     link: env.BUILD_URL,

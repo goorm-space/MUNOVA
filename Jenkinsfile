@@ -26,6 +26,7 @@ pipeline {
                     script {
                          sh '''
                             rm -f src/main/resources/application.properties
+                            mkdir -p src/main/resources
                             cp $SECRET_FILE src/main/resources/application.properties
                          '''
                     }

@@ -56,20 +56,28 @@ pipeline {
 
     post {
         success {
-            discordSend description: "빌드가 성공했습니다! ✅",
-            footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
-            link: env.BUILD_URL,
-            result: currentBuild.currentResult,
-            title: "Jenkins CI/CD - 성공",
-            webhookURL: env.WEBHOOK_URL
+            script {
+                discordSend(
+                    webhookURL: env.WEBHOOK_URL,
+                    description: "빌드가 성공했습니다! ✅",
+                    title: "Jenkins CI/CD - 성공",
+                    footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
+                    link: env.BUILD_URL,
+                    result: currentBuild.currentResult
+                )
+            }
         }
         failure {
-            discordSend description: "빌드가 실패했습니다! ❌",
-            footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
-            link: env.BUILD_URL,
-            result: currentBuild.currentResult,
-            title: "Jenkins CI/CD - 실패",
-            webhookURL: env.WEBHOOK_URL
+            script {
+                discordSend(
+                    webhookURL: env.WEBHOOK_URL,
+                    description: "빌드가 실패했습니다! ❌",
+                    title: "Jenkins CI/CD - 실패",
+                    footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
+                    link: env.BUILD_URL,
+                    result: currentBuild.currentResult
+                )
+            }
         }
     }
 }

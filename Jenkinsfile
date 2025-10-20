@@ -57,14 +57,22 @@ pipeline {
    post {
        success {
            script {
+               // 커밋 메시지 및 URL
                def commitMsg = sh(script: "git log -1 --pretty=%B", returnStdout: true).trim()
-               def gitUrl = sh(script: "git config --get remote.origin.url", returnStdout: true).trim()
-               def commitHash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
-               def commitUrl = gitUrl.replace('.git','') + "/commit/" + commitHash
+               def commitHash = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+               def commitUrl = "${env.GIT_URL.replace('.git','')}/commit/${commitHash}"
+
+               // 머지 브랜치 정보
+               def headBranch = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
+               def baseBranch = env.GIT_BRANCH ?: 'unknown'
+
+               // PR 스타일 표시
+               def prDisplay = "merge : ${headBranch} ➡️ ${baseBranch}"
+               def prUrl = "${env.GIT_URL.replace('.git','')}/compare/${baseBranch}...${headBranch}"
 
                discordSend(
                    webhookURL: env.WEBHOOK_URL,
-                   description: "빌드가 성공했습니다! ✅\n커밋 메시지: ${commitMsg}\n[커밋 바로가기](${commitUrl})",
+                   description: "빌드가 성공했습니다! ✅\n커밋 메시지: ${commitMsg}\n[커밋 바로가기](${commitUrl})\n${prDisplay}\n[머지 결과 바로가기](${prUrl})",
                    title: "Jenkins CI/CD - 성공",
                    footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
                    link: env.BUILD_URL,
@@ -75,13 +83,18 @@ pipeline {
        failure {
            script {
                def commitMsg = sh(script: "git log -1 --pretty=%B", returnStdout: true).trim()
-               def gitUrl = sh(script: "git config --get remote.origin.url", returnStdout: true).trim()
-               def commitHash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
-               def commitUrl = gitUrl.replace('.git','') + "/commit/" + commitHash
+               def commitHash = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+               def commitUrl = "${env.GIT_URL.replace('.git','')}/commit/${commitHash}"
+
+               def headBranch = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
+               def baseBranch = env.GIT_BRANCH ?: 'unknown'
+
+               def prDisplay = "merge : ${headBranch} ➡️ ${baseBranch}"
+               def prUrl = "${env.GIT_URL.replace('.git','')}/compare/${baseBranch}...${headBranch}"
 
                discordSend(
                    webhookURL: env.WEBHOOK_URL,
-                   description: "빌드가 실패했습니다! ❌\n커밋 메시지: ${commitMsg}\n[커밋 바로가기](${commitUrl})",
+                   description: "빌드가 실패했습니다! ❌\n커밋 메시지: ${commitMsg}\n[커밋 바로가기](${commitUrl})\n${prDisplay}\n[머지 결과 바로가기](${prUrl})",
                    title: "Jenkins CI/CD - 실패",
                    footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
                    link: env.BUILD_URL,

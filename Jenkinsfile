@@ -4,9 +4,26 @@ pipeline {
     triggers {
         GenericTrigger(
             genericVariables: [
+                // 저장소명
+                [key: 'repository', value: '$.repository.name', defaultValue: 'null'],
+                // 저장소 URL
+                [key: 'repositoryLink', value: '$.repository.html_url', defaultValue: 'null'],
+                // pr 상태
+                [key: 'action', value: '$.action', defaultValue: 'null'],
+                // pr merged 여부
+                [key: 'prIsMerged', value: '$.pull_request.merged', defaultValue: 'false'],
+                // pr 번호
+                [key: 'prNumber', value: '$.pull_request.number', defaultValue: '0'],
+                // pr 링크
+                [key: 'prHtmlLink', value: '$.pull_request.html_url', defaultValue: 'null'],
+                // pr 제목
+                [key: 'prTitle', value: '$.pull_request.title', defaultValue: 'null'],
+                // pr 요청자
+                [key: 'prRequester', value: '$.pull_request.user.login', defaultValue: 'null'],
+                // merge 대상 브런치
                 [key: 'mergeTo', value: '$.pull_request.base.ref', defaultValue: 'null'],
+                // merge from
                 [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
-                [key: 'prHtmlLink', value: '$.pull_request.html_url', defaultValue: 'null']
             ],
             tokenCredentialId: 'MUNOVA-jenkins-Hook',
             regexpFilterText: '$mergeTo',
@@ -28,15 +45,15 @@ pipeline {
 
 
     stages {
-//         stage('Print Info') {
-//             steps {
-//                 script {
-//                     echo "Merge To: ${mergeTo}"    // dev, main 등
-//                     echo "Merge From: ${mergeFrom}"// feature/xxx 등
-//                     echo "PR URL: ${prUrl}"        // PR 페이지 링크
-//                 }
-//             }
-//         }
+        stage('Print Info') {
+            steps {
+                script {
+                    echo "Merge To: ${mergeTo}"    // dev, main 등
+                    echo "Merge From: ${mergeFrom}"// feature/xxx 등
+                    echo "PR URL: ${prUrl}"        // PR 페이지 링크
+                }
+            }
+        }
         stage('Checkout') {
             steps {
                 git branch: 'devtest',

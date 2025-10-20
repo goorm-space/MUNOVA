@@ -8,7 +8,7 @@ pipeline {
                 [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
                 [key: 'prHtmlLink', value: '$.pull_request.html_url', defaultValue: 'null']
             ],
-            tokenCredentialId: 'MUNOVA-jenkins-webhook',
+            tokenCredentialId: 'MUNOVA-jenkins-Hook',
             regexpFilterText: '$mergeTo',
             regexpFilterExpression: '.*'
         )

@@ -103,9 +103,20 @@ pipeline {
                def commitHash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
                def commitUrl = gitUrl.replace('.git','') + "/commit/" + commitHash
 
+               def fromTo = "Merge From: ${mergeFrom} → Merge To: ${mergeTo}"
+               def prInfo = prHtmlLink != "null" ? "<${prHtmlLink} | PR #${prNumber}>" : "PR 없음"
+
+               // 최종 메시지
+               def finalMsg = """빌드가 성공했습니다! ✅
+                   커밋 메시지: ${commitMsg}
+                   커밋 바로가기: ${commitUrl}
+                   ${fromTo}
+                   PR 링크: ${prInfo}
+                   Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}"""
+
                discordSend(
                    webhookURL: env.WEBHOOK_URL,
-                   description: "빌드가 성공했습니다! ✅\n커밋 메시지: ${commitMsg}\n[커밋 바로가기](${commitUrl})",
+                   description: finalMsg,
                    title: "Jenkins CI/CD - 성공",
                    footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
                    link: env.BUILD_URL,
@@ -120,9 +131,20 @@ pipeline {
                def commitHash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
                def commitUrl = gitUrl.replace('.git','') + "/commit/" + commitHash
 
+               def fromTo = "Merge From: ${mergeFrom} → Merge To: ${mergeTo}"
+               def prInfo = prHtmlLink != "null" ? "<${prHtmlLink} | PR #${prNumber}>" : "PR 없음"
+
+               // 최종 메시지
+               def errorMessage = """빌드가 실패했습니다! ❌
+                   커밋 메시지: ${commitMsg}
+                   커밋 바로가기: ${commitUrl}
+                   ${fromTo}
+                   PR 링크: ${prInfo}
+                   Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}"""
+
                discordSend(
                    webhookURL: env.WEBHOOK_URL,
-                   description: "빌드가 실패했습니다! ❌\n커밋 메시지: ${commitMsg}\n[커밋 바로가기](${commitUrl})",
+                   description: errorMessage,
                    title: "Jenkins CI/CD - 실패",
                    footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
                    link: env.BUILD_URL,

@@ -8,6 +8,7 @@ pipeline {
             TAG = "${env.BUILD_NUMBER}"
             DOCKER_IMAGE_NAME = 'goorm-space/MUNOVA-api'
 //             DOCKER_CREDENTIALS_ID = 'dockerhub-access'
+            WEBHOOK_URL = credentials("MUNOVA-Jenkins-webhook")
         }
 
 
@@ -41,24 +42,33 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
-            steps {
-                script {
-                    // Docker 이미지 생성
-                    def dockerImageVersion = "${env.BUILD_NUMBER}"
-                    sh "docker build --no-cache -t ${DOCKER_IMAGE_NAME}:${dockerImageVersion} ./"
-                    sh "docker image inspect ${DOCKER_IMAGE_NAME}:${dockerImageVersion}"
-                }
-            }
-        }
+//         stage('Docker Build') {
+//             steps {
+//                 script {
+//                     // Docker 이미지 생성
+//                     def dockerImageVersion = "${env.BUILD_NUMBER}"
+//                     sh "docker build --no-cache -t ${DOCKER_IMAGE_NAME}:${dockerImageVersion} ./"
+//                     sh "docker image inspect ${DOCKER_IMAGE_NAME}:${dockerImageVersion}"
+//                 }
+//             }
+//         }
     }
 
     post {
         success {
-            echo '✅ Pipeline completed successfully'
+            discordSend description: "빌드가 성공했습니다! ✅",
+            footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
+            link: env.BUILD_URL,
+            result: currentBuild.currentResult,
+            title: "Jenkins CI/CD - 성공",
+            webhookURL: env.WEBHOOK_URL
         }
         failure {
-            echo '❌ Pipeline failed'
+            discordSend description: "빌드가 실패했습니다! ❌",
+            footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
+            link: env.BUILD_URL,
+            result: currentBuild.currentResult,
+            title: "Jenkins CI/CD - 실패",
+            webhookURL: env.WEBHOOK_URL
         }
-    }
 }

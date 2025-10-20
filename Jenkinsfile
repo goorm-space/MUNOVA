@@ -57,7 +57,7 @@ pipeline {
 
                 discordSend(
                     webhookURL: env.WEBHOOK_URL,
-                    description: "빌드가 성공했습니다! ✅\n커밋 메시지: ${commitMsg}\n[커밋 바로가기](${commitUrl})\n${prDisplay}\n[머지 결과 바로가기](${prUrl})",
+                    description: "빌드가 성공했습니다! ✅\n커밋 메시지 : ${commitMsg}\n[커밋 바로가기](${commitUrl})\n${prDisplay}\n[머지 결과 바로가기](${prUrl})",
                     title: "Jenkins CI/CD - 성공",
                     footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
                     link: env.BUILD_URL,
@@ -80,7 +80,7 @@ pipeline {
 
                 discordSend(
                     webhookURL: env.WEBHOOK_URL,
-                    description: "빌드가 실패했습니다! ❌\n커밋 메시지: ${commitMsg}\n[커밋 바로가기](${commitUrl})\n${prDisplay}\n[머지 결과 바로가기](${prUrl})",
+                    description: "빌드가 실패했습니다! ❌\n커밋 메시지 : ${commitMsg}\n[커밋 바로가기](${commitUrl})\n${prDisplay}\n[머지 결과 바로가기](${prUrl})",
                     title: "Jenkins CI/CD - 실패",
                     footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
                     link: env.BUILD_URL,

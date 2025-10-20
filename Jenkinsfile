@@ -1,18 +1,18 @@
 pipeline {
     agent any
 
-//     triggers {
-//         GenericTrigger(
-//             genericVariables: [
-//                 [key: 'mergeTo', value: '$.pull_request.base.ref', defaultValue: 'null'],
-//                 [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
-//                 [key: 'prHtmlLink', value: '$.pull_request.html_url', defaultValue: 'null']
-//             ],
-//             tokenCredentialId: 'MUNOVA-webhook-secret',
-//             regexpFilterText: '$mergeTo',
-//             regexpFilterExpression: '.*'
-//         )
-//     }
+    triggers {
+        GenericTrigger(
+            genericVariables: [
+                [key: 'mergeTo', value: '$.pull_request.base.ref', defaultValue: 'null'],
+                [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
+                [key: 'prHtmlLink', value: '$.pull_request.html_url', defaultValue: 'null']
+            ],
+            tokenCredentialId: 'MUNOVA-jenkins-webhook',
+            regexpFilterText: '$mergeTo',
+            regexpFilterExpression: '.*'
+        )
+    }
 
 
     tools {

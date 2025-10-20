@@ -45,15 +45,7 @@ pipeline {
 
 
     stages {
-        stage('Print Info') {
-            steps {
-                script {
-                    echo "Merge To: ${mergeTo}"    // dev, main 등
-                    echo "Merge From: ${mergeFrom}"// feature/xxx 등
-                    echo "PR URL: ${prHtmlLink}"        // PR 페이지 링크
-                }
-            }
-        }
+
         stage('Checkout') {
             steps {
                 git branch: 'devtest',

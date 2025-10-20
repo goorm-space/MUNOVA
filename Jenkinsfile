@@ -27,9 +27,18 @@ pipeline {
 
 
     stages {
+        stage('Print Info') {
+            steps {
+                script {
+                    echo "Merge To: ${mergeTo}"    // dev, main 등
+                    echo "Merge From: ${mergeFrom}"// feature/xxx 등
+                    echo "PR URL: ${prUrl}"        // PR 페이지 링크
+                }
+            }
+        }
         stage('Checkout') {
             steps {
-                git branch: 'dev',
+                git branch: 'devtest',
                     url: 'https://github.com/goorm-space/MUNOVA.git',
                     credentialsId: 'MUNOVA-Access-Token'
             }

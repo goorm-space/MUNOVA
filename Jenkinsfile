@@ -1,5 +1,37 @@
 pipeline {
     agent any
+
+    triggers {
+        GenericTrigger(
+            genericVariables: [
+                // 저장소명
+                [key: 'repository', value: '$.repository.name', defaultValue: 'null'],
+                // 저장소 URL
+                [key: 'repositoryLink', value: '$.repository.html_url', defaultValue: 'null'],
+                // pr 상태
+                [key: 'action', value: '$.action', defaultValue: 'null'],
+                // pr merged 여부
+                [key: 'prIsMerged', value: '$.pull_request.merged', defaultValue: 'false'],
+                // pr 번호
+                [key: 'prNumber', value: '$.pull_request.number', defaultValue: '0'],
+                // pr 링크
+                [key: 'prHtmlLink', value: '$.pull_request.html_url', defaultValue: 'null'],
+                // pr 제목
+                [key: 'prTitle', value: '$.pull_request.title', defaultValue: 'null'],
+                // pr 요청자
+                [key: 'prRequester', value: '$.pull_request.user.login', defaultValue: 'null'],
+                // merge 대상 브런치
+                [key: 'mergeTo', value: '$.pull_request.base.ref', defaultValue: 'null'],
+                // merge from
+                [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
+            ],
+            tokenCredentialId: 'MUNOVA-jenkins-Hook',
+            regexpFilterText: '$prIsMerged',
+            regexpFilterExpression: '^true$'
+        )
+    }
+
+
     tools {
             jdk 'JDK21'
     }
@@ -8,11 +40,12 @@ pipeline {
             TAG = "${env.BUILD_NUMBER}"
             DOCKER_IMAGE_NAME = 'goorm-space/MUNOVA-api'
 //             DOCKER_CREDENTIALS_ID = 'dockerhub-access'
-            WEBHOOK_URL = credentials("MUNOVA-Jenkins-webhook")
+            WEBHOOK_URL = credentials("MUNOVA-dico-Hook")
         }
 
 
     stages {
+
         stage('Checkout') {
             steps {
                 git branch: 'dev',
@@ -57,14 +90,27 @@ pipeline {
    post {
        success {
            script {
-               def commitMsg = sh(script: "git log -1 --pretty=%B", returnStdout: true).trim()
                def gitUrl = sh(script: "git config --get remote.origin.url", returnStdout: true).trim()
                def commitHash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
                def commitUrl = gitUrl.replace('.git','') + "/commit/" + commitHash
 
+               def fromTo = "Merge From: ${mergeFrom} ➡️ Merge To: ${mergeTo}"
+               def prInfo = prHtmlLink != "null" ? "<${prHtmlLink} | PR #${prNumber}>" : "PR 없음"
+
+               // 최종 메시지
+               def finalMsg = """빌드가 성공했습니다! ✅
+
+                   PR 제목: ${prTitle}
+
+                   커밋 바로가기: ${commitUrl}
+
+                   ${fromTo}
+
+                   PR 링크: ${prInfo}"""
+
                discordSend(
                    webhookURL: env.WEBHOOK_URL,
-                   description: "빌드가 성공했습니다! ✅\n커밋 메시지: ${commitMsg}\n[커밋 바로가기](${commitUrl})",
+                   description: finalMsg,
                    title: "Jenkins CI/CD - 성공",
                    footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
                    link: env.BUILD_URL,
@@ -74,14 +120,27 @@ pipeline {
        }
        failure {
            script {
-               def commitMsg = sh(script: "git log -1 --pretty=%B", returnStdout: true).trim()
                def gitUrl = sh(script: "git config --get remote.origin.url", returnStdout: true).trim()
                def commitHash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
                def commitUrl = gitUrl.replace('.git','') + "/commit/" + commitHash
 
+               def fromTo = "Merge From: ${mergeFrom} ➡️ Merge To: ${mergeTo}"
+               def prInfo = prHtmlLink != "null" ? "<${prHtmlLink} | PR #${prNumber}>" : "PR 없음"
+
+               // 최종 메시지
+               def errorMessage = """빌드가 실패했습니다! ❌
+
+                   PR 제목: ${prTitle}
+
+                   커밋 바로가기: ${commitUrl}
+
+                   ${fromTo}
+
+                   PR 링크: ${prInfo}"""
+
                discordSend(
                    webhookURL: env.WEBHOOK_URL,
-                   description: "빌드가 실패했습니다! ❌\n커밋 메시지: ${commitMsg}\n[커밋 바로가기](${commitUrl})",
+                   description: errorMessage,
                    title: "Jenkins CI/CD - 실패",
                    footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
                    link: env.BUILD_URL,

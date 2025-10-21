@@ -1,11 +1,16 @@
 package com.space.munova.chat.service;
 
-import com.space.munova.chat.dto.OneToOneChatRoomRequestDto;
-import com.space.munova.chat.dto.OneToOneChatRoomResponseDto;
-import org.springframework.stereotype.Service;
+import com.space.munova.chat.dto.OneToOneChatItemDto;
+import com.space.munova.chat.dto.OneToOneChatRequestDto;
+import com.space.munova.chat.dto.OneToOneChatResponseDto;
+
+import java.util.List;
 
 
 public interface ChatRoomService {
 
-    OneToOneChatRoomResponseDto createOneToOneChatRoom(OneToOneChatRoomRequestDto requestChatRoomDto);
+    OneToOneChatResponseDto createOneToOneChatRoom(OneToOneChatRequestDto requestChatRoomDto);
+
+    List<OneToOneChatItemDto> getOneToOneChatRooms(Long userId);
+
 }

@@ -2,6 +2,7 @@ package com.space.munova.chat.entity;
 
 
 import com.space.munova.chat.enums.ChatUserType;
+import com.space.munova.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -20,12 +21,12 @@ public class GroupChat {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private User userId;
+    private Member memberId;
 
     private ChatUserType type;
 
-    public GroupChat(Chat chatId, User userId) {
+    public GroupChat(Chat chatId, Member memberId) {
         this.chatId = chatId;
-        this.userId = userId;
+        this.memberId = memberId;
     }
 }

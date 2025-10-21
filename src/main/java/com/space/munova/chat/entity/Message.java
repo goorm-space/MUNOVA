@@ -1,6 +1,8 @@
 package com.space.munova.chat.entity;
 
 import com.space.munova.chat.enums.MessageType;
+import com.space.munova.core.entity.BaseEntity;
+import com.space.munova.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,7 +16,7 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @NoArgsConstructor
-public class Message {
+public class Message extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -24,24 +26,20 @@ public class Message {
     @Enumerated(EnumType.STRING)
     private MessageType type;   // TEXT, IMAGE
 
-    @CreatedDate
-    private LocalDateTime createdAt;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_id")
     private Chat chatId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private User userId;
+    private Member userId;
 
     @Builder
-    public Message(String content, MessageType type, Chat chatId, User userId) {
+    public Message(String content, MessageType type, Chat chatId, Member userId) {
         this.content = content;
         this.type = type;
         this.chatId = chatId;
         this.userId = userId;
-        this.createdAt = LocalDateTime.now();
     }
 
 }

@@ -1,28 +1,30 @@
 package com.space.munova.order.entity;
 
-import com.space.munova.common.entity.BaseTimeEntity;
-import com.space.munova.order.dto.CreateOrderRequest;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Table(name = "orders")
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Order extends BaseTimeEntity {
+// extends BaseTimeEntity
+public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+//    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+//    @JoinColumn(name = "user_id")
     private Long userId;
 
     private String orderNum;
@@ -39,9 +41,6 @@ public class Order extends BaseTimeEntity {
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
-
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems;

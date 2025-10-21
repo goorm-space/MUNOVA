@@ -3,10 +3,12 @@ package com.space.munova.order.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "order_items")
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -16,6 +18,12 @@ public class OrderItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "order_id")
+    private Order order;
+
+    //    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    //    @JoinColumn(name = "product_detail_id")
     private Long productDetailId;
 
     private String productName;
@@ -32,8 +40,4 @@ public class OrderItem {
 
     @Enumerated(EnumType.STRING)
     private OrderItemStatus status;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "orderId")
-    private Order order;
 }

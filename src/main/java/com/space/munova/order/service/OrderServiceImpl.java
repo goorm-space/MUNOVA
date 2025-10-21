@@ -3,6 +3,7 @@ package com.space.munova.order.service;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.order.dto.CreateOrderRequest;
+import com.space.munova.order.dto.GetOrderDetailResponse;
 import com.space.munova.order.dto.OrderItemRequest;
 import com.space.munova.order.dto.OrderType;
 import com.space.munova.order.entity.Order;
@@ -66,6 +67,15 @@ public class OrderServiceImpl implements OrderService {
 
         // Todo: 6. 장바구니 처리
         return order;
+    }
+
+    @Override
+    public GetOrderDetailResponse getOrderDetail(Long orderId) {
+
+        Order order = orderRepository.findOrderDetailsById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 orderId: "+ orderId));
+
+        return GetOrderDetailResponse.from(order);
     }
 
     private List<OrderItem> createOrderItems(List<OrderItemRequest> itemRequests, Order order) {

@@ -3,15 +3,13 @@ package com.space.munova.member.entity;
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.dto.MemberRole;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Getter
 public class Member extends BaseEntity {
 
     @Id

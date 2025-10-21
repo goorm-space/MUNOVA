@@ -34,8 +34,39 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+
+    // Querydsl 추가
+    implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
+    annotationProcessor "com.querydsl:querydsl-apt:${dependencyManagement.importedProperties['querydsl.version']}:jakarta"
+    annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+    annotationProcessor "jakarta.persistence:jakarta.persistence-api"
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+
+/**
+ * querydsl 빌드 옵션
+ */
+///큐 객체 저장될 루트내용
+def querydslDir = "${layout.projectDirectory}/build/generated/querydsl"
+
+sourceSets{
+    getByName("main").java.srcDirs(querydslDir)
+}
+
+/// 자바 컴파일 실행시 파일 어디에 넣을지
+// Groovy DSL 문법으로 수정: tasks.withType<JavaCompile> -> tasks.withType(JavaCompile)
+tasks.withType(JavaCompile) {
+    options.generatedSourceOutputDirectory = file(querydslDir)
+}
+
+/// 클린 실행시 queryDsl 파일도 같이 삭제
+tasks.named("clean"){
+    doLast {
+        file(querydslDir).deleteRecursively()
+    }
 }

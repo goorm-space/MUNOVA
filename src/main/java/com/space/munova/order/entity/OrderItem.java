@@ -1,5 +1,6 @@
 package com.space.munova.order.entity;
 
+import com.space.munova.product.domain.product.ProductDetail;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,22 +23,19 @@ public class OrderItem {
     @JoinColumn(name = "order_id")
     private Order order;
 
-    //    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    //    @JoinColumn(name = "product_detail_id")
-    private Long productDetailId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "product_detail_id")
+    private ProductDetail productDetail;
 
+    @Column(nullable = false)
     private String productName;
 
+    @Column(nullable = false)
     private Long originPrice;
 
+    @Column(nullable = false)
     private Integer quantity;
 
-    private Long couponId;
-
-    private Integer discountPrice;
-
-    private Long totalPrice;
-
     @Enumerated(EnumType.STRING)
-    private OrderItemStatus status;
+    private OrderStatus status;
 }

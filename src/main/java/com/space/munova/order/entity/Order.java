@@ -1,5 +1,7 @@
 package com.space.munova.order.entity;
 
+import com.space.munova.core.entity.BaseEntity;
+import com.space.munova.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,26 +19,29 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-// extends BaseTimeEntity
-public class Order {
+public class Order extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-//    @JoinColumn(name = "user_id")
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id")
+    private Member member;
 
+    @Column(nullable = false, unique = true)
     private String orderNum;
 
     private String userRequest;
 
+    @Column(nullable = false)
     private Long originPrice;
 
     private Long couponId;
 
+    @Column(nullable = false)
     private Integer discountPrice;
 
+    @Column(nullable = false)
     private Long totalPrice;
 
     @Enumerated(EnumType.STRING)
@@ -44,6 +49,12 @@ public class Order {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems;
+
+    public void setPrices(Long originPrice, int discountPrice, Long totalPrice) {
+        this.originPrice = originPrice;
+        this.discountPrice = discountPrice;
+        this.totalPrice = totalPrice;
+    }
 
     public static String generateOrderNum() {
         String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));

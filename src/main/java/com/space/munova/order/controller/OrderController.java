@@ -1,6 +1,8 @@
 package com.space.munova.order.controller;
 
+import com.space.munova.core.config.ResponseApi;
 import com.space.munova.order.dto.CreateOrderRequest;
+import com.space.munova.order.dto.CreateOrderResponse;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -18,10 +20,11 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<?> createOrder(@RequestBody CreateOrderRequest request) {
+    public ResponseApi<?> createOrder(@RequestBody CreateOrderRequest request) {
         // Todo: userId 가져오기
         Long userId = 1L;
         Order order = orderService.createOrder(userId, request);
-        return ResponseEntity.ok(order);
+        CreateOrderResponse response = CreateOrderResponse.from(order);
+        return ResponseApi.created(response);
     }
 }

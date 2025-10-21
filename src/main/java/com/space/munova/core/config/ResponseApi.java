@@ -37,6 +37,8 @@ public class ResponseApi<T> {
         return new ResponseApi<>(HttpStatus.OK.value(), data);
     }
 
+    public static <T> ResponseApi<T> created(T data) { return new ResponseApi<>(HttpStatus.CREATED.value(), data); }
+
     public static <T> ResponseApi<T> nok(HttpStatusCode statusCode, String errorCode, String message) {
         return new ResponseApi<>(statusCode.value(), errorCode, message, null);
     }

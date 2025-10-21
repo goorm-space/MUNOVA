@@ -18,7 +18,7 @@ public class Product  {
     private Long id;
     private String info;
     private String name;
-    private Integer price;
+    private Long price;
 
     @ColumnDefault("0")
     private Integer likeCount;
@@ -46,7 +46,7 @@ public class Product  {
 
     public static Product createDefaultProduct(String name,
                                                String info,
-                                               Integer price,
+                                               Long price,
                                                Brand brand,
                                                Category category
                                                ) {

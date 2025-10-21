@@ -27,7 +27,7 @@ repositories {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
 
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
@@ -53,7 +53,7 @@ tasks.named('test') {
 /// 큐 객체 저장될 루트내용
 def querydslDir = layout.projectDirectory.dir("build/generated/querydsl")
 
-sourceSets{
+sourceSets {
     getByName("main").java.srcDirs(querydslDir)
 }
 
@@ -64,7 +64,7 @@ tasks.withType(JavaCompile) {
 }
 
 /// 클린 실행시 queryDsl 파일도 같이 삭제 (수정된 부분)
-tasks.named("clean"){
+tasks.named("clean") {
     doLast {
         // file 객체를 직접 가져와서 존재 여부를 확인합니다.
         def querydslDirectory = querydslDir.asFile

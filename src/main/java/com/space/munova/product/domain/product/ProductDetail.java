@@ -1,6 +1,6 @@
 package com.space.munova.product.domain.product;
 
-import com.space.munova.common.repository.entity.TimeBaseEntity;
+
 import jakarta.persistence.*;
 import lombok.*;
 

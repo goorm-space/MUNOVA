@@ -1,7 +1,7 @@
 package com.space.munova.product.domain.product;
 
 
-import com.space.munova.common.repository.entity.TimeBaseEntity;
+
 import com.space.munova.product.domain.product.enums.ProductImageType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -15,7 +15,7 @@ import org.hibernate.annotations.ColumnDefault;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Table(name = "product_image")
-public class ProductImage extends TimeBaseEntity {
+public class ProductImage  {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

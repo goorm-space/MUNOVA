@@ -2,6 +2,8 @@ package com.space.munova.core.exception;
 
 import com.space.munova.core.config.ResponseApi;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ public class BaseExceptionHandler {
     /**
      * 도메인 예외 처리
      */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ResponseApi<Object>> handleBaseException(BaseException ex) {
         String code = ex.getCode();
@@ -35,6 +38,7 @@ public class BaseExceptionHandler {
     /**
      * @Valid로 인한 예외 처리
      */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseApi<Object> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
@@ -50,12 +54,12 @@ public class BaseExceptionHandler {
     /**
      * 기타 서버 예외처리
      */
+    @Order()
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseApi<Object> handleInternalServerException(Exception ex) {
         String errorMessage = "서버 내부 오류가 발생하였습니다.";
         log.error(errorMessage, ex);
-
         return ResponseApi.nok(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", errorMessage);
     }
 

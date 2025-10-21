@@ -3,14 +3,12 @@ package com.space.munova.order.controller;
 import com.space.munova.core.config.ResponseApi;
 import com.space.munova.order.dto.CreateOrderRequest;
 import com.space.munova.order.dto.CreateOrderResponse;
+import com.space.munova.order.dto.GetOrderDetailResponse;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,5 +24,13 @@ public class OrderController {
         Order order = orderService.createOrder(userId, request);
         CreateOrderResponse response = CreateOrderResponse.from(order);
         return ResponseApi.created(response);
+    }
+
+    @GetMapping("/{orderId}")
+    public ResponseApi<?> getOrderDetail(@PathVariable("orderId") Long orderId) {
+
+        GetOrderDetailResponse response = orderService.getOrderDetail(orderId);
+
+        return ResponseApi.ok(response);
     }
 }

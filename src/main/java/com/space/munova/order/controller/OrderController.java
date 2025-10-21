@@ -22,5 +22,6 @@ public class OrderController {
         // Todo: userId 가져오기
         Long userId = 1L;
         Order order = orderService.createOrder(userId, request);
+        return ResponseEntity.ok(order);
     }
 }

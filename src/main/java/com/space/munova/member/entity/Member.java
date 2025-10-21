@@ -3,11 +3,9 @@ package com.space.munova.member.entity;
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.dto.MemberRole;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+@Getter
 @Entity
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -19,14 +17,19 @@ public class Member extends BaseEntity {
     @Column(name = "member_id")
     private Long id;
 
-    @Column(nullable = false)
     private String username;
 
-    @Column(nullable = false)
     private String password;
-
-    private String address;
 
     @Enumerated(EnumType.STRING)
     MemberRole role;
+
+    // 일반멤버 생성
+    public static Member createMember(String username, String encodedPassword) {
+        return Member.builder()
+                .username(username)
+                .password(encodedPassword)
+                .role(MemberRole.USER)
+                .build();
+    }
 }

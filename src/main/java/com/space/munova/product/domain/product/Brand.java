@@ -1,6 +1,5 @@
 package com.space.munova.product.domain.product;
 
-import com.space.munova.common.repository.entity.TimeBaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -12,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Table(name = "brand")
-public class Brand extends TimeBaseEntity {
+public class Brand {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,7 +1,7 @@
 package com.space.munova.product.domain.product;
 
 
-import com.space.munova.common.repository.entity.TimeBaseEntity;
+
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -12,7 +12,7 @@ import org.hibernate.annotations.ColumnDefault;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class Product extends TimeBaseEntity {
+public class Product  {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

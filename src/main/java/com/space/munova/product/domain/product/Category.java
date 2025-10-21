@@ -1,7 +1,6 @@
 package com.space.munova.product.domain.product;
 
 
-import com.space.munova.common.repository.entity.TimeBaseEntity;
 import com.space.munova.product.domain.product.enums.ProductCategory;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -15,7 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Table(name = "product_category")
 @Entity
-public class Category extends TimeBaseEntity {
+public class Category {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

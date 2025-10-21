@@ -24,16 +24,65 @@ repositories {
     mavenCentral()
 }
 
+ext {
+    JJWT_VERSION = "0.12.5"
+    WEBMVC_VERSION = "2.8.13"
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${WEBMVC_VERSION}"
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    implementation "io.jsonwebtoken:jjwt-api:${JJWT_VERSION}"
+    runtimeOnly "io.jsonwebtoken:jjwt-gson:${JJWT_VERSION}"
+    runtimeOnly "io.jsonwebtoken:jjwt-impl:${JJWT_VERSION}"
+
+    // Querydsl 추가
+    implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
+    annotationProcessor "com.querydsl:querydsl-apt:${dependencyManagement.importedProperties['querydsl.version']}:jakarta"
+    annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+    annotationProcessor "jakarta.persistence:jakarta.persistence-api"
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+/**
+ * querydsl 빌드 옵션
+ */
+/// 큐 객체 저장될 루트내용
+def querydslDir = layout.projectDirectory.dir("build/generated/querydsl")
+
+sourceSets {
+    getByName("main").java.srcDirs(querydslDir)
+}
+
+/// 자바 컴파일 실행시 파일 어디에 넣을지
+// Groovy DSL 문법으로 수정: tasks.withType<JavaCompile> -> tasks.withType(JavaCompile)
+tasks.withType(JavaCompile) {
+    options.generatedSourceOutputDirectory = querydslDir.asFile
+}
+
+/// 클린 실행시 queryDsl 파일도 같이 삭제 (수정된 부분)
+tasks.named("clean") {
+    doLast {
+        // file 객체를 직접 가져와서 존재 여부를 확인합니다.
+        def querydslDirectory = querydslDir.asFile
+        if (querydslDirectory.exists()) {
+            querydslDirectory.deleteRecursively()
+            println "QueryDSL generated files deleted."
+        } else {
+            println "QueryDSL generated directory does not exist, skipping deletion."
+        }
+    }
 }

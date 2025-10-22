@@ -4,6 +4,9 @@ import com.space.munova.member.entity.Member;
 import com.space.munova.product.domain.Product;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_recommendations",
@@ -28,4 +31,8 @@ public class UserRecommendation {
 
     @Column(nullable = false)
     private int score;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 }

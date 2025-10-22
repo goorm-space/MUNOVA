@@ -3,6 +3,9 @@ package com.space.munova.recommend.domain;
 import com.space.munova.product.domain.Product;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "product_recommendations",
@@ -27,4 +30,8 @@ public class ProductRecommendation {
 
     @Column(nullable = false)
     private int score;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 }

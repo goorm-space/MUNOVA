@@ -1,5 +1,6 @@
 package com.space.munova.order.entity;
 
+import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.product.domain.product.ProductDetail;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

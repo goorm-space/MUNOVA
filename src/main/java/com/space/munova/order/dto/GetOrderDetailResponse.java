@@ -1,10 +1,8 @@
 package com.space.munova.order.dto;
 
 import com.space.munova.order.entity.Order;
-import com.space.munova.order.entity.OrderStatus;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 public record GetOrderDetailResponse (
@@ -20,12 +18,12 @@ public record GetOrderDetailResponse (
         LocalDateTime orderDate,
         String paymentReceipt,
         String paymentMethod,
-        List<OrderItemDetailResponse> orderItems
+        List<OrderItemDto> orderItems
 
 ) {
     public static GetOrderDetailResponse from(Order order) {
-        List<OrderItemDetailResponse> orderItems = order.getOrderItems().stream()
-                .map(OrderItemDetailResponse::from)
+        List<OrderItemDto> orderItems = order.getOrderItems().stream()
+                .map(OrderItemDto::from)
                 .toList();
 
         return new GetOrderDetailResponse(

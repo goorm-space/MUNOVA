@@ -5,7 +5,7 @@ import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.order.dto.*;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
-import com.space.munova.order.entity.OrderStatus;
+import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.order.repository.OrderItemRepository;
 import com.space.munova.order.repository.OrderRepository;
 import com.space.munova.product.domain.product.Jpa.JpaProductDetailRepository;
@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor

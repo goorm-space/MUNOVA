@@ -2,6 +2,7 @@ package com.space.munova.order.entity;
 
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.entity.Member;
+import com.space.munova.order.dto.OrderStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

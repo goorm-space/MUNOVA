@@ -1,9 +1,8 @@
 package com.space.munova.order.dto;
 
 import com.space.munova.order.entity.OrderItem;
-import com.space.munova.order.entity.OrderStatus;
 
-public record OrderItemDetailResponse(
+public record OrderItemDto(
         Long orderItemId,
         String productName,
         // Todo: 판매자, 옵션정보도 불러와야한다
@@ -11,8 +10,8 @@ public record OrderItemDetailResponse(
         Long totalPrice,
         OrderStatus status
 ) {
-    public static OrderItemDetailResponse from(OrderItem orderItem) {
-        return new OrderItemDetailResponse(
+    public static OrderItemDto from(OrderItem orderItem) {
+        return new OrderItemDto(
                 orderItem.getId(),
                 orderItem.getProductName(),
                 orderItem.getQuantity(),

@@ -1,4 +1,4 @@
-package com.space.munova.chat.dto;
+package com.space.munova.chat.dto.message;
 
 import com.space.munova.chat.enums.MessageType;
 import lombok.*;

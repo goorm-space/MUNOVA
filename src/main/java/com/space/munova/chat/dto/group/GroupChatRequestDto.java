@@ -1,6 +1,5 @@
-package com.space.munova.chat.dto;
+package com.space.munova.chat.dto.group;
 
-import com.space.munova.chat.enums.ChatUserType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

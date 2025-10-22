@@ -1,48 +1,65 @@
 package com.space.munova.chat.controller;
 
 
-import com.space.munova.chat.dto.*;
+import com.space.munova.chat.dto.group.GroupChatRequestDto;
+import com.space.munova.chat.dto.group.GroupChatResponseDto;
+import com.space.munova.chat.dto.ChatItemDto;
+import com.space.munova.chat.dto.onetoone.OneToOneChatRequestDto;
+import com.space.munova.chat.dto.onetoone.OneToOneChatResponseDto;
 import com.space.munova.chat.service.ChatRoomService;
+import com.space.munova.core.config.ResponseApi;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/api/chat")
 public class ChatRoomController {
 
-    private final SimpMessagingTemplate simpMessagingTemplate;
     private final ChatRoomService chatService;
 
     // 문의하기 -> 1:1 채팅방 생성
-    @PostMapping("/chat/one-to-one")
-    public ResponseEntity<OneToOneChatResponseDto> createOneToOneChatRoom(
-            @RequestBody OneToOneChatRequestDto requestDto)  {
-        return ResponseEntity.status(HttpStatus.CREATED).body(chatService.createOneToOneChatRoom(requestDto));
+    @PostMapping("/one-to-one/{memberId}/{productId}")
+    public ResponseApi<OneToOneChatResponseDto> createOneToOneChatRoom(
+            @PathVariable Long memberId,
+            @PathVariable Long productId)  {
+        return ResponseApi.ok(chatService.createOneToOneChatRoom(memberId, productId));
     }
 
     // 구매자의 1:1 문의 채팅 목록 확인
-    @GetMapping("/chat/one-to-one/buyer/{buyerId}")
-    public ResponseEntity<List<OneToOneChatItemDto>> getBuyerChatRooms(@PathVariable Long buyerId) {
-        return ResponseEntity.ok(chatService.getOneToOneChatRoomsbyBuyer(buyerId));
+    @GetMapping("/one-to-one/{buyerId}")
+    public ResponseApi<List<ChatItemDto>> getBuyerChatRooms(@PathVariable Long buyerId) {
+        return ResponseApi.ok(chatService.getOneToOneChatRoomsByBuyer(buyerId));
     }
 
     // 판매자 1:1 문의 채팅 목록 확인
-    @GetMapping("/chat/one-to-one/seller/{sellerId}")
-    public ResponseEntity<List<OneToOneChatItemDto>> getSellerChatRooms(@PathVariable Long sellerId) {
-        return ResponseEntity.ok(chatService.getOneToOneChatRoomsbySeller(sellerId));
+    @GetMapping("/seller/one-to-one/{sellerId}")
+    public ResponseApi<List<ChatItemDto>> getSellerChatRooms(@PathVariable Long sellerId) {
+        return ResponseApi.ok(chatService.getOneToOneChatRoomsBySeller(sellerId));
     }
 
-    // 그룹 채팅방 생 성
-    @PostMapping("/chat/group")
-    public ResponseEntity<GroupChatResponseDto> createGroupChatRoom(
+    // 판매자 1:1 문의 채팅 비활성화
+    @PostMapping("/seller/{sellerId}/{chatId}")
+    public ResponseApi<OneToOneChatResponseDto> setChatClosed(
+            @PathVariable Long sellerId,
+            @PathVariable Long chatId) {
+        return ResponseApi.ok(chatService.setChatRoomClosed(sellerId, chatId));
+    }
+
+    // 그룹 채팅방 생성
+    @PostMapping("/group")
+    public ResponseApi<GroupChatResponseDto> createGroupChatRoom(
             @RequestBody @Valid GroupChatRequestDto requestDto)  {
-        return ResponseEntity.status(HttpStatus.CREATED).body(chatService.createGroupChatRoom(requestDto));
+        return ResponseApi.ok(chatService.createGroupChatRoom(requestDto));
+    }
+
+    // 참여 중인 그룹 채팅 목록 확인
+    @GetMapping("/group/{memberId}")
+    public ResponseApi<List<ChatItemDto>> getGroupChatRooms(@PathVariable Long memberId) {
+        return ResponseApi.ok(chatService.getGroupChatRooms(memberId));
     }
 
 }

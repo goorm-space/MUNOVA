@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @AllArgsConstructor
-public class OneToOneChatItemDto {
+public class ChatItemDto {
 
     private Long chatId;
 
@@ -22,7 +22,7 @@ public class OneToOneChatItemDto {
 
     private LocalDateTime lastMessageTime;
 
-    public OneToOneChatItemDto(Chat chat) {
+    public ChatItemDto(Chat chat) {
         this.chatId = chat.getId();
         this.name = chat.getName();
         this.lastMessageContent = chat.getLastMessageContent();

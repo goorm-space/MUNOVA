@@ -40,4 +40,8 @@ public class OrderItem {
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
+
+    public void updateStatus(OrderStatus status) {
+        this.status = status;
+    }
 }

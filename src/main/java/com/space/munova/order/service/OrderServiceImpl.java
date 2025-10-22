@@ -11,20 +11,20 @@ import com.space.munova.order.repository.OrderRepository;
 import com.space.munova.product.domain.product.Jpa.JpaProductDetailRepository;
 import com.space.munova.product.domain.product.ProductDetail;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class OrderServiceImpl implements OrderService {
 
     private static final int PAGE_SIZE = 5;
@@ -33,9 +33,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemRepository orderItemRepository;
     private final MemberRepository memberRepository;
     private final JpaProductDetailRepository productDetailRepository;
-//    private final CouponRepository couponRepository;
-//    private final CartRepository cartRepository;
 
+    @Transactional
     @Override
     public Order createOrder(Long userId, CreateOrderRequest request) {
 
@@ -56,7 +55,7 @@ public class OrderServiceImpl implements OrderService {
         // Todo: 3. 쿠폰 적용 및 금액 계산
         long originPrice = orderItems.stream()
                 .mapToLong(item -> item.getPrice() * item.getQuantity())
-                        .sum();
+                .sum();
         int discountPrice = 0;
         Long totalPrice = originPrice - discountPrice;
         order.setPrices(originPrice, discountPrice, totalPrice);
@@ -70,6 +69,8 @@ public class OrderServiceImpl implements OrderService {
         // Todo: 6. 장바구니 처리
         return order;
     }
+//    private final CouponRepository couponRepository;
+//    private final CartRepository cartRepository;
 
     @Override
     public GetOrderListResponse getOrderList(int page) {
@@ -90,7 +91,7 @@ public class OrderServiceImpl implements OrderService {
     public GetOrderDetailResponse getOrderDetail(Long orderId) {
 
         Order order = orderRepository.findOrderDetailsById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 orderId: "+ orderId));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 orderId: " + orderId));
 
         return GetOrderDetailResponse.from(order);
     }
@@ -111,7 +112,7 @@ public class OrderServiceImpl implements OrderService {
                     .order(order)
                     .productDetail(detail)
                     .productName(detail.getProduct().getName())
-                    .originPrice(detail.getProduct().getPrice())
+                    .price(detail.getProduct().getPrice())
                     .quantity(itemReq.quantity())
                     .status(OrderStatus.PAYMENT_PENDING)
                     .build();

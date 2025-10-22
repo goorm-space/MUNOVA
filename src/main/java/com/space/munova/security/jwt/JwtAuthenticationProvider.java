@@ -8,6 +8,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
+import static com.space.munova.security.jwt.JwtHelper.ROLE_CLAIM_KEY;
+
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationProvider implements AuthenticationProvider {
@@ -24,10 +26,11 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
 
         // 인증객체 생성 후 반환
         long memberId = Long.parseLong(jwtHelper.getClaims(accessToken, Claims::getSubject));
-        String role = jwtHelper.getClaims(accessToken, claims -> claims.get("authorities")).toString();
-        MemberRole parseRole = MemberRole.valueOf(role);
+        Claims claim = jwtHelper.getClaimsFromToken(accessToken);
+        String role = jwtHelper.getClaims(claim, claims -> claims.get(ROLE_CLAIM_KEY)).toString();
 
-        return JwtAuthenticationToken.afterOf(memberId, parseRole);
+        MemberRole parseRole = MemberRole.valueOf(role);
+        return JwtAuthenticationToken.afterOf(memberId, parseRole, claim);
     }
 
     @Override

@@ -25,7 +25,8 @@ public class RefreshTokenRedisRepository {
 
     public String findBy(Long memberId) {
         String key = REFRESH_TOKEN_PREFIX + memberId;
-        return String.valueOf(restTemplate.opsForValue().get(key));
+        Object refreshToken = restTemplate.opsForValue().get(key);
+        return refreshToken != null ? refreshToken.toString() : null;
     }
 
     public void delete(Long memberId) {

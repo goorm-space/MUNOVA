@@ -1,10 +1,9 @@
 package com.space.munova.chat.controller;
 
 
-import com.space.munova.chat.dto.OneToOneChatItemDto;
-import com.space.munova.chat.dto.OneToOneChatRequestDto;
-import com.space.munova.chat.dto.OneToOneChatResponseDto;
+import com.space.munova.chat.dto.*;
 import com.space.munova.chat.service.ChatRoomService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,9 +21,9 @@ public class ChatRoomController {
 
     // 문의하기 -> 1:1 채팅방 생성
     @PostMapping("/chat/one-to-one")
-    public ResponseEntity<OneToOneChatResponseDto> createChatRoom(
-            @RequestBody OneToOneChatRequestDto requestChatRoomDto)  {
-        return ResponseEntity.status(HttpStatus.CREATED).body(chatService.createOneToOneChatRoom(requestChatRoomDto));
+    public ResponseEntity<OneToOneChatResponseDto> createOneToOneChatRoom(
+            @RequestBody OneToOneChatRequestDto requestDto)  {
+        return ResponseEntity.status(HttpStatus.CREATED).body(chatService.createOneToOneChatRoom(requestDto));
     }
 
     // 구매자의 1:1 문의 채팅 목록 확인
@@ -37,6 +36,13 @@ public class ChatRoomController {
     @GetMapping("/chat/one-to-one/seller/{sellerId}")
     public ResponseEntity<List<OneToOneChatItemDto>> getSellerChatRooms(@PathVariable Long sellerId) {
         return ResponseEntity.ok(chatService.getOneToOneChatRoomsbySeller(sellerId));
+    }
+
+    // 그룹 채팅방 생성
+    @PostMapping("/chat/group")
+    public ResponseEntity<GroupChatResponseDto> createGroupChatRoom(
+            @RequestBody @Valid GroupChatRequestDto requestDto)  {
+        return ResponseEntity.status(HttpStatus.CREATED).body(chatService.createGroupChatRoom(requestDto));
     }
 
 }

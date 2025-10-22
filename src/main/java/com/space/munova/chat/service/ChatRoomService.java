@@ -1,8 +1,6 @@
 package com.space.munova.chat.service;
 
-import com.space.munova.chat.dto.OneToOneChatItemDto;
-import com.space.munova.chat.dto.OneToOneChatRequestDto;
-import com.space.munova.chat.dto.OneToOneChatResponseDto;
+import com.space.munova.chat.dto.*;
 
 import java.util.List;
 
@@ -15,4 +13,5 @@ public interface ChatRoomService {
 
     List<OneToOneChatItemDto> getOneToOneChatRoomsbySeller(Long userId);
 
+    GroupChatResponseDto createGroupChatRoom(GroupChatRequestDto requestDto);
 }

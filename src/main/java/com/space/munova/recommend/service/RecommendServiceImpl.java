@@ -11,6 +11,7 @@ import com.space.munova.recommend.repository.UserRecommendationRepository;
 import com.space.munova.recommend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
@@ -61,6 +62,7 @@ public class RecommendServiceImpl implements RecommendService {
     }
 
     @Override
+    @Transactional
     public void updateUserProductRecommend(Long userId, Long productId) {
         // 1. 사용자 조회
         Member user = userRepository.findById(userId)
@@ -72,7 +74,7 @@ public class RecommendServiceImpl implements RecommendService {
 
         // 3. 같은 카테고리에서 4개 추천 상품 조회
         List<Product> recommendedProducts = productRepository
-                .findTop4ByCategoryAndIdNotOrderByIdAsc(clickedProduct.getCategory(), clickedProduct.getId());
+                .findTop4ByCategory_IdAndIdNotOrderByIdAsc(clickedProduct.getCategory().getId(), clickedProduct.getId());
 
         // 4. 추천 기록 저장
         for (Product rec : recommendedProducts) {
@@ -87,6 +89,7 @@ public class RecommendServiceImpl implements RecommendService {
     }
 
     @Override
+    @Transactional
     public void updateSimilarProductRecommend(Long productId) {
         // 1. 상품 조회
         Product product = productRepository.findById(productId)
@@ -94,10 +97,20 @@ public class RecommendServiceImpl implements RecommendService {
 
         productRecommendRepository.deleteBySourceProduct(product);
 
-        // 2. 같은 카테고리에서 4개 유사 상품 조회 (본 상품 제외)
-        List<com.space.munova.product.domain.Product> Recommendations = productRepository
-                .findTop4ByCategoryAndIdNotOrderByIdAsc(product.getCategory(), product.getId());
+        if (product.getCategory() == null) {
+            System.out.println("Product id=" + productId + " has no category. Cannot generate recommendations.");
+            return; // 추천 로직 종료
+        }
 
+        // 2. 같은 카테고리에서 4개 유사 상품 조회 (본 상품 제외)
+        Long categoryId = product.getCategory().getId();
+        List<Product> Recommendations = productRepository
+                .findTop4ByCategory_IdAndIdNotOrderByIdAsc(categoryId, product.getId());
+
+        if(Recommendations == null || Recommendations.isEmpty()) {
+            System.out.println("추천할 상품이 없습니다.");
+            return;
+        }
         // 3. 추천 기록 저장
         for (Product rec : Recommendations) {
             ProductRecommendation pr = ProductRecommendation.builder()

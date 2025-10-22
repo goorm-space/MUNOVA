@@ -1,10 +1,7 @@
-package com.space.munova.chat.dto;
+package com.space.munova.chat.dto.message;
 
-import com.space.munova.chat.entity.Chat;
 import com.space.munova.chat.entity.Message;
 import com.space.munova.chat.enums.MessageType;
-import com.space.munova.member.entity.Member;
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 

@@ -1,8 +1,8 @@
 package com.space.munova.chat.controller;
 
-import com.space.munova.chat.dto.ChatMessageRequestDto;
-import com.space.munova.chat.dto.ChatMessageResponseDto;
-import com.space.munova.chat.dto.ChatMessageViewDto;
+import com.space.munova.chat.dto.message.ChatMessageRequestDto;
+import com.space.munova.chat.dto.message.ChatMessageResponseDto;
+import com.space.munova.chat.dto.message.ChatMessageViewDto;
 import com.space.munova.chat.service.ChatMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -10,6 +10,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -34,8 +35,10 @@ public class ChatMessageController {
     }
 
     // 채팅 메시지 조회
-    @GetMapping("/chat/messages/{chatId}")
-    public List<ChatMessageViewDto> getMessages(@RequestParam Long chatId, Long memberId){
+    @GetMapping("/chat/messages/{memberId}/{chatId}")
+    public List<ChatMessageViewDto> getMessages(
+            @PathVariable Long memberId,
+            @PathVariable Long chatId){
         return chatMessageService.getMessagesByChatId(chatId, memberId);
     }
 

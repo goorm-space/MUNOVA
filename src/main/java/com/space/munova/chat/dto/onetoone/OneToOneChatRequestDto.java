@@ -1,4 +1,4 @@
-package com.space.munova.chat.dto;
+package com.space.munova.chat.dto.onetoone;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,8 +10,6 @@ import lombok.Setter;
 public class OneToOneChatRequestDto {
 
     private Long buyerId;
-
-    private Long sellerId;
 
     private Long productId;
 

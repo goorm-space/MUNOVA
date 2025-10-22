@@ -18,7 +18,7 @@ public class ChatException extends BaseException {
         return new ChatException("CHAT_02", "이미 종료된 채팅방입니다.", HttpStatus.CONFLICT, detailMessage);
     }
 
-    public static ChatException participantInactiveException(String... detailMessage) {
+    public static ChatException unauthorizedParticipantException(String... detailMessage) {
         return new ChatException("CHAT_03", "채팅방에 대한 권한이 없습니다.", HttpStatus.FORBIDDEN, detailMessage);
     }
 
@@ -32,5 +32,9 @@ public class ChatException extends BaseException {
 
     public static ChatException cannotFindProductException(String... detailMessage) {
         return new ChatException("PROD_01", "상품을 찾을 수 없습니다.", HttpStatus.NOT_FOUND, detailMessage);
+    }
+
+    public static ChatException unauthorizedAccessException(String... detailMessage) {
+        return new ChatException("AUTH_02", "권한이 없습니다.", HttpStatus.FORBIDDEN, detailMessage);
     }
 }

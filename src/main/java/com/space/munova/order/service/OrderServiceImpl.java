@@ -55,7 +55,7 @@ public class OrderServiceImpl implements OrderService {
 
         // Todo: 3. 쿠폰 적용 및 금액 계산
         long originPrice = orderItems.stream()
-                .mapToLong(item -> item.getOriginPrice() * item.getQuantity())
+                .mapToLong(item -> item.getPrice() * item.getQuantity())
                         .sum();
         int discountPrice = 0;
         Long totalPrice = originPrice - discountPrice;

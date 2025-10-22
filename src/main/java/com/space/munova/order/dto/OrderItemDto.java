@@ -15,7 +15,7 @@ public record OrderItemDto(
                 orderItem.getId(),
                 orderItem.getProductName(),
                 orderItem.getQuantity(),
-                orderItem.getOriginPrice() * orderItem.getQuantity(),
+                orderItem.getPrice() * orderItem.getQuantity(),
                 orderItem.getStatus()
         );
     }

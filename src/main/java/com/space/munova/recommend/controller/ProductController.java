@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/recommend/products")
+@RequestMapping("/api/admin/recommend/products")
 @RequiredArgsConstructor
 public class ProductController {
 

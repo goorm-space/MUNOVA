@@ -1,4 +1,4 @@
-package com.space.munova.product.domain.product.enums;
+package com.space.munova.product.domain.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

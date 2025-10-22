@@ -1,7 +1,9 @@
-package com.space.munova.product.domain.product;
+package com.space.munova.product.domain;
 
 
-import com.space.munova.product.domain.product.enums.ProductCategory;
+import com.space.munova.core.entity.BaseEntity;
+import com.space.munova.product.domain.enums.ProductCategory;
+import com.space.munova.product.infra.ProductCategoryConverter;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -14,10 +16,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Table(name = "product_category")
 @Entity
-public class Category {
+public class Category extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "category_id")
     private Long id;
 
     @Nullable

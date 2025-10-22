@@ -8,11 +8,11 @@ import java.util.List;
 public record OrderSummaryDto(
         Long orderId,
         LocalDateTime orderDate,
-        List<OrderItemDetailResponse> orderItems
+        List<OrderItemDto> orderItems
 ) {
     public static OrderSummaryDto from(Order order) {
-        List<OrderItemDetailResponse> orderItems = order.getOrderItems().stream()
-                .map(OrderItemDetailResponse::from)
+        List<OrderItemDto> orderItems = order.getOrderItems().stream()
+                .map(OrderItemDto::from)
                 .toList();
 
         return new OrderSummaryDto(

@@ -1,4 +1,4 @@
-package com.space.munova.order.entity;
+package com.space.munova.order.dto;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

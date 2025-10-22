@@ -1,6 +1,7 @@
-package com.space.munova.product.domain.product;
+package com.space.munova.product.domain;
 
 
+import com.space.munova.product.domain.enums.OptionCategory;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -18,7 +19,7 @@ public class Option  {
     private Long id;
 
     @Convert(converter = OptionConverter.class)
-    private Option optionType;
+    private OptionCategory optionType;
 
     private String optionName;
 

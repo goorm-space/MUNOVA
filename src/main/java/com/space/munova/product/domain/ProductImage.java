@@ -1,8 +1,8 @@
-package com.space.munova.product.domain.product;
+package com.space.munova.product.domain;
 
 
 
-import com.space.munova.product.domain.product.enums.ProductImageType;
+import com.space.munova.product.domain.enums.ProductImageType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

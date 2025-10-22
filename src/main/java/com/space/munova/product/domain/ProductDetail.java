@@ -1,4 +1,4 @@
-package com.space.munova.product.domain.product;
+package com.space.munova.product.domain;
 
 
 import jakarta.persistence.*;

@@ -38,7 +38,7 @@ public class ChatRoomController {
         return ResponseEntity.ok(chatService.getOneToOneChatRoomsbySeller(sellerId));
     }
 
-    // 그룹 채팅방 생성
+    // 그룹 채팅방 생 성
     @PostMapping("/chat/group")
     public ResponseEntity<GroupChatResponseDto> createGroupChatRoom(
             @RequestBody @Valid GroupChatRequestDto requestDto)  {

@@ -10,6 +10,6 @@ public interface ChatMessageService {
 
     ChatMessageResponseDto createChatMessage(ChatMessageRequestDto chatMessageRequest);
 
-    List<ChatMessageViewDto> getMessagesByChatId(Long chatId);
+    List<ChatMessageViewDto> getMessagesByChatId(Long chatId, Long memberId);
 
 }

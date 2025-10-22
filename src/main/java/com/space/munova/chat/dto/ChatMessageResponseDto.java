@@ -3,9 +3,13 @@ package com.space.munova.chat.dto;
 
 import com.space.munova.chat.entity.Message;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
 public class ChatMessageResponseDto {
 
     private Long chatId;

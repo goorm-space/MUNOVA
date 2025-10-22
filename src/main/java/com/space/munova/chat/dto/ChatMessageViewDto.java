@@ -5,11 +5,15 @@ import com.space.munova.chat.entity.Message;
 import com.space.munova.chat.enums.MessageType;
 import com.space.munova.member.entity.Member;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+@Setter
+@Getter
 public class ChatMessageViewDto {
-    private Long mesageId;
+    private Long messageId;
 
     private String content;
 
@@ -24,7 +28,7 @@ public class ChatMessageViewDto {
     private LocalDateTime createdAt;
 
     public ChatMessageViewDto(Message message){
-        this.mesageId = message.getId();
+        this.messageId = message.getId();
         this.content = message.getContent();
         this.type = message.getType();
         this.chatId = message.getChatId().getId();

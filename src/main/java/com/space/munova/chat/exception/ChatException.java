@@ -14,6 +14,15 @@ public class ChatException extends BaseException {
         return new ChatException("CHAT_01", "채팅방을 찾을 수 없습니다.", HttpStatus.NOT_FOUND, detailMessage);
     }
 
+    public static ChatException chatClosedException(String... detailMessage) {
+        return new ChatException("CHAT_02", "이미 종료된 채팅방입니다.", HttpStatus.CONFLICT, detailMessage);
+    }
+
+    public static ChatException participantInactiveException(String... detailMessage) {
+        return new ChatException("CHAT_03", "채팅방에 대한 권한이 없습니다.", HttpStatus.FORBIDDEN, detailMessage);
+    }
+
+
 
 // ======================
 

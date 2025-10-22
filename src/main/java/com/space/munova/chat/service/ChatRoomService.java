@@ -11,6 +11,8 @@ public interface ChatRoomService {
 
     OneToOneChatResponseDto createOneToOneChatRoom(OneToOneChatRequestDto requestChatRoomDto);
 
-    List<OneToOneChatItemDto> getOneToOneChatRooms(Long userId);
+    List<OneToOneChatItemDto> getOneToOneChatRoomsbyBuyer(Long userId);
+
+    List<OneToOneChatItemDto> getOneToOneChatRoomsbySeller(Long userId);
 
 }

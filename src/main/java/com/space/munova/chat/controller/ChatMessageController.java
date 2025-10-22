@@ -35,8 +35,8 @@ public class ChatMessageController {
 
     // 채팅 메시지 조회
     @GetMapping("/chat/messages/{chatId}")
-    public List<ChatMessageViewDto> getMessages(@RequestParam Long chatId){
-        return chatMessageService.getMessagesByChatId(chatId);
+    public List<ChatMessageViewDto> getMessages(@RequestParam Long chatId, Long memberId){
+        return chatMessageService.getMessagesByChatId(chatId, memberId);
     }
 
 }

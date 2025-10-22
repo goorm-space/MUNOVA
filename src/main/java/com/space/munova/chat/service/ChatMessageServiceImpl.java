@@ -5,10 +5,13 @@ import com.space.munova.chat.dto.ChatMessageResponseDto;
 import com.space.munova.chat.dto.ChatMessageViewDto;
 import com.space.munova.chat.entity.Chat;
 import com.space.munova.chat.entity.Message;
+import com.space.munova.chat.entity.OneToOneChat;
+import com.space.munova.chat.enums.ChatStatus;
 import com.space.munova.chat.exception.ChatException;
 import com.space.munova.chat.repository.ChatRepository;
 import com.space.munova.chat.repository.MessageRepository;
 import com.space.munova.chat.repository.MemberRepository;
+import com.space.munova.chat.repository.OneToOneChatRepository;
 import com.space.munova.member.entity.Member;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +28,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     private final MessageRepository messageRepository;
     private final ChatRepository chatRepository;
     private final MemberRepository userRepository;
+    private final OneToOneChatRepository oneToOneChatRepository;
 
     // 메시지 DB에 저장
     @Override
@@ -34,6 +38,12 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         // 채팅방 확인
         Chat chatId = chatRepository.findById(chatMessageRequest.getChatId())
                 .orElseThrow(() -> ChatException.cannotFindChatException("chatId=" + chatMessageRequest.getChatId()));
+
+        // 2. 채팅방 상태 확인
+        if (chatId.getStatus() != ChatStatus.OPENED) {
+            throw ChatException.chatClosedException("chatId=" + chatId.getId());
+        }
+
         // 송신자 확인
         Member senderId = userRepository.findById(chatMessageRequest.getSenderId())
                 .orElseThrow(() -> ChatException.cannotFindMemberException("senderId=" + chatMessageRequest.getSenderId()));
@@ -56,7 +66,26 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     // 채팅방 메시지 List 조회
     @Override
     @Transactional
-    public List<ChatMessageViewDto> getMessagesByChatId(Long chatId) {
+    public List<ChatMessageViewDto> getMessagesByChatId(Long chatId, Long memberId) {
+
+        // 송신자 확인
+        Member senderId = userRepository.findById(memberId)
+                .orElseThrow(() -> ChatException.cannotFindMemberException("senderId=" + memberId));
+
+        // 1. 채팅방 확인
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> ChatException.cannotFindChatException("chatId=" + chatId));
+
+        // 2. 채팅방 상태 확인
+        if (chat.getStatus() != ChatStatus.OPENED) {
+            throw ChatException.chatClosedException("chatId=" + chatId);
+        }
+
+        // 3. 참여자 권한 확인 (1:1 채팅)
+        if (!oneToOneChatRepository.findByChatIdAndParticipantIdWithChat(chatId, memberId)) {
+            throw ChatException.participantInactiveException("userId=" + memberId);
+        }
+
         return messageRepository.findAllByChatIdWithChat(chatId).stream()
                 .map(ChatMessageViewDto::new).toList();
 

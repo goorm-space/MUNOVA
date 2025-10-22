@@ -20,7 +20,7 @@ public class ChatRoomController {
     private final SimpMessagingTemplate simpMessagingTemplate;
     private final ChatRoomService chatService;
 
-    // 일대일 채팅방 생성
+    // 문의하기 -> 1:1 채팅방 생성
     @PostMapping("/chat/one-to-one")
     public ResponseEntity<OneToOneChatResponseDto> createChatRoom(
             @RequestBody OneToOneChatRequestDto requestChatRoomDto)  {
@@ -28,10 +28,15 @@ public class ChatRoomController {
     }
 
     // 구매자의 1:1 문의 채팅 목록 확인
-    @GetMapping("/chat/one-to-one/{userId}")
-    public ResponseEntity<List<OneToOneChatItemDto>> getChatRoom(@PathVariable Long userId) {
-        return ResponseEntity.ok(chatService.getOneToOneChatRooms(userId));
+    @GetMapping("/chat/one-to-one/buyer/{buyerId}")
+    public ResponseEntity<List<OneToOneChatItemDto>> getBuyerChatRooms(@PathVariable Long buyerId) {
+        return ResponseEntity.ok(chatService.getOneToOneChatRoomsbyBuyer(buyerId));
     }
 
+    // 판매자 1:1 문의 채팅 목록 확인
+    @GetMapping("/chat/one-to-one/seller/{sellerId}")
+    public ResponseEntity<List<OneToOneChatItemDto>> getSellerChatRooms(@PathVariable Long sellerId) {
+        return ResponseEntity.ok(chatService.getOneToOneChatRoomsbySeller(sellerId));
+    }
 
 }

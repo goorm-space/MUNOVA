@@ -65,15 +65,29 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     }
 
     @Override
-    public List<OneToOneChatItemDto> getOneToOneChatRooms(Long userId) {
+    @Transactional
+    public List<OneToOneChatItemDto> getOneToOneChatRoomsbyBuyer(Long buyerId) {
 
         // 사용자 조회
-        Member buyer = userRepository.findById(userId)
-                .orElseThrow(() -> ChatException.cannotFindMemberException("buyerId=" + userId));
+        Member buyer = userRepository.findById(buyerId)
+                .orElseThrow(() -> ChatException.cannotFindMemberException("buyerId=" + buyerId));
 
         // 사용자를 통해 Chat 리스트 조회
         return chatRepository.findAllByUserIdOrderByLastMessageTimeDesc(buyer.getId())
                 .stream().map(OneToOneChatItemDto::new).toList();
+    }
+
+    @Transactional
+    @Override
+    public List<OneToOneChatItemDto> getOneToOneChatRoomsbySeller(Long sellerId) {
+        // 사용자 조회
+        Member buyer = userRepository.findById(sellerId)
+                .orElseThrow(() -> ChatException.cannotFindMemberException("sellerId=" + sellerId));
+
+//        return oneToOneChatRepository.findAllWithChatBySellerId(sellerId)
+//                .stream().map(m -> new OneToOneChatItemDto(m.getChatId())).toList();
+        return oneToOneChatRepository.findAllChatDtosBySellerId(sellerId);
+
     }
 
 

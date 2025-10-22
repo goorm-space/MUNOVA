@@ -12,6 +12,10 @@ import java.util.List;
 @Repository
 public interface ChatRepository extends JpaRepository<Chat, Long> {
 
-    @Query("SELECT c FROM Chat c WHERE c.userId.id = :buyerId ORDER BY c.lastMessageTime DESC")
+    @Query("SELECT c " +
+            "FROM Chat c " +
+            "WHERE c.userId.id = :buyerId " +
+            "AND c.status = 'OPENED'"+
+            "ORDER BY c.lastMessageTime DESC")
     List<Chat> findAllByUserIdOrderByLastMessageTimeDesc(@Param("buyerId") Long buyerId);
 }

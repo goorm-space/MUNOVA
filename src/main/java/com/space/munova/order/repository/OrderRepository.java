@@ -1,6 +1,8 @@
 package com.space.munova.order.repository;
 
 import com.space.munova.order.entity.Order;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,4 +18,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "LEFT JOIN FETCH o.orderItems oi " +
             "WHERE o.id = :orderId")
     Optional<Order> findOrderDetailsById(@Param("orderId") Long orderId);
+
+    Page<Order> findAll(Pageable pageable);
 }

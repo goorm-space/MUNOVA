@@ -2,10 +2,7 @@ package com.space.munova.order.service;
 
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.repository.MemberRepository;
-import com.space.munova.order.dto.CreateOrderRequest;
-import com.space.munova.order.dto.GetOrderDetailResponse;
-import com.space.munova.order.dto.OrderItemRequest;
-import com.space.munova.order.dto.OrderType;
+import com.space.munova.order.dto.*;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.entity.OrderStatus;
@@ -16,6 +13,10 @@ import com.space.munova.product.domain.product.ProductDetail;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -26,6 +27,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Transactional
 public class OrderServiceImpl implements OrderService {
+
+    private static final int PAGE_SIZE = 5;
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
@@ -67,6 +70,21 @@ public class OrderServiceImpl implements OrderService {
 
         // Todo: 6. 장바구니 처리
         return order;
+    }
+
+    @Override
+    public GetOrderListResponse getOrderList(int page) {
+        Pageable pageable = PageRequest.of(
+                page,
+                PAGE_SIZE,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        Page<Order> orderPage = orderRepository.findAll(pageable);
+
+        Page<OrderSummaryDto> dtoPage = orderPage.map(OrderSummaryDto::from);
+
+        return GetOrderListResponse.from(dtoPage);
     }
 
     @Override

@@ -1,14 +1,15 @@
 package com.space.munova.chat.service;
 
-import com.space.munova.chat.dto.OneToOneChatItemDto;
-import com.space.munova.chat.dto.OneToOneChatRequestDto;
-import com.space.munova.chat.dto.OneToOneChatResponseDto;
+import com.space.munova.chat.dto.*;
 import com.space.munova.chat.entity.Chat;
+import com.space.munova.chat.entity.GroupChat;
 import com.space.munova.chat.entity.OneToOneChat;
 import com.space.munova.chat.enums.ChatStatus;
 import com.space.munova.chat.enums.ChatType;
+import com.space.munova.chat.enums.ChatUserType;
 import com.space.munova.chat.exception.ChatException;
 import com.space.munova.chat.repository.ChatRepository;
+import com.space.munova.chat.repository.GroupChatRepository;
 import com.space.munova.chat.repository.OneToOneChatRepository;
 import com.space.munova.chat.repository.MemberRepository;
 import com.space.munova.member.entity.Member;
@@ -28,6 +29,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     private final MemberRepository userRepository;
     private final ChatRepository chatRepository;
     private final OneToOneChatRepository oneToOneChatRepository;
+    private final GroupChatRepository groupChatRepository;
     private final JpaProductRepository productRepository;
 
     // 1:1 채팅방 생성
@@ -53,17 +55,20 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 
         // 1:1 채팅방 생성
         Chat chat = chatRepository.save(Chat.builder()
-                                            .name(generateChatRoomName(product, buyer))
-                                            .type(ChatType.ONE_ON_ONE)
-                                            .status(ChatStatus.OPENED)
-                                            .userId(seller)
-                                            .build());
+                        .name(generateChatRoomName(product, buyer))
+                        .type(ChatType.ONE_ON_ONE)
+                        .status(ChatStatus.OPENED)
+                        .max_participant(2)
+                        .cur_participant(2)
+                        .userId(seller)
+                        .build());
         // 채팅방 참가자 등록
         oneToOneChatRepository.save(new OneToOneChat(chat, buyer, seller));
 
         return OneToOneChatResponseDto.to(chat, buyer, seller);
     }
 
+    // 1:1 채팅방 목록 조회(구매자)
     @Override
     @Transactional
     public List<OneToOneChatItemDto> getOneToOneChatRoomsbyBuyer(Long buyerId) {
@@ -77,6 +82,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                 .stream().map(OneToOneChatItemDto::new).toList();
     }
 
+    // 1:1 채팅방 목록 조회(판매자)
     @Transactional
     @Override
     public List<OneToOneChatItemDto> getOneToOneChatRoomsbySeller(Long sellerId) {
@@ -88,6 +94,31 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 //                .stream().map(m -> new OneToOneChatItemDto(m.getChatId())).toList();
         return oneToOneChatRepository.findAllChatDtosBySellerId(sellerId);
 
+    }
+
+    // group 채팅방 생성
+    @Override
+    @Transactional
+    public GroupChatResponseDto createGroupChatRoom(GroupChatRequestDto requestDto) {
+
+        // 채팅방 생성자 조회
+        Member member = userRepository.findById(requestDto.getMemberId())
+                .orElseThrow(() -> ChatException.cannotFindMemberException("sellerId=" + requestDto.getMemberId()));
+
+        // Group 채팅방 생성
+        Chat chat = chatRepository.save(Chat.builder()
+                        .name(requestDto.getName())
+                        .type(ChatType.GROUP)
+                        .status(ChatStatus.OPENED)
+                        .userId(member)
+                        .cur_participant(1)
+                        .max_participant(requestDto.getMaxParticipants())
+                        .build());
+
+        // Group_Chat 테이블 저장
+        GroupChat save = groupChatRepository.save(new GroupChat(chat, member, ChatUserType.OWNER));
+
+        return GroupChatResponseDto.to(chat, requestDto.getMemberId());
     }
 
 

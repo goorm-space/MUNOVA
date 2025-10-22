@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
+@Table(name = "one_to_one_chat")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OneToOneChat {
 

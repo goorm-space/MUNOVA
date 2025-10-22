@@ -5,9 +5,13 @@ import com.space.munova.chat.enums.ChatUserType;
 import com.space.munova.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "group_chat")
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GroupChat {
 
@@ -25,8 +29,9 @@ public class GroupChat {
 
     private ChatUserType type;
 
-    public GroupChat(Chat chatId, Member memberId) {
+    public GroupChat(Chat chatId, Member memberId,  ChatUserType type) {
         this.chatId = chatId;
         this.memberId = memberId;
+        this.type = type;
     }
 }

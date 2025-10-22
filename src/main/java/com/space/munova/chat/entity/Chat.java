@@ -6,6 +6,7 @@ import com.space.munova.chat.enums.ChatType;
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.entity.Member;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -15,7 +16,8 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "chat")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Chat extends BaseEntity {
 
@@ -26,6 +28,7 @@ public class Chat extends BaseEntity {
     @OneToOne(fetch = FetchType.EAGER)
     private Member userId;
 
+    @Column(nullable = false)
     private String name;
 
     @Enumerated(EnumType.STRING)
@@ -43,11 +46,13 @@ public class Chat extends BaseEntity {
     private LocalDateTime lastMessageTime;
 
     @Builder
-    public Chat(String name, ChatStatus status, ChatType type, Member userId) {
+    public Chat(@NonNull String name, ChatStatus status, ChatType type, Member userId, Integer cur_participant, Integer max_participant) {
         this.name = name;
         this.status = status;
         this.type = type;
         this.userId = userId;
+        this.cur_participant = cur_participant;
+        this.max_participant = max_participant;
     }
 
     public void modifyLastMessageContent(String lastMessageContent, LocalDateTime lastMessageTime) {

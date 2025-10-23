@@ -9,7 +9,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-public class CommonController {
+public class RecommendCommonController {
 
     private final RecommendService recommendService;
 

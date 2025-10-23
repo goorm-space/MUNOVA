@@ -1,6 +1,6 @@
 package com.space.munova.recommend.repository;
 
-import com.space.munova.product.domain.Product;
+import com.space.munova.product.domain.product.Product;
 import com.space.munova.recommend.domain.ProductRecommendation;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;

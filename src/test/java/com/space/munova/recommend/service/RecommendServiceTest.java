@@ -1,7 +1,7 @@
 //package com.space.munova.recommend.service;
 //
 //import com.space.munova.MunovaApplication;
-//import com.space.munova.product.domain.Product;
+//import com.space.munova.product.domain.product.Product;
 //import com.space.munova.recommend.repository.ProductRepository;
 //import org.junit.jupiter.api.Test;
 //import org.springframework.beans.factory.annotation.Autowired;

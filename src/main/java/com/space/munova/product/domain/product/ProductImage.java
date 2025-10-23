@@ -1,4 +1,4 @@
-package com.space.munova.product.domain;
+package com.space.munova.product.domain.product;
 
 
 

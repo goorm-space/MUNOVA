@@ -1,7 +1,7 @@
 package com.space.munova.recommend.service;
 
 import com.space.munova.member.entity.Member;
-import com.space.munova.product.domain.Product;
+import com.space.munova.product.domain.product.Product;
 import com.space.munova.recommend.domain.ProductRecommendation;
 import com.space.munova.recommend.domain.UserRecommendation;
 import com.space.munova.recommend.dto.ResponseDto;

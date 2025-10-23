@@ -13,7 +13,6 @@ import org.springframework.data.annotation.CreatedDate;
 import java.time.LocalDateTime;
 
 @Getter
-@Setter
 @Entity
 @NoArgsConstructor
 @Table(name = "message")

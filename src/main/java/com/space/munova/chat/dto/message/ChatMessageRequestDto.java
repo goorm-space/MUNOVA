@@ -4,7 +4,6 @@ import com.space.munova.chat.enums.MessageType;
 import lombok.*;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString

@@ -8,16 +8,13 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ChatRepository extends JpaRepository<Chat, Long> {
 
-    @Query("SELECT new com.space.munova.chat.dto.ChatItemDto" +
-            "(c.id, c.name, c.lastMessageContent, c.lastMessageTime)" +
+    @Query("SELECT c " +
             "FROM Chat c " +
-            "WHERE c.userId.id = :buyerId " +
-            "AND c.status = 'OPENED' " +
-            "AND c.type = com.space.munova.chat.enums.ChatType.ONE_ON_ONE " +
-            "ORDER BY c.lastMessageTime DESC")
-    List<ChatItemDto> findAllByUserIdOrderByLastMessageTimeDesc(@Param("buyerId") Long buyerId);
-}
+            "WHERE c.id = :chatId " +
+            "AND c.status = com.space.munova.chat.enums.ChatStatus.OPENED")
+    Optional<Chat> findOpenedChatById(@Param("chatId") Long chatId);}

@@ -1,5 +1,6 @@
 package com.space.munova.security.config;
 
+import com.space.munova.member.dto.MemberRole;
 import com.space.munova.security.exception.CustomAccessDeniedHandler;
 import com.space.munova.security.exception.CustomAuthenticationEntryPoint;
 import com.space.munova.security.exception.JwtAuthenticationFailureHandler;
@@ -37,6 +38,8 @@ public class WebSecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+                        .requestMatchers("/api/admin/**").hasRole(MemberRole.ADMIN.getAuthority())
+                        .requestMatchers("/api/seller/**").hasRole(MemberRole.SELLER.getAuthority())
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )

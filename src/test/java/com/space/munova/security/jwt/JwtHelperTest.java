@@ -22,6 +22,8 @@ class JwtHelperTest extends IntegrationTestBase {
 
     private MockHttpServletResponse response;
 
+    private static final String USER_NAME = "testuser";
+
     @BeforeEach
     void setUp() {
         response = new MockHttpServletResponse();
@@ -33,7 +35,7 @@ class JwtHelperTest extends IntegrationTestBase {
     void generateAccessToken_success() {
         // given
         Long memberId = 1L;
-        String username = "testuser";
+        String username = USER_NAME;
         MemberRole role = MemberRole.USER;
 
         // when
@@ -68,7 +70,7 @@ class JwtHelperTest extends IntegrationTestBase {
     @DisplayName("JWT 토큰 유효성 검증 성공")
     void validateJwt_success() {
         // given
-        String accessToken = jwtHelper.generateAccessToken(1L, "testuser", MemberRole.USER);
+        String accessToken = jwtHelper.generateAccessToken(1L, USER_NAME, MemberRole.USER);
 
         // when & then
         jwtHelper.validateJwt(accessToken);
@@ -136,7 +138,7 @@ class JwtHelperTest extends IntegrationTestBase {
     @DisplayName("Claims에서 값 추출 성공")
     void getClaims_success() {
         // given
-        String accessToken = jwtHelper.generateAccessToken(1L, "testuser", MemberRole.USER);
+        String accessToken = jwtHelper.generateAccessToken(1L, USER_NAME, MemberRole.USER);
 
         // when
         String subject = jwtHelper.getClaims(accessToken, Claims::getSubject);
@@ -144,7 +146,7 @@ class JwtHelperTest extends IntegrationTestBase {
 
         // then
         assertThat(subject).isEqualTo("1");
-        assertThat(username).isEqualTo("testuser");
+        assertThat(username).isEqualTo(USER_NAME);
     }
 
     @Test
@@ -152,7 +154,7 @@ class JwtHelperTest extends IntegrationTestBase {
     void getMemberId_success() {
         // given
         Long memberId = 1L;
-        String accessToken = jwtHelper.generateAccessToken(memberId, "testuser", MemberRole.USER);
+        String accessToken = jwtHelper.generateAccessToken(memberId, USER_NAME, MemberRole.USER);
         Claims claims = jwtHelper.getClaimsFromToken(accessToken);
         JwtAuthenticationToken authentication = JwtAuthenticationToken.afterOf(memberId, MemberRole.USER, claims);
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -168,7 +170,7 @@ class JwtHelperTest extends IntegrationTestBase {
     @DisplayName("SecurityContext에서 MemberName 가져오기 성공")
     void getMemberName_success() {
         // given
-        String username = "testuser";
+        String username = USER_NAME;
         String accessToken = jwtHelper.generateAccessToken(1L, username, MemberRole.USER);
         Claims claims = jwtHelper.getClaimsFromToken(accessToken);
         JwtAuthenticationToken authentication = JwtAuthenticationToken.afterOf(1L, MemberRole.USER, claims);
@@ -186,7 +188,7 @@ class JwtHelperTest extends IntegrationTestBase {
     void getMemberRole_success() {
         // given
         MemberRole role = MemberRole.ADMIN;
-        String accessToken = jwtHelper.generateAccessToken(1L, "testuser", role);
+        String accessToken = jwtHelper.generateAccessToken(1L, USER_NAME, role);
         Claims claims = jwtHelper.getClaimsFromToken(accessToken);
         JwtAuthenticationToken authentication = JwtAuthenticationToken.afterOf(1L, role, claims);
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -231,7 +233,7 @@ class JwtHelperTest extends IntegrationTestBase {
         Long memberId = 1L;
 
         // when
-        String accessToken = jwtHelper.generateAccessToken(memberId, "testuser", MemberRole.USER);
+        String accessToken = jwtHelper.generateAccessToken(memberId, USER_NAME, MemberRole.USER);
         Thread.sleep(10);
         String refreshToken = jwtHelper.generateRefreshToken(memberId);
 

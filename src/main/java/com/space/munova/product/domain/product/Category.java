@@ -1,7 +1,7 @@
 package com.space.munova.product.domain.product;
 
 
-import com.space.munova.product.domain.enums.ProductCategory;
+import com.space.munova.product.domain.product.enums.ProductCategory;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

@@ -1,7 +1,7 @@
 package com.space.munova.product.domain.product;
 
 
-import com.space.munova.product.domain.enums.OptionCategory;
+import com.space.munova.product.domain.product.enums.OptionCategory;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

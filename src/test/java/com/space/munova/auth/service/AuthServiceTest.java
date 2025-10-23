@@ -9,13 +9,11 @@ import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.security.jwt.JwtAuthenticationToken;
 import com.space.munova.security.jwt.JwtHelper;
 import io.jsonwebtoken.Claims;
-import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +25,9 @@ class AuthServiceTest extends IntegrationTestBase {
     private AuthService authService;
 
     @Autowired
+    private TokenService tokenService;
+
+    @Autowired
     private MemberRepository memberRepository;
 
     @Autowired
@@ -35,14 +36,11 @@ class AuthServiceTest extends IntegrationTestBase {
     @Autowired
     private JwtHelper jwtHelper;
 
-    private MockHttpServletResponse response;
-
     private static final String USER_NAME = "testuser";
     private static final String USER_PASSWORD = "password123";
 
     @BeforeEach
     void setUp() {
-        response = new MockHttpServletResponse();
         SecurityContextHolder.clearContext();
     }
 
@@ -82,27 +80,22 @@ class AuthServiceTest extends IntegrationTestBase {
     @DisplayName("로그인 성공")
     void signIn_success() {
         // given
-        authService.signup(new SignupRequest(USER_NAME, USER_PASSWORD, ""));
-        SignInRequest request = new SignInRequest(USER_NAME, USER_PASSWORD);
+        authService.signup(SignupRequest.of(USER_NAME, USER_PASSWORD, ""));
+        SignInRequest request = SignInRequest.of(USER_NAME, USER_PASSWORD);
 
         // when
-        SignInResponse result = authService.signIn(request, response);
+        SignInGenerateToken result = authService.signIn(request);
 
         // then
         assertThat(result).isNotNull();
         assertThat(result.accessToken()).isNotBlank();
+        assertThat(result.refreshToken()).isNotBlank();
 
         // Redis에 refreshToken 저장 확인
         Member member = memberRepository.findByUsername(USER_NAME).orElseThrow();
         String storedRefreshToken = refreshTokenRedisRepository.findBy(member.getId());
         assertThat(storedRefreshToken).isNotNull();
-
-        // 쿠키에 refreshToken 저장 확인
-        Cookie cookie = response.getCookie(JwtHelper.REFRESH_TOKEN_COOKIE_KEY);
-        assertThat(cookie).isNotNull();
-        assertThat(cookie.getValue()).isNotBlank();
-        assertThat(cookie.isHttpOnly()).isTrue();
-        assertThat(cookie.getSecure()).isTrue();
+        assertThat(storedRefreshToken).isEqualTo(result.refreshToken());
     }
 
     @Test
@@ -113,7 +106,7 @@ class AuthServiceTest extends IntegrationTestBase {
         SignInRequest request = SignInRequest.of(USER_NAME, "wrongpassword");
 
         // when & then
-        assertThatThrownBy(() -> authService.signIn(request, response))
+        assertThatThrownBy(() -> authService.signIn(request))
                 .isInstanceOf(RuntimeException.class);
     }
 
@@ -122,26 +115,20 @@ class AuthServiceTest extends IntegrationTestBase {
     void signOut_success() {
         // given
         authService.signup(SignupRequest.of(USER_NAME, USER_PASSWORD, ""));
-        SignInResponse signInResponse = authService.signIn(SignInRequest.of(USER_NAME, USER_PASSWORD), response);
+        SignInGenerateToken signInResult = authService.signIn(SignInRequest.of(USER_NAME, USER_PASSWORD));
 
         // SecurityContext 설정
         Member member = memberRepository.findByUsername(USER_NAME).orElseThrow();
-        Claims claims = jwtHelper.getClaimsFromToken(signInResponse.accessToken());
+        Claims claims = jwtHelper.getClaimsFromToken(signInResult.accessToken());
         JwtAuthenticationToken authentication = JwtAuthenticationToken.afterOf(member.getId(), member.getRole(), claims);
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        MockHttpServletResponse logoutResponse = new MockHttpServletResponse();
-
         // when
-        authService.signOut(logoutResponse);
+        authService.signOut();
 
         // then
         String storedRefreshToken = refreshTokenRedisRepository.findBy(member.getId());
         assertThat(storedRefreshToken).isNull();
-
-        Cookie cookie = logoutResponse.getCookie(JwtHelper.REFRESH_TOKEN_COOKIE_KEY);
-        assertThat(cookie).isNotNull();
-        assertThat(cookie.getMaxAge()).isEqualTo(0);
     }
 
     @Test
@@ -149,43 +136,36 @@ class AuthServiceTest extends IntegrationTestBase {
     void reissueToken_success() throws InterruptedException {
         // given
         authService.signup(SignupRequest.of(USER_NAME, USER_PASSWORD, ""));
-        SignInResponse signInResponse = authService.signIn(SignInRequest.of(USER_NAME, USER_PASSWORD), response);
+        SignInGenerateToken signInResult = authService.signIn(SignInRequest.of(USER_NAME, USER_PASSWORD));
 
-        Cookie cookie = response.getCookie(JwtHelper.REFRESH_TOKEN_COOKIE_KEY);
-        String refreshToken = cookie.getValue();
+        String refreshToken = signInResult.refreshToken();
 
         // 시간 차이를 위해 잠시 대기
         Thread.sleep(1000);
 
-        MockHttpServletResponse reissueResponse = new MockHttpServletResponse();
-
         // when
-        TokenReissueResponse result = authService.reissueToken(refreshToken, reissueResponse);
+        GenerateTokens result = tokenService.reissueToken(refreshToken);
 
         // then
         assertThat(result).isNotNull();
         assertThat(result.accessToken()).isNotBlank();
+        assertThat(result.refreshToken()).isNotBlank();
         // accessToken이 재발급되었으므로 다를 것으로 예상
-        assertThat(result.accessToken()).isNotEqualTo(signInResponse.accessToken());
+        assertThat(result.accessToken()).isNotEqualTo(signInResult.accessToken());
 
         // 새로운 refreshToken이 Redis에 저장되었는지 확인
         Member member = memberRepository.findByUsername(USER_NAME).orElseThrow();
         String newStoredRefreshToken = refreshTokenRedisRepository.findBy(member.getId());
         assertThat(newStoredRefreshToken).isNotNull();
         assertThat(newStoredRefreshToken).isNotEqualTo(refreshToken);
-
-        // 새로운 refreshToken이 쿠키에 저장되었는지 확인
-        Cookie newCookie = reissueResponse.getCookie(JwtHelper.REFRESH_TOKEN_COOKIE_KEY);
-        assertThat(newCookie).isNotNull();
-        assertThat(newCookie.getValue()).isNotBlank();
-        assertThat(newCookie.getValue()).isNotEqualTo(refreshToken);
+        assertThat(newStoredRefreshToken).isEqualTo(result.refreshToken());
     }
 
     @Test
     @DisplayName("토큰 재발급 실패 - null refreshToken")
     void reissueToken_fail_nullRefreshToken() {
         // when & then
-        assertThatThrownBy(() -> authService.reissueToken(null, response))
+        assertThatThrownBy(() -> tokenService.reissueToken(null))
                 .isInstanceOf(AuthException.class);
     }
 
@@ -194,7 +174,7 @@ class AuthServiceTest extends IntegrationTestBase {
     void reissueToken_fail_mismatchedRefreshToken() throws InterruptedException {
         // given
         authService.signup(SignupRequest.of(USER_NAME, USER_PASSWORD, ""));
-        authService.signIn(SignInRequest.of(USER_NAME, USER_PASSWORD), response);
+        SignInGenerateToken signInResult = authService.signIn(SignInRequest.of(USER_NAME, USER_PASSWORD));
 
         Member member = memberRepository.findByUsername(USER_NAME).orElseThrow();
 
@@ -202,15 +182,14 @@ class AuthServiceTest extends IntegrationTestBase {
         Thread.sleep(1000);
         String invalidRefreshToken = jwtHelper.generateRefreshToken(member.getId());
 
-        MockHttpServletResponse reissueResponse = new MockHttpServletResponse();
-
         // when & then
-        assertThatThrownBy(() -> authService.reissueToken(invalidRefreshToken, reissueResponse))
+        assertThatThrownBy(() -> tokenService.reissueToken(invalidRefreshToken))
                 .isInstanceOf(AuthException.class);
 
-        // Redis에서 토큰이 삭제되었는지 확인
+        // Redis에 원래 토큰이 그대로 있는지 확인 (삭제되지 않음)
         String storedRefreshToken = refreshTokenRedisRepository.findBy(member.getId());
-        assertThat(storedRefreshToken).isNull();
+        assertThat(storedRefreshToken).isNotNull();
+        assertThat(storedRefreshToken).isEqualTo(signInResult.refreshToken());
     }
 
     @Test
@@ -223,10 +202,8 @@ class AuthServiceTest extends IntegrationTestBase {
         // 만료된 토큰 생성 (만료시간 -1초)
         String expiredToken = createExpiredToken(member.getId());
 
-        MockHttpServletResponse reissueResponse = new MockHttpServletResponse();
-
         // when & then
-        assertThatThrownBy(() -> authService.reissueToken(expiredToken, reissueResponse))
+        assertThatThrownBy(() -> tokenService.reissueToken(expiredToken))
                 .isInstanceOf(AuthException.class);
     }
 

@@ -1,7 +1,7 @@
-package com.space.munova.product.domain.product;
+package com.space.munova.product.infra;
 
 
-import com.space.munova.product.domain.product.enums.OptionCategory;
+import com.space.munova.product.domain.enums.OptionCategory;
 import jakarta.persistence.AttributeConverter;
 
 public class OptionConverter implements AttributeConverter<OptionCategory, String> {

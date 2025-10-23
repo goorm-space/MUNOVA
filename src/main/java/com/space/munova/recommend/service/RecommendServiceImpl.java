@@ -1,7 +1,7 @@
 package com.space.munova.recommend.service;
 
 import com.space.munova.member.entity.Member;
-import com.space.munova.product.domain.product.Product;
+import com.space.munova.product.domain.Product;
 import com.space.munova.recommend.domain.ProductRecommendation;
 import com.space.munova.recommend.domain.UserRecommendation;
 import com.space.munova.recommend.dto.ResponseDto;
@@ -27,7 +27,7 @@ public class RecommendServiceImpl implements RecommendService {
 
     @Override
     public List<ResponseDto> getRecommendationsByUserId(Long userId) {
-       //회원 추천 로그 조회 로직
+        //회원 추천 로그 조회 로직
         return Collections.emptyList();
     }
 
@@ -107,7 +107,7 @@ public class RecommendServiceImpl implements RecommendService {
         List<Product> Recommendations = productRepository
                 .findTop4ByCategory_IdAndIdNotOrderByIdAsc(categoryId, product.getId());
 
-        if(Recommendations == null || Recommendations.isEmpty()) {
+        if (Recommendations == null || Recommendations.isEmpty()) {
             System.out.println("추천할 상품이 없습니다.");
             return;
         }
@@ -119,7 +119,7 @@ public class RecommendServiceImpl implements RecommendService {
                     .build();
             productRecommendRepository.save(pr);
 
-            System.out.println(product.getName()+" -> "+rec.getName());
+            System.out.println(product.getName() + " -> " + rec.getName());
         }
 
         System.out.println("Similar products updated for productId = " + productId);

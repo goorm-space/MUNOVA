@@ -1,7 +1,9 @@
-package com.space.munova.product.domain.product;
+package com.space.munova.product.domain;
 
 
 
+import com.space.munova.core.entity.BaseEntity;
+import com.space.munova.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -12,13 +14,14 @@ import org.hibernate.annotations.ColumnDefault;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class Product  {
+public class Product extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "product_id")
     private Long id;
     private String info;
     private String name;
-    private Integer price;
+    private Long price;
 
     @ColumnDefault("0")
     private Integer likeCount;
@@ -37,18 +40,19 @@ public class Product  {
     @JoinColumn(name = "product_category_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Category category;
 
-//    @ManyToOne
-//    @JoinColumn(name = "product_category_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-//    private User user;
+    @ManyToOne
+    @JoinColumn(name = "member_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private Member member;
 
     @ColumnDefault("0")
     private boolean isDeleted;
 
     public static Product createDefaultProduct(String name,
                                                String info,
-                                               Integer price,
+                                               Long price,
                                                Brand brand,
-                                               Category category
+                                               Category category,
+                                               Member member
                                                ) {
 
         if(brand == null) {
@@ -72,6 +76,9 @@ public class Product  {
         if(name == null || name.isEmpty()) {
             throw new IllegalArgumentException("name cannot be null or empty");
         }
+        if(member == null) {
+            throw new IllegalArgumentException("member cannot be null");
+        }
 
         return Product.builder()
                 .brand(brand)
@@ -79,6 +86,7 @@ public class Product  {
                 .price(price)
                 .category(category)
                 .name(name)
+                .member(member)
                 .build();
     }
 

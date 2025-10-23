@@ -1,7 +1,6 @@
-package com.space.munova.product.domain.product;
+package com.space.munova.product.domain;
 
-
-import com.space.munova.product.domain.product.enums.OptionCategory;
+import com.space.munova.core.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -12,15 +11,14 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Table(name = "option")
-public class Option  {
+@Table(name = "brand")
+public class Brand extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "brand_id")
     private Long id;
-
-    @Convert(converter = OptionConverter.class)
-    private OptionCategory optionType;
-
-    private String optionName;
-
+    private String presidentName;
+    private String brandCode;
+    private String brandName;
 }

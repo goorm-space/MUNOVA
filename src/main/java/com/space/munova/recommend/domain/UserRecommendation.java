@@ -1,7 +1,7 @@
 package com.space.munova.recommend.domain;
 
 import com.space.munova.member.entity.Member;
-import com.space.munova.product.domain.product.Product;
+import com.space.munova.product.domain.Product;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

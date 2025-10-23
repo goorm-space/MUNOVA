@@ -1,6 +1,6 @@
-package com.space.munova.product.domain.product;
+package com.space.munova.product.infra;
 
-import com.space.munova.product.domain.product.enums.ProductCategory;
+import com.space.munova.product.domain.enums.ProductCategory;
 import jakarta.persistence.AttributeConverter;
 
 public class ProductCategoryConverter implements AttributeConverter<ProductCategory, String> {

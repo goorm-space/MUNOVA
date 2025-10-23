@@ -27,4 +27,6 @@ public interface ChatRoomService {
     void leaveGroupChat(Long memberId, Long chatId);
 
     void joinGroupChat(Long memberId, Long chatId);
+
+    void closeGroupChat(Long memberId, Long chatId);
 }

@@ -196,6 +196,23 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         chatMemberRepository.save(new ChatMember(chat, member, ChatUserType.MEMBER));
     }
 
+    // OWNER가 채팅방 CLOSED로 전환
+    @Override
+    @Transactional
+    public void closeGroupChat(Long memberId, Long chatId) {
+        Member member = userRepository.findById(memberId)
+                .orElseThrow(() -> ChatException.cannotFindMemberException("memberId=" + memberId));
+
+        // OPENED 되어 있는 채팅방인지 확인
+        Chat chat = chatRepository.findOpenedChatById(chatId)
+                .orElseThrow(() -> ChatException.chatClosedException("chatId=" + chatId));
+
+        ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, ChatStatus.OPENED, ChatType.GROUP, ChatUserType.OWNER)
+                .orElseThrow(() -> ChatException.chatClosedException("chatId=" + chatId));
+
+        chatMember.getChatId().updateStatus(ChatStatus.CLOSED);
+    }
+
 
     private String generateChatRoomName(Product product, Member otherUser) {
         return "[" + product.getName() + "] 문의 - " + otherUser.getUsername() + "님";

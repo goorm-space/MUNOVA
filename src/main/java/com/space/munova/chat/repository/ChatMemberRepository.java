@@ -62,6 +62,18 @@ public interface ChatMemberRepository extends CrudRepository<ChatMember, Long> {
             @Param("memberId") Long memberId,
             @Param("chatStatus") ChatStatus chatStatus);
 
+    // 참여자 여부 확인 (메시지 전송/조회용)
+    @Query("SELECT CASE WHEN COUNT(cm) > 0 THEN true ELSE false END " +
+            "FROM ChatMember cm " +
+            "JOIN cm.chatId c " +
+            "WHERE cm.chatId.id = :chatId " +
+            "AND cm.memberId.id = :memberId " +
+            "AND c.status = :chatStatus")
+    boolean isOwner(
+            @Param("chatId") Long chatId,
+            @Param("memberId") Long memberId,
+            @Param("chatStatus") ChatStatus chatStatus);
+
 
     @Query("SELECT cm " +
             "FROM ChatMember cm " +

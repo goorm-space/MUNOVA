@@ -3,7 +3,7 @@ package com.space.munova.order.service;
 import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.repository.OrderItemRepository;
-import com.space.munova.product.domain.product.ProductDetail;
+import com.space.munova.product.domain.ProductDetail;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

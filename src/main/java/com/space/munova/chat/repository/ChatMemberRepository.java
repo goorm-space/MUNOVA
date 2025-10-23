@@ -6,7 +6,7 @@ import com.space.munova.chat.enums.ChatStatus;
 import com.space.munova.chat.enums.ChatType;
 import com.space.munova.chat.enums.ChatUserType;
 import com.space.munova.member.entity.Member;
-import com.space.munova.product.domain.product.Product;
+import com.space.munova.product.domain.Product;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;

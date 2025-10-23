@@ -1,8 +1,8 @@
 package com.space.munova.chat.service;
 
+import com.space.munova.chat.dto.ChatItemDto;
 import com.space.munova.chat.dto.group.ChatInfoResponseDto;
 import com.space.munova.chat.dto.group.GroupChatRequestDto;
-import com.space.munova.chat.dto.ChatItemDto;
 import com.space.munova.chat.dto.group.GroupChatUpdateRequestDto;
 import com.space.munova.chat.dto.onetoone.OneToOneChatResponseDto;
 import com.space.munova.chat.entity.Chat;
@@ -11,13 +11,14 @@ import com.space.munova.chat.enums.ChatStatus;
 import com.space.munova.chat.enums.ChatType;
 import com.space.munova.chat.enums.ChatUserType;
 import com.space.munova.chat.exception.ChatException;
-import com.space.munova.chat.repository.*;
+import com.space.munova.chat.repository.ChatMemberRepository;
+import com.space.munova.chat.repository.ChatRepository;
 import com.space.munova.member.dto.MemberRole;
 import com.space.munova.member.entity.Member;
-import com.space.munova.product.domain.product.Jpa.JpaProductRepository;
-import com.space.munova.product.domain.product.Product;
+import com.space.munova.member.repository.MemberRepository;
+import com.space.munova.product.domain.Product;
+import com.space.munova.product.domain.Repository.ProductRepository;
 import jakarta.transaction.Transactional;
-import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +31,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 
     private final MemberRepository userRepository;
     private final ChatRepository chatRepository;
-    private final JpaProductRepository productRepository;
+    private final ProductRepository productRepository;
     private final ChatMemberRepository chatMemberRepository;
 
     // 1:1 채팅방 생성
@@ -54,19 +55,19 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         Optional<ChatMember> existingChat = chatMemberRepository.findByMemberIdAndProductId(buyer, product);
 
         // 있으면 기존 채팅방 반환
-        if(existingChat.isPresent()) {
+        if (existingChat.isPresent()) {
             return OneToOneChatResponseDto.to(existingChat.get().getChatId(), buyer, buyer);
         }
 
         // 1:1 채팅방 생성
         Chat chat = chatRepository.save(Chat.builder()
-                        .name(generateChatRoomName(product, buyer))
-                        .type(ChatType.ONE_ON_ONE)
-                        .status(ChatStatus.OPENED)
-                        .maxParticipant(2)
-                        .curParticipant(2)
+                .name(generateChatRoomName(product, buyer))
+                .type(ChatType.ONE_ON_ONE)
+                .status(ChatStatus.OPENED)
+                .maxParticipant(2)
+                .curParticipant(2)
 //                        .userId(buyer)
-                        .build());
+                .build());
         // 채팅방 참가자(판매자) 등록
         chatMemberRepository.save(new ChatMember(chat, buyer, ChatUserType.MEMBER));
         chatMemberRepository.save(new ChatMember(chat, buyer, ChatUserType.OWNER));
@@ -97,12 +98,12 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 
         // Group 채팅방 생성
         Chat chat = chatRepository.save(Chat.builder()
-                        .name(requestDto.getName())
-                        .type(ChatType.GROUP)
-                        .status(ChatStatus.OPENED)
-                        .curParticipant(1)
-                        .maxParticipant(requestDto.getMaxParticipants())
-                        .build());
+                .name(requestDto.getName())
+                .type(ChatType.GROUP)
+                .status(ChatStatus.OPENED)
+                .curParticipant(1)
+                .maxParticipant(requestDto.getMaxParticipants())
+                .build());
 
         chatMemberRepository.save(new ChatMember(chat, member, ChatUserType.OWNER));
 
@@ -129,7 +130,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         Member seller = userRepository.findById(memberId)
                 .orElseThrow(() -> ChatException.cannotFindMemberException("buyerId=" + memberId));
 
-        if(seller.getRole() != MemberRole.SELLER) {
+        if (seller.getRole() != MemberRole.SELLER) {
             throw ChatException.unauthorizedAccessException("sellerId=" + seller.getId());
         }
 
@@ -186,7 +187,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                 .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId=" + chatId));
 
         // 해당 채팅방에 이미 참여중인지 확인
-        if(chatMemberRepository.existsBy(chatId, memberId, ChatStatus.OPENED)){
+        if (chatMemberRepository.existsBy(chatId, memberId, ChatStatus.OPENED)) {
             throw ChatException.alreadyJoinedException("chatId=" + chatId);
         }
 

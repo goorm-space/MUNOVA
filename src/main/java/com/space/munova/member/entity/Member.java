@@ -11,12 +11,11 @@ import org.springframework.util.StringUtils;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Getter
 public class Member extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-//    @Column(name = "member_id")
+    @Column(name = "member_id")
     private Long id;
 
     private String username;

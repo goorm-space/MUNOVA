@@ -2,19 +2,20 @@ package com.space.munova.product.application;
 
 
 import com.space.munova.member.entity.Member;
+import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.application.dto.AddProductRequestDto;
 import com.space.munova.product.application.dto.FindProductResponseDto;
 import com.space.munova.product.application.dto.ProductCategoryResponseDto;
 import com.space.munova.product.domain.Brand;
 import com.space.munova.product.domain.Category;
 import com.space.munova.product.domain.Product;
-import com.space.munova.product.domain.Repository.MemberRepository;
 import com.space.munova.product.domain.Repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
 import java.util.List;
 

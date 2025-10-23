@@ -7,8 +7,8 @@ import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.repository.OrderItemRepository;
 import com.space.munova.order.repository.OrderRepository;
-import com.space.munova.product.domain.product.Jpa.JpaProductDetailRepository;
-import com.space.munova.product.domain.product.ProductDetail;
+import com.space.munova.product.domain.ProductDetail;
+import com.space.munova.product.domain.Repository.ProductDetailRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,7 +31,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final MemberRepository memberRepository;
-    private final JpaProductDetailRepository productDetailRepository;
+    private final ProductDetailRepository productDetailRepository;
 
     @Transactional
     @Override

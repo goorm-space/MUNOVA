@@ -1,7 +1,6 @@
 package com.space.munova.order.dto;
 
 import com.space.munova.order.entity.OrderItem;
-import com.space.munova.order.entity.OrderStatus;
 
 public record OrderItemDetailResponse(
         Long orderItemId,
@@ -16,7 +15,7 @@ public record OrderItemDetailResponse(
                 orderItem.getId(),
                 orderItem.getProductName(),
                 orderItem.getQuantity(),
-                orderItem.getOriginPrice() * orderItem.getQuantity(),
+                orderItem.getPrice() * orderItem.getQuantity(),
                 orderItem.getStatus()
         );
     }

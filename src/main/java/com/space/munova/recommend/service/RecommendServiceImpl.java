@@ -1,14 +1,14 @@
 package com.space.munova.recommend.service;
 
 import com.space.munova.member.entity.Member;
+import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.domain.Product;
+import com.space.munova.product.domain.Repository.ProductRepository;
 import com.space.munova.recommend.domain.ProductRecommendation;
 import com.space.munova.recommend.domain.UserRecommendation;
 import com.space.munova.recommend.dto.ResponseDto;
 import com.space.munova.recommend.repository.ProductRecommendationRepository;
-import com.space.munova.recommend.repository.ProductRepository;
 import com.space.munova.recommend.repository.UserRecommendationRepository;
-import com.space.munova.recommend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RecommendServiceImpl implements RecommendService {
 
-    private final UserRepository userRepository;
+    private final MemberRepository memberRepository;
     private final ProductRepository productRepository;
     private final UserRecommendationRepository userRecommendRepository;
     private final ProductRecommendationRepository productRecommendRepository;
@@ -65,7 +65,7 @@ public class RecommendServiceImpl implements RecommendService {
     @Transactional
     public void updateUserProductRecommend(Long userId, Long productId) {
         // 1. 사용자 조회
-        Member user = userRepository.findById(userId)
+        Member user = memberRepository.findById(userId)
                 .orElseThrow();
 
         // 2. 클릭/좋아요/장바구니 기준 상품 조회

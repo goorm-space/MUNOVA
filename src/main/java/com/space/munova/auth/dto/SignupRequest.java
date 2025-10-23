@@ -7,9 +7,11 @@ public record SignupRequest(
         String username,
 
         @NotBlank(message = "비밀번호 필수")
-        String password
+        String password,
+
+        String address
 ) {
-    public static SignupRequest of(String username, String password) {
-        return new SignupRequest(username, password);
+    public static SignupRequest of(String username, String password, String address) {
+        return new SignupRequest(username, password, address);
     }
 }

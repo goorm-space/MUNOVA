@@ -2,6 +2,7 @@ package com.space.munova.order.entity;
 
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.entity.Member;
+import com.space.munova.order.dto.OrderStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,10 +23,11 @@ import java.util.UUID;
 public class Order extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "order_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "member_id")
     private Member member;
 
     @Column(nullable = false, unique = true)

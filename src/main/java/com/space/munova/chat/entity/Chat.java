@@ -3,18 +3,15 @@ package com.space.munova.chat.entity;
 
 import com.space.munova.chat.enums.ChatStatus;
 import com.space.munova.chat.enums.ChatType;
+import com.space.munova.chat.exception.ChatException;
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.entity.Member;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
 @Getter
-@Setter
 @Entity
 @Table(name = "chat")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -25,9 +22,6 @@ public class Chat extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.EAGER)
-    private Member userId;
-
     @Column(nullable = false)
     private String name;
 
@@ -37,22 +31,22 @@ public class Chat extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ChatType type;
 
-    private Integer cur_participant;
+    private Integer curParticipant;
 
-    private Integer max_participant;
+    private Integer maxParticipant;
 
     private String lastMessageContent;
 
     private LocalDateTime lastMessageTime;
 
     @Builder
-    public Chat(@NonNull String name, ChatStatus status, ChatType type, Member userId, Integer cur_participant, Integer max_participant) {
+    public Chat(@NonNull String name, ChatStatus status, ChatType type, Member userId, Integer curParticipant, Integer maxParticipant) {
         this.name = name;
         this.status = status;
         this.type = type;
-        this.userId = userId;
-        this.cur_participant = cur_participant;
-        this.max_participant = max_participant;
+//        this.userId = userId;
+        this.curParticipant = curParticipant;
+        this.maxParticipant = maxParticipant;
     }
 
     public void modifyLastMessageContent(String lastMessageContent, LocalDateTime lastMessageTime) {
@@ -62,6 +56,41 @@ public class Chat extends BaseEntity {
             this.lastMessageContent = lastMessageContent;
         }
         this.lastMessageTime = lastMessageTime;
+    }
+
+    public void updateStatus(ChatStatus status) {
+        this.status = status;
+    }
+
+    public void updateMaxParticipant(Integer newMaxParticipant) {
+        if(newMaxParticipant > maxParticipant){
+            throw ChatException.invalidOperationException("Max participants : " + maxParticipant + "\n" +
+                    "Requested : " + maxParticipant);
+        }
+        this.maxParticipant = newMaxParticipant;
+    }
+
+    public void updateName(String newName) {
+        if (newName == null || newName.isBlank()) {
+            throw ChatException.emptyChatNameException();
+        }
+        this.name = newName;
+    }
+
+    public void incrementParticipant() {
+        if (curParticipant >= maxParticipant) {
+            throw ChatException.exceedMaxParticipantsException(
+                    "Current participants: " + curParticipant + "\n" + "Max participants: " + maxParticipant
+            );
+        }
+        this.curParticipant += 1;
+    }
+
+    public void decrementParticipant() {
+        if (curParticipant <= 0) {
+            throw ChatException.cannotDecrementParticipantsException();
+        }
+        this.curParticipant -= 1;
     }
 
 }

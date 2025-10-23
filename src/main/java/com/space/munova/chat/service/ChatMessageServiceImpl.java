@@ -76,7 +76,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         }
 
         // 3. 참여자 권한 확인 (1:1 채팅)
-        if (!chatMemberRepository.findByChatIdAndParticipantIdWithChat(chatId, memberId)) {
+        if (!chatMemberRepository.existsBy(chatId, memberId, ChatStatus.OPENED)) {
             throw ChatException.unauthorizedParticipantException("userId=" + memberId);
         }
 

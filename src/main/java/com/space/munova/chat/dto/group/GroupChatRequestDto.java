@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
-@Setter
 @Getter
 @AllArgsConstructor
 public class GroupChatRequestDto {
@@ -19,6 +18,6 @@ public class GroupChatRequestDto {
     private String name;    // 채팅방 이름
 
     @NotNull(message = "최대 참여 인원 설정은 필수입니다.")
-    private int maxParticipants;    // 최대 참여 인원 제한
+    private Integer maxParticipants;    // 최대 참여 인원 제한
 
 }

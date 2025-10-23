@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 
 @Builder
 @Getter
-@Setter
 @AllArgsConstructor
 public class OneToOneChatResponseDto {
 
@@ -24,10 +23,6 @@ public class OneToOneChatResponseDto {
 
     private String name;    // 채팅방 이름
 
-    private String lastMessageContent;
-
-    private LocalDateTime lastMessageTime;
-
     private LocalDateTime createdAt;
 
     private ChatStatus chatStatus;
@@ -38,8 +33,6 @@ public class OneToOneChatResponseDto {
                 .sellerId(seller.getId())
                 .buyerId(buyer.getId())
                 .name(chat.getName())
-                .lastMessageContent(chat.getLastMessageContent())
-                .lastMessageTime(chat.getLastMessageTime())
                 .createdAt(chat.getCreatedAt())
                 .chatStatus(chat.getStatus())
                 .build();

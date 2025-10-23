@@ -1,8 +1,9 @@
 package com.space.munova.product.application;
 
-import com.space.munova.member.dto.MemberRole;
+
 import com.space.munova.member.entity.Member;
 import com.space.munova.product.application.dto.AddProductRequestDto;
+import com.space.munova.product.application.dto.FindProductResponseDto;
 import com.space.munova.product.application.dto.ProductCategoryResponseDto;
 import com.space.munova.product.domain.Brand;
 import com.space.munova.product.domain.Category;
@@ -10,6 +11,7 @@ import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.Repository.MemberRepository;
 import com.space.munova.product.domain.Repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,11 +29,14 @@ public class ProductService {
     private final BrandService brandService;
     private final CategoryService categoryService;
     private final MemberRepository memberRepository;
+
+
     /// 모든 카테고리 조회 메서드
     public List<ProductCategoryResponseDto> findProductCategories() {
         return categoryService.findAllProductCategories();
     }
 
+    /// 상품 등록 메서드
     @Transactional
     public void saveProduct(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, Long sellerId, Long brandId, AddProductRequestDto reqDto) throws IOException {
 
@@ -62,5 +67,12 @@ public class ProductService {
         productDetailService.saveProductDetailAndOption(savedProduct, reqDto.shoeOptionDtos());
     }
 
+    /// 상품조회메서드(조건별)
+    public List<FindProductResponseDto> findProductByConditions(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
+
+        List<FindProductResponseDto> productByConditions = productRepository.findProductByConditions(categoryId, optionIds, keyword, pageable);
+
+        return productByConditions;
+    }
 
 }

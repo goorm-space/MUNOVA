@@ -153,3 +153,5 @@ build/
 
 .DS_Store
 **/.DS_Store
+
+*.yml

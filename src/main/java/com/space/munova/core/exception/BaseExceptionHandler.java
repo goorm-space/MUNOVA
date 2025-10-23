@@ -7,6 +7,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -36,6 +37,16 @@ public class BaseExceptionHandler {
     }
 
     /**
+     * Security 예외처리
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @ExceptionHandler(AuthenticationException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ResponseApi<Object> handleAuthenticationException(AuthenticationException ex) {
+        return ResponseApi.nok(HttpStatus.UNAUTHORIZED, "AUTH_FAILED", ex.getMessage());
+    }
+
+    /**
      * @Valid로 인한 예외 처리
      */
     @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -54,12 +65,12 @@ public class BaseExceptionHandler {
     /**
      * 기타 서버 예외처리
      */
-    @Order()
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseApi<Object> handleInternalServerException(Exception ex) {
         String errorMessage = "서버 내부 오류가 발생하였습니다.";
         log.error(errorMessage, ex);
+
         return ResponseApi.nok(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", errorMessage);
     }
 

@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    options {
+        disableConcurrentBuilds()
+    }
+
     triggers {
         GenericTrigger(
             genericVariables: [
@@ -41,6 +45,13 @@ pipeline {
             DOCKER_IMAGE_NAME = 'goorm-space/MUNOVA-api'
 //             DOCKER_CREDENTIALS_ID = 'dockerhub-access'
             WEBHOOK_URL = credentials("MUNOVA-dico-Hook")
+
+            // Generic Trigger에서 넘어온 값을 빌드 환경 변수로 확실히 저장
+            ENV_PR_TITLE = "${prTitle}"
+            ENV_PR_NUMBER = "${prNumber}"
+            ENV_MERGE_FROM = "${mergeFrom}"
+            ENV_MERGE_TO = "${mergeTo}"
+            ENV_PR_HTML_LINK = "${prHtmlLink}"
         }
 
 
@@ -94,13 +105,13 @@ pipeline {
                def commitHash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
                def commitUrl = gitUrl.replace('.git','') + "/commit/" + commitHash
 
-               def fromTo = "Merge From: ${mergeFrom} ➡️ Merge To: ${mergeTo}"
-               def prInfo = prHtmlLink != "null" ? "<${prHtmlLink} | PR #${prNumber}>" : "PR 없음"
+               def fromTo = "Merge From: ${env.ENV_MERGE_FROM} ➡️ Merge To: ${env.ENV_MERGE_TO}"
+               def prInfo = prHtmlLink != "null" ? "<${env.ENV_PR_HTML_LINK} | PR #${env.ENV_PR_NUMBER}>" : "PR 없음"
 
                // 최종 메시지
                def finalMsg = """빌드가 성공했습니다! ✅
 
-                   PR 제목: ${prTitle}
+                   PR 제목: ${env.ENV_PR_TITLE}
 
                    커밋 바로가기: ${commitUrl}
 
@@ -124,13 +135,13 @@ pipeline {
                def commitHash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
                def commitUrl = gitUrl.replace('.git','') + "/commit/" + commitHash
 
-               def fromTo = "Merge From: ${mergeFrom} ➡️ Merge To: ${mergeTo}"
-               def prInfo = prHtmlLink != "null" ? "<${prHtmlLink} | PR #${prNumber}>" : "PR 없음"
+               def fromTo = "Merge From: ${env.ENV_MERGE_FROM} ➡️ Merge To: ${env.ENV_MERGE_TO}"
+               def prInfo = prHtmlLink != "null" ? "<${env.ENV_PR_HTML_LINK} | PR #${env.ENV_PR_NUMBER}>" : "PR 없음"
 
                // 최종 메시지
                def errorMessage = """빌드가 실패했습니다! ❌
 
-                   PR 제목: ${prTitle}
+                   PR 제목: ${env.ENV_PR_TITLE}
 
                    커밋 바로가기: ${commitUrl}
 

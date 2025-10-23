@@ -2,6 +2,7 @@ package com.space.munova.security.jwt;
 
 import com.space.munova.IntegrationTestBase;
 import com.space.munova.member.dto.MemberRole;
+import com.space.munova.member.exception.MemberException;
 import com.space.munova.security.exception.CustomAuthenticationException;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
@@ -201,29 +202,25 @@ class JwtHelperTest extends IntegrationTestBase {
     }
 
     @Test
-    @DisplayName("SecurityContext가 비어있을 때 MemberId는 null 반환")
+    @DisplayName("SecurityContext가 비어있을 때 MemberId는 예외 발생")
     void getMemberId_null_whenSecurityContextEmpty() {
         // given
         SecurityContextHolder.clearContext();
 
-        // when
-        Long result = JwtHelper.getMemberId();
-
-        // then
-        assertThat(result).isNull();
+        // when & then
+        assertThatThrownBy(() -> JwtHelper.getMemberId())
+                .isInstanceOf(MemberException.class);
     }
 
     @Test
-    @DisplayName("SecurityContext가 비어있을 때 MemberName은 null 반환")
+    @DisplayName("SecurityContext가 비어있을 때 MemberName은 예외 발생")
     void getMemberName_null_whenSecurityContextEmpty() {
         // given
         SecurityContextHolder.clearContext();
 
-        // when
-        String result = JwtHelper.getMemberName();
-
-        // then
-        assertThat(result).isNull();
+        // when & then
+        assertThatThrownBy(() -> JwtHelper.getMemberName())
+                .isInstanceOf(MemberException.class);
     }
 
     @Test

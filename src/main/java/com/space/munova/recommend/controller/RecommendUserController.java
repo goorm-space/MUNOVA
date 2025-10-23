@@ -10,7 +10,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/recommend/users")
 @RequiredArgsConstructor
-public class UserController {
+public class RecommendUserController {
 
     private final RecommendService recommendService;
 

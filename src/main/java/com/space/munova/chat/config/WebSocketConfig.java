@@ -1,4 +1,4 @@
-package com.space.munova.chat;
+package com.space.munova.chat.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -8,7 +8,6 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker   // STOMP 기반 websocket 메시지 브로커 활성화
-// WebSocketMessageBrokerConfigurer : WebSocket/STOMP 설정 커스터마이징
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     // 클라이언트가 연결할 websocket 엔드 포인트

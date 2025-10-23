@@ -24,10 +24,10 @@ public interface ChatMemberRepository extends CrudRepository<ChatMember, Long> {
             "(c.id, c.name, c.lastMessageContent, c.lastMessageTime) " +
             "FROM ChatMember cm " +
             "JOIN cm.chatId c " +
-            "WHERE cm.memberId = :memberId " +
+            "WHERE cm.memberId.id = :memberId " +
             "AND c.status = :chatStatus " +
             "AND (c.type = :chatType) " +
-            "AND (cm.type = :chatUserType) " +
+            "AND (cm.chatMemberType = :chatUserType) " +
             "ORDER BY c.lastMessageTime DESC")
     List<ChatItemDto> findAllChats(
             @Param("memberId") Long memberId,
@@ -82,7 +82,7 @@ public interface ChatMemberRepository extends CrudRepository<ChatMember, Long> {
             "AND cm.memberId.id = :memberId " +
             "AND c.status = :chatStatus " +
             "AND c.type = :chatType " +
-            "AND cm.type = :chatUserType")
+            "AND cm.chatMemberType = :chatUserType")
     Optional<ChatMember> findChatMember(
             @Param("chatId") Long chatId,
             @Param("memberId") Long memberId,

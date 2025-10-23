@@ -1,6 +1,7 @@
 package com.space.munova.security.jwt;
 
 import com.space.munova.member.dto.MemberRole;
+import com.space.munova.member.exception.MemberException;
 import com.space.munova.security.exception.CustomAuthenticationException;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -125,12 +126,15 @@ public class JwtHelper {
     public static Long getMemberId() {
         Authentication authentication = getAuthentication();
         if (authentication == null) {
-            return null;
+            throw MemberException.notFoundException();
         }
         if (authentication instanceof JwtAuthenticationToken jwtAuth) {
+            if (jwtAuth.getPrincipal() == null) {
+                throw MemberException.notFoundException();
+            }
             return (Long) jwtAuth.getPrincipal();
         }
-        return null;
+        throw MemberException.notFoundException();
     }
 
     /**
@@ -138,7 +142,10 @@ public class JwtHelper {
      */
     public static String getMemberName() {
         Object username = getClaims(NAME_CLAIM_KEY);
-        return username != null ? username.toString() : null;
+        if (username == null) {
+            throw MemberException.notFoundException();
+        }
+        return username.toString();
     }
 
     /**
@@ -147,7 +154,7 @@ public class JwtHelper {
     public static MemberRole getMemberRole() {
         Object authorities = getClaims(ROLE_CLAIM_KEY);
         if (authorities == null) {
-            return MemberRole.USER;
+            throw MemberException.notFoundException();
         }
         return MemberRole.valueOf(authorities.toString());
     }

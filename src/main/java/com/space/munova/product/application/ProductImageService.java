@@ -32,7 +32,7 @@ public class ProductImageService {
         List<UploadFile> sideImgInfos = fileStore.storeFiles(sideImgFile);
         List<ProductImage> productImages = new ArrayList<>();
         sideImgInfos.forEach(sideImg -> {
-            ProductImage sideImage = ProductImage.createDefaultProductImage(ProductImageType.MAIN, sideImg.getOriginName(), sideImg.getSavedName(), product);
+            ProductImage sideImage = ProductImage.createDefaultProductImage(ProductImageType.SIDE, sideImg.getOriginName(), sideImg.getSavedName(), product);
             productImages.add(sideImage);
         });
         productImageRepository.saveAll(productImages);

@@ -10,7 +10,12 @@ public class MemberException extends BaseException {
         super(code, message, statusCode, detailMessage);
     }
 
-    public static MemberException invalidMemberException(String... detailMessage) {
-        return new MemberException("MEMBER_01", "사용자 정보가 올바르지 않습니다.", HttpStatus.UNAUTHORIZED, detailMessage);
+    public static MemberException notFoundException(String... detailMessage) {
+        return new MemberException("MEMBER_01", "사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND, detailMessage);
     }
+
+    public static MemberException invalidMemberException(String... detailMessage) {
+        return new MemberException("MEMBER_02", "사용자 정보가 올바르지 않습니다.", HttpStatus.UNAUTHORIZED, detailMessage);
+    }
+
 }

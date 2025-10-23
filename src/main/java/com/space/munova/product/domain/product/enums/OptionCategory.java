@@ -1,13 +1,13 @@
-package com.space.munova.product.domain.product.enums;
+    package com.space.munova.product.domain.product.enums;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+    import lombok.AllArgsConstructor;
+    import lombok.Getter;
 
-@Getter
-@AllArgsConstructor
-public enum OptionCategory {
-    SIZE ("사이즈"),
-    COLOR ("색상");
+    @Getter
+    @AllArgsConstructor
+    public enum OptionCategory {
+        SIZE ("사이즈"),
+        COLOR ("색상");
 
-    private String description;
-}
+        private String description;
+    }

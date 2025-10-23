@@ -87,12 +87,12 @@ public class ChatRoomController {
         return ResponseApi.ok();
     }
 
-    // 그룹채팅(Owner) 채팅방 닫기
-    @PatchMapping("/group/{memberId}/{chatId}/close")
-    public ResponseApi<Void> closeGroupChat(
-            @PathVariable Long memberId, @PathVariable Long chatId){
-        chatService.closeGroupChat(memberId, chatId);
-    }
+//    // 그룹채팅(Owner) 채팅방 닫기
+//    @PatchMapping("/group/{memberId}/{chatId}/close")
+//    public ResponseApi<Void> closeGroupChat(
+//            @PathVariable Long memberId, @PathVariable Long chatId){
+//        chatService.closeGroupChat(memberId, chatId);
+//    }
 
     // 그룹채팅(Owner) 인원 강퇴
 

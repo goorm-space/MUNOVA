@@ -37,6 +37,9 @@ class AuthServiceTest extends IntegrationTestBase {
 
     private MockHttpServletResponse response;
 
+    private static final String USER_NAME = "testuser";
+    private static final String USER_PASSWORD = "password123";
+
     @BeforeEach
     void setUp() {
         response = new MockHttpServletResponse();
@@ -53,25 +56,25 @@ class AuthServiceTest extends IntegrationTestBase {
     @DisplayName("회원가입 성공")
     void signup_success() {
         // given
-        SignupRequest request = new SignupRequest("testuser", "password123");
+        SignupRequest request = SignupRequest.of(USER_NAME, USER_PASSWORD, "");
 
         // when
         SignupResponse result = authService.signup(request);
 
         // then
         assertThat(result).isNotNull();
-        assertThat(result.username()).isEqualTo("testuser");
-        assertThat(memberRepository.existsByUsername("testuser")).isTrue();
+        assertThat(result.username()).isEqualTo(USER_NAME);
+        assertThat(memberRepository.existsByUsername(USER_NAME)).isTrue();
     }
 
     @Test
     @DisplayName("회원가입 실패 - 중복된 사용자명")
     void signup_fail_duplicateUsername() {
         // given
-        authService.signup(new SignupRequest("testuser", "password123"));
+        authService.signup(SignupRequest.of(USER_NAME, USER_PASSWORD, ""));
 
         // when & then
-        assertThatThrownBy(() -> authService.signup(new SignupRequest("testuser", "password456")))
+        assertThatThrownBy(() -> authService.signup(SignupRequest.of(USER_NAME, "password456", "")))
                 .isInstanceOf(AuthException.class);
     }
 
@@ -79,8 +82,8 @@ class AuthServiceTest extends IntegrationTestBase {
     @DisplayName("로그인 성공")
     void signIn_success() {
         // given
-        authService.signup(new SignupRequest("testuser", "password123"));
-        SignInRequest request = new SignInRequest("testuser", "password123");
+        authService.signup(new SignupRequest(USER_NAME, USER_PASSWORD, ""));
+        SignInRequest request = new SignInRequest(USER_NAME, USER_PASSWORD);
 
         // when
         SignInResponse result = authService.signIn(request, response);
@@ -90,7 +93,7 @@ class AuthServiceTest extends IntegrationTestBase {
         assertThat(result.accessToken()).isNotBlank();
 
         // Redis에 refreshToken 저장 확인
-        Member member = memberRepository.findByUsername("testuser").orElseThrow();
+        Member member = memberRepository.findByUsername(USER_NAME).orElseThrow();
         String storedRefreshToken = refreshTokenRedisRepository.findBy(member.getId());
         assertThat(storedRefreshToken).isNotNull();
 
@@ -106,8 +109,8 @@ class AuthServiceTest extends IntegrationTestBase {
     @DisplayName("로그인 실패 - 잘못된 비밀번호")
     void signIn_fail_invalidPassword() {
         // given
-        authService.signup(new SignupRequest("testuser", "password123"));
-        SignInRequest request = new SignInRequest("testuser", "wrongpassword");
+        authService.signup(SignupRequest.of(USER_NAME, USER_PASSWORD, ""));
+        SignInRequest request = SignInRequest.of(USER_NAME, "wrongpassword");
 
         // when & then
         assertThatThrownBy(() -> authService.signIn(request, response))
@@ -118,11 +121,11 @@ class AuthServiceTest extends IntegrationTestBase {
     @DisplayName("로그아웃 성공")
     void signOut_success() {
         // given
-        authService.signup(new SignupRequest("testuser", "password123"));
-        SignInResponse signInResponse = authService.signIn(new SignInRequest("testuser", "password123"), response);
+        authService.signup(SignupRequest.of(USER_NAME, USER_PASSWORD, ""));
+        SignInResponse signInResponse = authService.signIn(SignInRequest.of(USER_NAME, USER_PASSWORD), response);
 
         // SecurityContext 설정
-        Member member = memberRepository.findByUsername("testuser").orElseThrow();
+        Member member = memberRepository.findByUsername(USER_NAME).orElseThrow();
         Claims claims = jwtHelper.getClaimsFromToken(signInResponse.accessToken());
         JwtAuthenticationToken authentication = JwtAuthenticationToken.afterOf(member.getId(), member.getRole(), claims);
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -145,8 +148,8 @@ class AuthServiceTest extends IntegrationTestBase {
     @DisplayName("토큰 재발급 성공")
     void reissueToken_success() throws InterruptedException {
         // given
-        authService.signup(new SignupRequest("testuser", "password123"));
-        SignInResponse signInResponse = authService.signIn(new SignInRequest("testuser", "password123"), response);
+        authService.signup(SignupRequest.of(USER_NAME, USER_PASSWORD, ""));
+        SignInResponse signInResponse = authService.signIn(SignInRequest.of(USER_NAME, USER_PASSWORD), response);
 
         Cookie cookie = response.getCookie(JwtHelper.REFRESH_TOKEN_COOKIE_KEY);
         String refreshToken = cookie.getValue();
@@ -166,7 +169,7 @@ class AuthServiceTest extends IntegrationTestBase {
         assertThat(result.accessToken()).isNotEqualTo(signInResponse.accessToken());
 
         // 새로운 refreshToken이 Redis에 저장되었는지 확인
-        Member member = memberRepository.findByUsername("testuser").orElseThrow();
+        Member member = memberRepository.findByUsername(USER_NAME).orElseThrow();
         String newStoredRefreshToken = refreshTokenRedisRepository.findBy(member.getId());
         assertThat(newStoredRefreshToken).isNotNull();
         assertThat(newStoredRefreshToken).isNotEqualTo(refreshToken);
@@ -190,10 +193,10 @@ class AuthServiceTest extends IntegrationTestBase {
     @DisplayName("토큰 재발급 실패 - Redis에 저장된 토큰과 불일치")
     void reissueToken_fail_mismatchedRefreshToken() throws InterruptedException {
         // given
-        authService.signup(new SignupRequest("testuser", "password123"));
-        authService.signIn(new SignInRequest("testuser", "password123"), response);
+        authService.signup(SignupRequest.of(USER_NAME, USER_PASSWORD, ""));
+        authService.signIn(SignInRequest.of(USER_NAME, USER_PASSWORD), response);
 
-        Member member = memberRepository.findByUsername("testuser").orElseThrow();
+        Member member = memberRepository.findByUsername(USER_NAME).orElseThrow();
 
         // 시간 차이를 두어 다른 토큰 생성
         Thread.sleep(1000);
@@ -214,8 +217,8 @@ class AuthServiceTest extends IntegrationTestBase {
     @DisplayName("토큰 재발급 실패 - 만료된 refreshToken")
     void reissueToken_fail_expiredRefreshToken() {
         // given
-        authService.signup(new SignupRequest("testuser", "password123"));
-        Member member = memberRepository.findByUsername("testuser").orElseThrow();
+        authService.signup(SignupRequest.of(USER_NAME, USER_PASSWORD, ""));
+        Member member = memberRepository.findByUsername(USER_NAME).orElseThrow();
 
         // 만료된 토큰 생성 (만료시간 -1초)
         String expiredToken = createExpiredToken(member.getId());

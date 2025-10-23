@@ -47,6 +47,9 @@ class AuthControllerTest extends IntegrationTestBase {
     @Autowired
     private JwtHelper jwtHelper;
 
+    private static final String USER_NAME = "testuser";
+    private static final String USER_PASSWORD = "password123";
+
     @BeforeEach
     void setUp() {
         memberRepository.deleteAll();
@@ -61,7 +64,7 @@ class AuthControllerTest extends IntegrationTestBase {
     @DisplayName("회원가입 API 성공")
     void signup_success() throws Exception {
         // given
-        SignupRequest request = new SignupRequest("testuser", "password123");
+        SignupRequest request = SignupRequest.of(USER_NAME, USER_PASSWORD, "");
 
         // when & then
         mockMvc.perform(post("/auth/signup")
@@ -71,17 +74,17 @@ class AuthControllerTest extends IntegrationTestBase {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("success"))
-                .andExpect(jsonPath("$.data.username").value("testuser"));
+                .andExpect(jsonPath("$.data.username").value(USER_NAME));
 
-        assertThat(memberRepository.existsByUsername("testuser")).isTrue();
+        assertThat(memberRepository.existsByUsername(USER_NAME)).isTrue();
     }
 
     @Test
     @DisplayName("회원가입 API 실패 - 중복된 사용자명")
     void signup_fail_duplicateUsername() throws Exception {
         // given
-        memberRepository.save(Member.createMember("testuser", passwordEncoder.encode("password123")));
-        SignupRequest request = new SignupRequest("testuser", "password456");
+        memberRepository.save(Member.createMember(USER_NAME, passwordEncoder.encode(USER_PASSWORD), ""));
+        SignupRequest request = SignupRequest.of(USER_NAME, "password456", "");
 
         // when & then
         mockMvc.perform(post("/auth/signup")
@@ -96,8 +99,8 @@ class AuthControllerTest extends IntegrationTestBase {
     @DisplayName("로그인 API 성공")
     void signIn_success() throws Exception {
         // given
-        memberRepository.save(Member.createMember("testuser", passwordEncoder.encode("password123")));
-        SignInRequest request = new SignInRequest("testuser", "password123");
+        memberRepository.save(Member.createMember(USER_NAME, passwordEncoder.encode(USER_PASSWORD), ""));
+        SignInRequest request = SignInRequest.of(USER_NAME, USER_PASSWORD);
 
         // when & then
         MvcResult result = mockMvc.perform(post("/auth/signin")
@@ -114,7 +117,7 @@ class AuthControllerTest extends IntegrationTestBase {
                 .andReturn();
 
         // Redis에 refreshToken 저장 확인
-        Member member = memberRepository.findByUsername("testuser").orElseThrow();
+        Member member = memberRepository.findByUsername(USER_NAME).orElseThrow();
         String storedRefreshToken = refreshTokenRedisRepository.findBy(member.getId());
         assertThat(storedRefreshToken).isNotNull();
 
@@ -128,8 +131,8 @@ class AuthControllerTest extends IntegrationTestBase {
     @DisplayName("로그인 API 실패 - 잘못된 비밀번호")
     void signIn_fail_invalidPassword() throws Exception {
         // given
-        memberRepository.save(Member.createMember("testuser", passwordEncoder.encode("password123")));
-        SignInRequest request = new SignInRequest("testuser", "wrongpassword");
+        memberRepository.save(Member.createMember(USER_NAME, passwordEncoder.encode(USER_PASSWORD), ""));
+        SignInRequest request = SignInRequest.of(USER_NAME, "wrongpassword");
 
         // when & then
         mockMvc.perform(post("/auth/signin")
@@ -144,7 +147,7 @@ class AuthControllerTest extends IntegrationTestBase {
     @DisplayName("로그아웃 API 성공")
     void signOut_success() throws Exception {
         // given
-        Member member = memberRepository.save(Member.createMember("testuser", passwordEncoder.encode("password123")));
+        Member member = memberRepository.save(Member.createMember(USER_NAME, passwordEncoder.encode(USER_PASSWORD), ""));
         String accessToken = jwtHelper.generateAccessToken(member.getId(), member.getUsername(), member.getRole());
         String refreshToken = jwtHelper.generateRefreshToken(member.getId());
         refreshTokenRedisRepository.save(member.getId(), refreshToken, System.currentTimeMillis() + 86400000);
@@ -169,7 +172,7 @@ class AuthControllerTest extends IntegrationTestBase {
     @DisplayName("토큰 재발급 API 성공")
     void reissueToken_success() throws Exception {
         // given
-        Member member = memberRepository.save(Member.createMember("testuser", passwordEncoder.encode("password123")));
+        Member member = memberRepository.save(Member.createMember(USER_NAME, passwordEncoder.encode(USER_PASSWORD), ""));
         String refreshToken = jwtHelper.generateRefreshToken(member.getId());
         long expireTime = jwtHelper.getClaims(refreshToken, io.jsonwebtoken.Claims::getExpiration).getTime();
         refreshTokenRedisRepository.save(member.getId(), refreshToken, expireTime);
@@ -215,7 +218,7 @@ class AuthControllerTest extends IntegrationTestBase {
     @DisplayName("토큰 재발급 API 실패 - Redis에 저장된 토큰과 불일치")
     void reissueToken_fail_mismatchedToken() throws Exception {
         // given
-        Member member = memberRepository.save(Member.createMember("testuser", passwordEncoder.encode("password123")));
+        Member member = memberRepository.save(Member.createMember(USER_NAME, passwordEncoder.encode(USER_PASSWORD), ""));
         String validRefreshToken = jwtHelper.generateRefreshToken(member.getId());
 
         // 시간 차이를 두어 다른 토큰 생성

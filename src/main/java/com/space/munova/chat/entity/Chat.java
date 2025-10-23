@@ -20,6 +20,7 @@ public class Chat extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "chat_id")
     private Long id;
 
     @Column(nullable = false)
@@ -40,7 +41,7 @@ public class Chat extends BaseEntity {
     private LocalDateTime lastMessageTime;
 
     @Builder
-    public Chat(@NonNull String name, ChatStatus status, ChatType type, Member userId, Integer curParticipant, Integer maxParticipant) {
+    public Chat(@NonNull String name, ChatStatus status, ChatType type, Integer curParticipant, Integer maxParticipant) {
         this.name = name;
         this.status = status;
         this.type = type;

@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 
+import java.util.Optional;
+
 @Getter
 @RequiredArgsConstructor
 public enum MemberRole implements GrantedAuthority {
@@ -14,6 +16,17 @@ public enum MemberRole implements GrantedAuthority {
 
     private final String key;
     private final String description;
+
+    public static MemberRole fromCode(String roleCode) {
+        return Optional.ofNullable(roleCode)
+                .map(code -> {
+                    try {
+                        return MemberRole.valueOf(code.toUpperCase());
+                    } catch (IllegalArgumentException e) {
+                        return null;
+                    }
+                }).orElse(null);
+    }
 
     @Override
     public String getAuthority() {

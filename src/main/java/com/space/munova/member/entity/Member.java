@@ -1,16 +1,16 @@
 package com.space.munova.member.entity;
 
-import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.dto.MemberRole;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.util.StringUtils;
 
 @Getter
 @Entity
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class Member extends BaseEntity {
+public class Member {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,11 +27,26 @@ public class Member extends BaseEntity {
     MemberRole role;
 
     // 일반멤버 생성
-    public static Member createMember(String username, String encodedPassword) {
+    public static Member createMember(String username, String encodedPassword, String address) {
         return Member.builder()
                 .username(username)
                 .password(encodedPassword)
+                .address(address)
                 .role(MemberRole.USER)
                 .build();
     }
+
+    // 맴버 업데이트
+    public void updateMember(String username, String address, MemberRole role) {
+        if (StringUtils.hasText(username)) {
+            this.username = username;
+        }
+        if (StringUtils.hasText(address)) {
+            this.address = address;
+        }
+        if (role != null) {
+            this.role = role;
+        }
+    }
+
 }

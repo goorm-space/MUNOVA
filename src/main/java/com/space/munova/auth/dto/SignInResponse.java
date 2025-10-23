@@ -1,8 +1,11 @@
 package com.space.munova.auth.dto;
 
-public record SignInResponse(String accessToken) {
+public record SignInResponse(
+        Long memberId,
+        String accessToken
+) {
 
-    public static SignInResponse of(String accessToken) {
-        return new SignInResponse(accessToken);
+    public static SignInResponse of(Long memberId, String accessToken) {
+        return new SignInResponse(memberId, accessToken);
     }
 }

@@ -14,10 +14,12 @@ import com.space.munova.member.entity.Member;
 import com.space.munova.member.repository.MemberRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChatMessageServiceImpl implements ChatMessageService {
@@ -32,6 +34,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     @Transactional
     public ChatMessageResponseDto createChatMessage(ChatMessageRequestDto chatMessageRequest) {
 
+        log.info("Creating chat message: {}", chatMessageRequest);
         // 송신자 확인
         Member senderId = userRepository.findById(chatMessageRequest.getSenderId())
                 .orElseThrow(() -> ChatException.cannotFindMemberException("senderId=" + chatMessageRequest.getSenderId()));

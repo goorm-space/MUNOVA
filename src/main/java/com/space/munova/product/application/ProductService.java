@@ -9,7 +9,10 @@ import com.space.munova.product.application.dto.ProductCategoryResponseDto;
 import com.space.munova.product.domain.Brand;
 import com.space.munova.product.domain.Category;
 import com.space.munova.product.domain.Product;
+import com.space.munova.product.domain.ProductSearchLog;
 import com.space.munova.product.domain.Repository.ProductRepository;
+import com.space.munova.product.domain.Repository.ProductSearchLogRepository;
+import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,6 +33,9 @@ public class ProductService {
     private final BrandService brandService;
     private final CategoryService categoryService;
     private final MemberRepository memberRepository;
+    private final ProductSearchLogRepository productSearchLogRepository;
+    private final JwtHelper jwtHelper;
+    private final SearchLogService searchLogService;
 
 
     /// 모든 카테고리 조회 메서드
@@ -68,12 +74,47 @@ public class ProductService {
         productDetailService.saveProductDetailAndOption(savedProduct, reqDto.shoeOptionDtos());
     }
 
-    /// 상품조회메서드(조건별)
-    public List<FindProductResponseDto> findProductByConditions(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
+    private List<FindProductResponseDto> findProducts(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
+        return productRepository.findProductByConditions(categoryId,optionIds, keyword, pageable);
+    }
 
-        List<FindProductResponseDto> productByConditions = productRepository.findProductByConditions(categoryId, optionIds, keyword, pageable);
-
+    //통합된 상품 조회
+    public List<FindProductResponseDto> findProductsWithOptionalLogging(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable, boolean doLogging) {
+        List<FindProductResponseDto> productByConditions=findProducts(categoryId,keyword,optionIds,pageable);
+        if(doLogging && (categoryId!=null || (keyword!=null && !keyword.isEmpty()) || (optionIds!=null && !optionIds.isEmpty()))) {
+            searchLogService.saveSearchLog(categoryId,keyword);
+        }
         return productByConditions;
     }
+
+
+//    /// 상품조회메서드(조건별)
+//    public List<FindProductResponseDto> findProductByConditions(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
+//
+//        List<FindProductResponseDto> productByConditions = productRepository.findProductByConditions(categoryId, optionIds, keyword, pageable);
+//
+//        return productByConditions;
+//    }
+//    /// 상품조회메서드 (로그인)
+//    public List<FindProductResponseDto> findProductByConditionsUser(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
+//
+//        List<FindProductResponseDto> productByConditions = productRepository.findProductByConditions(categoryId, optionIds, keyword, pageable);
+//        if(categoryId == null && (keyword == null || keyword.isEmpty()) && (optionIds == null || optionIds.isEmpty())){
+//            return productByConditions;
+//        }
+//        Long memberId = jwtHelper.getMemberId();
+//        try{
+//            ProductSearchLog log=ProductSearchLog.builder()
+//                    .memberId(memberId)
+//                    .searchDetail(keyword !=null ? keyword : "")
+//                    .searchCategoryId(categoryId)
+//                    .build();
+//            productSearchLogRepository.save(log);
+//        } catch(Exception e){
+//            System.out.println("검색 로그 저장 실패: "+e.getMessage());
+//        }
+//
+//        return productByConditions;
+//    }
 
 }

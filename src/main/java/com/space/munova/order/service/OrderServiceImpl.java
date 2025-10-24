@@ -66,7 +66,7 @@ public class OrderServiceImpl implements OrderService {
         Long totalPrice = originPrice - discountPrice;
         order.setPrices(originPrice, discountPrice, totalPrice);
 
-        // Todo: 4. 결제 및 status 변경 재고 감소
+        // Todo: 4. 결제 및 status 변경, 재고 감소
 
         // 5. 주문 저장
         orderRepository.save(order);

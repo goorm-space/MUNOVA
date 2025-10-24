@@ -87,34 +87,4 @@ public class ProductService {
         return productByConditions;
     }
 
-
-//    /// 상품조회메서드(조건별)
-//    public List<FindProductResponseDto> findProductByConditions(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
-//
-//        List<FindProductResponseDto> productByConditions = productRepository.findProductByConditions(categoryId, optionIds, keyword, pageable);
-//
-//        return productByConditions;
-//    }
-//    /// 상품조회메서드 (로그인)
-//    public List<FindProductResponseDto> findProductByConditionsUser(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
-//
-//        List<FindProductResponseDto> productByConditions = productRepository.findProductByConditions(categoryId, optionIds, keyword, pageable);
-//        if(categoryId == null && (keyword == null || keyword.isEmpty()) && (optionIds == null || optionIds.isEmpty())){
-//            return productByConditions;
-//        }
-//        Long memberId = jwtHelper.getMemberId();
-//        try{
-//            ProductSearchLog log=ProductSearchLog.builder()
-//                    .memberId(memberId)
-//                    .searchDetail(keyword !=null ? keyword : "")
-//                    .searchCategoryId(categoryId)
-//                    .build();
-//            productSearchLogRepository.save(log);
-//        } catch(Exception e){
-//            System.out.println("검색 로그 저장 실패: "+e.getMessage());
-//        }
-//
-//        return productByConditions;
-//    }
-
 }

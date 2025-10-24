@@ -1,6 +1,6 @@
 package com.space.munova.product.application;
 
-import com.space.munova.product.application.dto.ShoeOptionDto;
+import com.space.munova.product.application.dto.*;
 import com.space.munova.product.domain.Option;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.ProductDetail;
@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.*;
+import java.util.*;
 import java.util.List;
 
 @Service
@@ -60,6 +62,87 @@ public class ProductDetailService {
             Option foundOption = optionService.findByCategoryAndName(optionCategory, optionName);
             ProductOptionMapping productOptionMapping = ProductOptionMapping.createDefaultProductOptionMapping(foundOption, savedProductDetail);
             productOptionMappingService.saveProductOptionMapping(productOptionMapping);
+        }
+    }
+
+
+    //*
+    // 상품아이디를 통해 상품디테일에 종속된 옵션 조회후 상품상세조회를 위한 DTO로 분류하여 반환 메서드
+    // @parma - productId
+    // */
+    public List<ProductDetailInfoDto> findProductDetailInfoDtoByProductId(Long productId) {
+        List<ProductOptionInfoDto> productOptionInfoDtos = productDetailRepository.findProductDetailAndOptionsByProductId(productId);
+
+        /// 상품색상 아이디 아래에 여러개의 상품디테일아이디가 있다.
+        /// 상품색상아이디(키), 상품디테일아이디 (밸류)
+        Map<ColorOptionDto, List<Long>> classifiedDetailByColorMap = new HashMap<>();
+        /// 디테일 아이디가 가지고있는 사이즈 리스트
+        Map<Long, ProductDetailAndSizeDto> detailIdMappedSizeOptionMap = new HashMap<>();
+
+        classifyOptionDatas(productOptionInfoDtos, classifiedDetailByColorMap, detailIdMappedSizeOptionMap);
+
+        createProductDetailInfoList(classifiedDetailByColorMap, detailIdMappedSizeOptionMap);
+
+        return  createProductDetailInfoList(classifiedDetailByColorMap, detailIdMappedSizeOptionMap);
+    }
+
+    private List<ProductDetailInfoDto> createProductDetailInfoList(Map<ColorOptionDto, List<Long>> classifiedDetailByColorMap, Map<Long, ProductDetailAndSizeDto> detailIdMappedSizeOptionMap) {
+        List<ProductDetailInfoDto> productDetailInfoDtos = new ArrayList<>();
+
+        classifiedDetailByColorMap.entrySet().forEach(entry -> {
+            List<ProductDetailAndSizeDto> productDetailAndSizeDtos = new ArrayList<>();
+            for(Long detailId : entry.getValue()) {
+                ProductDetailAndSizeDto productDetailAndSizeDto = detailIdMappedSizeOptionMap.get(detailId);
+
+
+                productDetailAndSizeDtos.add(productDetailAndSizeDto);
+            }
+
+            ProductDetailInfoDto productDetailInfoDto = new ProductDetailInfoDto(entry.getKey(), productDetailAndSizeDtos);
+            productDetailInfoDtos.add(productDetailInfoDto);
+        });
+
+        return productDetailInfoDtos;
+    }
+
+
+    /// 데이터 분류 메서드
+    private void classifyOptionDatas(List<ProductOptionInfoDto> productOptionInfoDtos, Map<ColorOptionDto, List<Long>> classifiedDetailByColorMap, Map<Long, ProductDetailAndSizeDto> detailIdMappedSizeOptionMap) {
+        for (ProductOptionInfoDto dto : productOptionInfoDtos) {
+
+            ///  옵션타입이 컬러일경우, 키값에 옵션ID를 저장하고 밸류에 해당 디테일리스트를 저장.
+            if(dto.optionType().equals(OptionCategory.COLOR)) {
+
+                /// 컬러를 기준으로 디테일아이디를 분류한다.
+                classifyDetailByColor(dto, classifiedDetailByColorMap);
+            }
+
+            if(dto.optionType().equals(OptionCategory.SIZE)) {
+                classifySizeOptionsByDetail(dto, detailIdMappedSizeOptionMap);
+            }
+
+        }
+    }
+
+
+    /// 디테일 기준으로 사이즈옵션 분류
+    private void classifySizeOptionsByDetail(ProductOptionInfoDto dto, Map<Long, ProductDetailAndSizeDto> detailIdMappedSizeOptionMap) {
+        ProductDetailAndSizeDto productDetailAndSizeDto = new ProductDetailAndSizeDto(dto.detailId(), dto.optionId(), dto.optionType().name(), dto.optionName(), dto.quantity());
+        detailIdMappedSizeOptionMap.put(dto.detailId(), productDetailAndSizeDto);
+    }
+
+
+    /// 컬러를 기준으로 디테일을 분류하는 메소드
+    private void classifyDetailByColor(ProductOptionInfoDto dto, Map<ColorOptionDto, List<Long>> classifiedMap) {
+        ColorOptionDto colorOptionDto = new ColorOptionDto(dto.optionId(), dto.optionType().name(), dto.optionName());
+        if(classifiedMap.containsKey(colorOptionDto)) {
+            List<Long> detailIds = classifiedMap.get(colorOptionDto);
+            detailIds.add(dto.detailId());
+            classifiedMap.put(colorOptionDto, detailIds);
+        } else {
+            List<Long> detailIds = new ArrayList<>();
+            detailIds.add(dto.detailId());
+            classifiedMap.put(colorOptionDto, detailIds);
         }
     }
 }

@@ -6,6 +6,8 @@ import com.space.munova.product.application.ProductService;
 import com.space.munova.product.application.dto.AddProductRequestDto;
 import com.space.munova.product.application.dto.FindProductResponseDto;
 import com.space.munova.product.application.dto.ProductCategoryResponseDto;
+import com.space.munova.product.application.dto.ProductDetailResponseDto;
+import com.space.munova.security.jwt.JwtAuthenticationToken;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,24 +31,23 @@ class ProductController {
 
     private final ProductService productService;
     private final ObjectMapper objectMapper;
-        /// 상품 등록 메서드
-        @Operation(summary = "상품 세부사항 등록", description = "상품의 세부사항을 받아 상품을 등록한다. (판매자만 등록 가능)")
-        @PostMapping(value = "/api/seller/product", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-        public ResponseEntity<ResponseApi<Void>> saveProduct (@RequestPart(name = "mainImgFile") MultipartFile mainImgFile,
-                                                             @RequestPart(name = "sideImgFile") List<MultipartFile> sideImgFile,
-                                                              @RequestPart(name = "addProductInforms") AddProductRequestDto reqDto) throws IOException {
+
+    /// 상품 등록 메서드
+    @Operation(summary = "상품 세부사항 등록", description = "상품의 세부사항을 받아 상품을 등록한다. (판매자만 등록 가능)")
+    @PostMapping(value = "/api/product", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResponseApi<Void>> saveProduct(@RequestPart(name = "mainImgFile") MultipartFile mainImgFile,
+                                                         @RequestPart(name = "sideImgFile") List<MultipartFile> sideImgFile,
+                                                         @RequestPart(name = "addProductInforms") @Valid AddProductRequestDto reqDto) throws IOException {
 
 
-            Long userId = 1L;
-            Long brandId = 1L;
-            productService.saveProduct(mainImgFile, sideImgFile, userId, brandId, reqDto);
-            return ResponseEntity.ok().body(ResponseApi.ok());
-        }
+        productService.saveProduct(mainImgFile, sideImgFile, reqDto);
+        return ResponseEntity.ok().body(ResponseApi.ok());
+    }
 
     /// 상품 등록 페이지 조회
     @Operation(summary = "상품 등록 페이지 조회", description = "상품의 카테고리를 바디에 담아 보내준다. (판매자만 조회 가능)")
-    @GetMapping("/api/seller/product/new")
-    public ResponseEntity<ResponseApi<List<ProductCategoryResponseDto>>> registProductView (){
+    @GetMapping("/product/new")
+    public ResponseEntity<ResponseApi<List<ProductCategoryResponseDto>>> registProductView() {
 
         List<ProductCategoryResponseDto> productCategories = productService.findProductCategories();
         return ResponseEntity.ok().body(ResponseApi.ok(productCategories));
@@ -72,6 +73,17 @@ class ProductController {
                                                                                  @PageableDefault Pageable pageable) {
         List<FindProductResponseDto> respDto = productService.findProductsWithOptionalLogging(categoryId, keyword, optionIds, pageable,false);
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
+    }
+
+
+    /// 상품상세 조회
+    @GetMapping("/product/{productId}")
+    @Operation(summary = "상품상세 조회", description = "상품상세조회")
+    public ResponseEntity<ResponseApi<ProductDetailResponseDto>> findProductDetail(@PathVariable(name = "productId") Long productId){
+        ProductDetailResponseDto respDto = productService.findProductDetails(productId);
+        /// 조회수 카운트 증가.
+        productService.updateProductViewCount(productId);
+        return  ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
 
 }

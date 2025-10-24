@@ -17,8 +17,8 @@ public class SearchLogService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void saveSearchLog(Long categoryId, String keyword) {
+        Long memberId = jwtHelper.getMemberId();
         try {
-            Long memberId = jwtHelper.getMemberId();
 
             ProductSearchLog log = ProductSearchLog.builder()
                     .memberId(memberId)

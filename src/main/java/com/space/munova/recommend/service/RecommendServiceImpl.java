@@ -5,16 +5,23 @@ import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.Repository.ProductRepository;
 import com.space.munova.recommend.domain.ProductRecommendation;
+import com.space.munova.recommend.domain.UserActionSummary;
 import com.space.munova.recommend.domain.UserRecommendation;
 import com.space.munova.recommend.dto.ResponseDto;
 import com.space.munova.recommend.repository.ProductRecommendationRepository;
+import com.space.munova.recommend.repository.UserActionSummaryRepository;
 import com.space.munova.recommend.repository.UserRecommendationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +31,8 @@ public class RecommendServiceImpl implements RecommendService {
     private final ProductRepository productRepository;
     private final UserRecommendationRepository userRecommendRepository;
     private final ProductRecommendationRepository productRecommendRepository;
+    private final UserActionSummaryRepository summaryRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public List<ResponseDto> getRecommendationsByUserId(Long userId) {
@@ -75,12 +84,13 @@ public class RecommendServiceImpl implements RecommendService {
         // 3. 같은 카테고리에서 4개 추천 상품 조회
         List<Product> recommendedProducts = productRepository
                 .findTop4ByCategory_IdAndIdNotOrderByIdAsc(clickedProduct.getCategory().getId(), clickedProduct.getId());
-
+        double recommendedScore=getRecommendationScore(userId,productId);
         // 4. 추천 기록 저장
         for (Product rec : recommendedProducts) {
             UserRecommendation ur = UserRecommendation.builder()
                     .member(user)
                     .product(rec)
+                    .score(recommendedScore)
                     .build();
             userRecommendRepository.save(ur);
         }
@@ -131,9 +141,68 @@ public class RecommendServiceImpl implements RecommendService {
         return Collections.emptyList();
     }
 
+
     @Override
-    public double getRecommendationScore(Long userId, Long productId) {
-        //추천 점수 조회
-        return 0.0;
+    public double getRecommendationScore(Long memberId, Long productId) {
+        // 기본 가중치 (합계 1 이하)
+        double CLICK_WEIGHT = 0.05;
+        double LIKE_WEIGHT = 0.15;
+        double CART_WEIGHT = 0.3;
+        double PURCHASE_WEIGHT = 0.5;
+
+        String cacheKey = "user:action:" + memberId + ":" + productId;
+        UserActionSummary summary = (UserActionSummary) redisTemplate.opsForValue().get(cacheKey);
+
+        if (summary == null) {
+            summary = summaryRepository.findByMemberIdAndProductId(memberId, productId)
+                    .orElse(new UserActionSummary(memberId, productId, false, false, false, false));
+            redisTemplate.opsForValue().set(cacheKey, summary, 10, TimeUnit.MINUTES);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // 행동별 최근성 가중치 계산
+        double clickedScore = summary.isClicked() && summary.getClickedAt() != null ?
+                CLICK_WEIGHT * Math.max(0.5, 1 - 0.05 * ChronoUnit.DAYS.between(summary.getClickedAt(), now)) : 0;
+        double likedScore = summary.isLiked() && summary.getLikedAt() != null ?
+                LIKE_WEIGHT * Math.max(0.5, 1 - 0.05 * ChronoUnit.DAYS.between(summary.getLikedAt(), now)) : 0;
+        double cartScore = summary.isInCart() && summary.getIncartAt() != null ?
+                CART_WEIGHT * Math.max(0.5, 1 - 0.05 * ChronoUnit.DAYS.between(summary.getIncartAt(), now)) : 0;
+        double purchasedScore = summary.isPurchased() && summary.getPurchasedAt() != null ?
+                PURCHASE_WEIGHT * Math.max(0.5, 1 - 0.05 * ChronoUnit.DAYS.between(summary.getPurchasedAt(), now)) : 0;
+
+        double behaviorScore = clickedScore + likedScore + cartScore + purchasedScore;
+
+        // 임시: 같은 카테고리일 경우 유사도 0.7
+//        double similarity = 0.7;
+//        double finalScore = behaviorScore * similarity;
+
+        // 0~100 정규화
+        double maxScore = CLICK_WEIGHT + LIKE_WEIGHT + CART_WEIGHT + PURCHASE_WEIGHT;
+        return (behaviorScore / maxScore) * 100;
     }
+
+    // 유저 행동 발생 시 호출
+    public void updateUserAction(Long memberId, Long productId, boolean clicked, boolean liked,
+                                 boolean inCart, boolean purchased) {
+        UserActionSummary summary = summaryRepository.findByMemberIdAndProductId(memberId, productId)
+                .orElse(UserActionSummary.builder()
+                        .memberId(memberId)
+                        .productId(productId)
+                        .build());
+
+        // 행동 값 업데이트
+        if (clicked) { summary.setClicked(true); summary.setClickedAt(LocalDateTime.now()); }
+        if (liked) { summary.setLiked(true); summary.setLikedAt(LocalDateTime.now()); }
+        if (inCart) { summary.setInCart(true); summary.setIncartAt(LocalDateTime.now()); }
+        if (purchased) { summary.setPurchased(true); summary.setPurchasedAt(LocalDateTime.now()); }
+
+        summary.setLastUpdated(LocalDateTime.now());
+        summaryRepository.save(summary);
+
+        // Redis 캐시에 저장 (TTL 10분)
+        String cacheKey = "user:action:" + memberId + ":" + productId;
+        redisTemplate.opsForValue().set(cacheKey, summary, 10, TimeUnit.MINUTES);
+    }
+
 }

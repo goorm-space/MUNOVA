@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface ChatMessageService {
 
-    ChatMessageResponseDto createChatMessage(ChatMessageRequestDto chatMessageRequest);
+    ChatMessageResponseDto createChatMessage(ChatMessageRequestDto chatMessageRequest, Long chatId);
 
     List<ChatMessageViewDto> getMessagesByChatId(Long chatId, Long memberId);
 

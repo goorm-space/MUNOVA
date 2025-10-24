@@ -32,7 +32,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     // 메시지 DB에 저장
     @Override
     @Transactional
-    public ChatMessageResponseDto createChatMessage(ChatMessageRequestDto chatMessageRequest) {
+    public ChatMessageResponseDto createChatMessage(ChatMessageRequestDto chatMessageRequest, Long chatId) {
 
         log.info("Creating chat message: {}", chatMessageRequest);
         // 송신자 확인
@@ -40,26 +40,26 @@ public class ChatMessageServiceImpl implements ChatMessageService {
                 .orElseThrow(() -> ChatException.cannotFindMemberException("senderId=" + chatMessageRequest.getSenderId()));
 
         // 채팅방 확인
-        Chat chatId = chatRepository.findById(chatMessageRequest.getChatId())
-                .orElseThrow(() -> ChatException.cannotFindChatException("chatId=" + chatMessageRequest.getChatId()));
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> ChatException.cannotFindChatException("chatId=" + chatId));
 
         // 2. 채팅방 상태 확인
-        if (chatId.getStatus() != ChatStatus.OPENED) {
-            throw ChatException.chatClosedException("chatId=" + chatId.getId());
+        if (chat.getStatus() != ChatStatus.OPENED) {
+            throw ChatException.chatClosedException("chatId=" + chat.getId());
         }
 
         // 메시지를 repository에 저장 + 현재 시간
         Message message = messageRepository.save(Message.builder()
-                .chatId(chatId)
+                .chatId(chat)
                 .userId(senderId)
                 .content(chatMessageRequest.getContent())
                 .type(chatMessageRequest.getMessageType())
                 .build());
 
         // 가장 최신 메시지 id, 최근 대화 시간 업데이트
-        chatId.modifyLastMessageContent(message.getContent(), message.getCreatedAt());
+        chat.modifyLastMessageContent(message.getContent(), message.getCreatedAt());
 
-        return new ChatMessageResponseDto(chatId.getId(), senderId.getId(), message);
+        return new ChatMessageResponseDto(chat.getId(), senderId.getId(), message);
     }
 
 

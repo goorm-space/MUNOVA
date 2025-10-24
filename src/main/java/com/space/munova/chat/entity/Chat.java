@@ -5,7 +5,6 @@ import com.space.munova.chat.enums.ChatStatus;
 import com.space.munova.chat.enums.ChatType;
 import com.space.munova.chat.exception.ChatException;
 import com.space.munova.core.entity.BaseEntity;
-import com.space.munova.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,10 +26,10 @@ public class Chat extends BaseEntity {
     private String name;
 
     @Enumerated(EnumType.STRING)
-    private ChatStatus status;
+    private ChatStatus status;  // OPENED, CLOSED
 
     @Enumerated(EnumType.STRING)
-    private ChatType type;
+    private ChatType type;  // GROUP, ONE_ON_ONE
 
     private Integer curParticipant;
 
@@ -45,36 +44,38 @@ public class Chat extends BaseEntity {
         this.name = name;
         this.status = status;
         this.type = type;
-//        this.userId = userId;
         this.curParticipant = curParticipant;
         this.maxParticipant = maxParticipant;
     }
 
     public void modifyLastMessageContent(String lastMessageContent, LocalDateTime lastMessageTime) {
-        if(lastMessageContent.length() > 20){
+        if (lastMessageContent.length() > 20) {
             this.lastMessageContent = lastMessageContent.substring(0, 20) + "...";
-        } else{
+        } else {
             this.lastMessageContent = lastMessageContent;
         }
         this.lastMessageTime = lastMessageTime;
     }
 
-    public void updateStatus(ChatStatus status) {
+    public void updateChatStatusClosed(ChatStatus status) {
+        if (status == this.status) {
+            throw ChatException.chatClosedException("chatStatusClosed");
+        }
         this.status = status;
     }
 
     public void updateMaxParticipant(Integer newMaxParticipant) {
-        if(newMaxParticipant > maxParticipant){
+        if (newMaxParticipant < curParticipant) {
             throw ChatException.invalidOperationException("Max participants : " + maxParticipant + "\n" +
                     "Requested : " + maxParticipant);
         }
+        if (newMaxParticipant == null) return;
+
         this.maxParticipant = newMaxParticipant;
     }
 
     public void updateName(String newName) {
-        if (newName == null || newName.isBlank()) {
-            throw ChatException.emptyChatNameException();
-        }
+        if (newName == null || newName.isBlank()) return;
         this.name = newName;
     }
 

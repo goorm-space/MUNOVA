@@ -4,9 +4,11 @@ import com.space.munova.member.entity.Member;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.Repository.ProductRepository;
+import com.space.munova.product.domain.enums.ProductCategory;
 import com.space.munova.recommend.domain.ProductRecommendation;
 import com.space.munova.recommend.domain.UserActionSummary;
 import com.space.munova.recommend.domain.UserRecommendation;
+import com.space.munova.recommend.dto.RecommendReasonResponseDto;
 import com.space.munova.recommend.dto.ResponseDto;
 import com.space.munova.recommend.repository.ProductRecommendationRepository;
 import com.space.munova.recommend.repository.UserActionSummaryRepository;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -136,10 +139,79 @@ public class RecommendServiceImpl implements RecommendService {
     }
 
     @Override
-    public List<ResponseDto> getRecommendationReason(Long userId, Long productId) {
-        //추천 근거 조회
-        return Collections.emptyList();
+    public List<RecommendReasonResponseDto> getRecommendationReason(Long userId, Long productId) {
+        List<RecommendReasonResponseDto> reasons = new ArrayList<>();
+
+        // 최근 추천 로그(기준 상품) 조회
+        UserRecommendation recentLog = userRecommendRepository.findTopByMemberIdOrderByCreatedAtDesc(userId)
+                .orElse(null);
+        if (recentLog == null) return reasons;
+
+        Product baseProduct = recentLog.getProduct();
+        Product targetProduct = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("추천 상품이 존재하지 않습니다."));
+
+        // 카테고리 비교
+        if (baseProduct.getCategory() != null && baseProduct.getCategory().equals(targetProduct.getCategory())) {
+            reasons.add(new RecommendReasonResponseDto("category", "같은 카테고리의 상품이에요."));
+        }
+
+        // 브랜드 비교
+        if (baseProduct.getBrand() != null && baseProduct.getBrand().equals(targetProduct.getBrand())) {
+            reasons.add(new RecommendReasonResponseDto("brand", "같은 브랜드의 상품이에요."));
+        }
+
+        // 가격 비교
+        long priceDiff = Math.abs(baseProduct.getPrice() - targetProduct.getPrice());
+        if (priceDiff < 10000) {
+            reasons.add(new RecommendReasonResponseDto("price", "비슷한 가격대의 상품이에요."));
+        } else if (priceDiff > 30000) {
+            reasons.add(new RecommendReasonResponseDto("price", "조금 다른 가격대의 상품이에요."));
+        }
+
+        // 상품명 기반 유사도 (예: “스니커즈”, “부츠”, “캔버스” 등)
+        if (isNameSimilar(baseProduct.getName(), targetProduct.getName())) {
+            reasons.add(new RecommendReasonResponseDto("name", "이름이 비슷한 상품이에요."));
+        }
+
+//        // 설명(info) 기반 스타일 비교
+//        if (isInfoSimilar(baseProduct.getInfo(), targetProduct.getInfo())) {
+//            reasons.add(new RecommendReasonResponseDto("style", "스타일이나 소재가 비슷한 상품이에요."));
+//        }
+
+        return reasons;
     }
+
+    private boolean isNameSimilar(String name1, String name2) {
+        if (name1 == null || name2 == null) return false;
+
+        name1 = name1.toLowerCase();
+        name2 = name2.toLowerCase();
+
+        // ProductCategory의 description(예: "스니커즈", "부츠", "로퍼") 사용
+        for (ProductCategory category : ProductCategory.values()) {
+            String keyword = category.getDescription();
+            if (name1.contains(keyword) && name2.contains(keyword)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+//    private boolean isInfoSimilar(String info1, String info2) {
+//        if (info1 == null || info2 == null) return false;
+//
+//        List<String> styleWords = List.of("가죽", "스웨이드", "러닝", "클래식", "스트릿", "하이탑");
+//        for (String word : styleWords) {
+//            if (info1.contains(word) && info2.contains(word)) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
+
+
+
 
 
     @Override

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -87,7 +88,19 @@ public class ProductService {
 
         List<FindProductResponseDto> productByConditions = productRepository.findProductByConditions(categoryId, optionIds, keyword, pageable);
 
-        return productByConditions;
+
+        return productByConditions.stream()
+                .map(dto -> new FindProductResponseDto(
+                        dto.productId(),
+                        productImageService.getImgPath(dto.mainImgSrc()), ///  이미지 풀 패스로 변환.
+                        dto.brandName(),
+                        dto.productName(),
+                        dto.price(),
+                        dto.likeCount(),
+                        dto.salesCount(),
+                        dto.createAt())
+                )
+                .toList();
     }
 
 

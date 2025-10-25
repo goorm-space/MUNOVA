@@ -1,0 +1,17 @@
+package com.space.munova.product.domain.Repository;
+
+import com.space.munova.product.domain.ProductLike;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+
+import java.util.List;
+
+public interface ProductLikeRepository extends JpaRepository<ProductLike, Long> {
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ProductLike pl " +
+            "SET pl.isDeleted = true " +
+            "WHERE pl.product.id IN :productIds")
+    void deleteAllByProductIds(List<Long> productIds);
+}

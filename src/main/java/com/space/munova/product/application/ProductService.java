@@ -7,6 +7,7 @@ import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.application.dto.*;
 import com.space.munova.product.application.exception.ProductException;
 import com.space.munova.product.domain.*;
+import com.space.munova.product.domain.Repository.ProductLikeRepository;
 import com.space.munova.product.domain.Repository.ProductRepository;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 
 @Slf4j
@@ -31,6 +34,8 @@ public class ProductService {
     private final BrandService brandService;
     private final CategoryService categoryService;
     private final MemberRepository memberRepository;
+    private final ProductLikeService productLikeService;
+
 
 
     /// 모든 카테고리 조회 메서드
@@ -83,7 +88,19 @@ public class ProductService {
 
         List<FindProductResponseDto> productByConditions = productRepository.findProductByConditions(categoryId, optionIds, keyword, pageable);
 
-        return productByConditions;
+
+        return productByConditions.stream()
+                .map(dto -> new FindProductResponseDto(
+                        dto.productId(),
+                        productImageService.getImgPath(dto.mainImgSrc()), ///  이미지 풀 패스로 변환.
+                        dto.brandName(),
+                        dto.productName(),
+                        dto.price(),
+                        dto.likeCount(),
+                        dto.salesCount(),
+                        dto.createAt())
+                )
+                .toList();
     }
 
 
@@ -99,5 +116,28 @@ public class ProductService {
     @Transactional(readOnly = false)
     public void updateProductViewCount(Long productId) {
         productRepository.updateProductViewCount(productId);
+    }
+
+
+    /*
+    * 상품 제거 메서드 (관련 테이블 모두 논리삭제) - 상품, 상품좋아요, 상품디테일, 상품이미지, 장바구니, 상품옵션매핑
+    * */
+    @Transactional(readOnly = false)
+    public void deleteProduct(List<Long> productIds) {
+
+        Long sellerId = JwtHelper.getMemberId();
+
+        productRepository.findAllById(productIds).forEach(product -> {
+
+            if(!product.getMember().getId().equals(sellerId)) {
+                throw ProductException.unauthorizedAccessException();
+            }
+        });
+
+        productImageService.deleteImagesByProductIds(productIds);
+        productDetailService.deleteProductDetailByProductId(productIds);
+        productLikeService.deleteProductLikeByProductId(productIds);
+        productRepository.deleteAllByProductIds(productIds);
+
     }
 }

@@ -21,9 +21,16 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
             "AND p.isDeleted = false")
     Optional<ProductInfoDto> findProductInfoById(Long productId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Product p " +
             "SET p.viewCount = p.viewCount + 1 " +
             "WHERE p.id = :productId")
     void updateProductViewCount(Long productId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Product p " +
+            "SET p.isDeleted = true " +
+            "WHERE p.id IN :productIds ")
+    void deleteAllByProductIds(List<Long> productIds);
+
 }

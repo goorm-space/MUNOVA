@@ -9,8 +9,8 @@ public final class CartException extends BaseException {
         super(code, message, statusCode, detailMessage);
     }
 
-    public static ProductException notFoundProductException(String... detailMessage) {
-        return new ProductException("CART_01", "유효하지 않은 요청입니다. : ", HttpStatus.BAD_REQUEST, detailMessage);
+    public static CartException notFoundProductException(String... detailMessage) {
+        return new CartException("CART_01", "유효하지 않은 요청입니다. : ", HttpStatus.BAD_REQUEST, detailMessage);
     }
 
 }

@@ -33,4 +33,8 @@ public final class ProductException extends BaseException {
         return new ProductException("PRODUCT_05", "권한 없는 접근 입니다.", HttpStatus.FORBIDDEN, detailMessage);
     }
 
+    public static ProductException notFoundProductDetailExeption(String... detailMessage) {
+        return new ProductException("PRODUCT_06", "유효하지 않은 상품 정보 입니다.", HttpStatus.NOT_FOUND, detailMessage);
+    }
+
 }

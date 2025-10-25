@@ -28,6 +28,7 @@ public class CartService {
     private final ProductDetailRepository productDetailRepository;
     private final MemberRepository memberRepository;
 
+    @Transactional(readOnly = false)
     public void deleteByProductDetailIds(List<Long> productDetailIds) {
         cartRepository.deleteByProductDetailIds(productDetailIds);
     }
@@ -49,5 +50,14 @@ public class CartService {
 
         Cart cart = Cart.createDefaultCart(member, productDetail, reqDto.quantity());
         cartRepository.save(cart);
+    }
+
+
+    /// 유저의 장바구니 카트 상품제거
+    @Transactional(readOnly = false)
+    public void deleteByCartIds(List<Long> cartIds) {
+
+        Long memberId = JwtHelper.getMemberId();
+        cartRepository.deleteByCartIdsAndMemberId(cartIds,memberId);
     }
 }

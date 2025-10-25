@@ -14,4 +14,6 @@ public interface CartRepository extends JpaRepository<Cart, Long> {
             "SET c.isDeleted = true " +
             "WHERE c.productDetail.id IN :productDetailIds")
     void deleteByProductDetailIds(List<Long> productDetailIds);
+
+
 }

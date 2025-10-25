@@ -128,25 +128,27 @@ public class ProductService {
     }
 
 
-    /*
-    * 상품 제거 메서드 (관련 테이블 모두 논리삭제) - 상품, 상품좋아요, 상품디테일, 상품이미지, 장바구니, 상품옵션매핑
-    * */
-    @Transactional(readOnly = false)
-    public void deleteProduct(List<Long> productIds) {
+        /*
+        * 상품 제거 메서드 (관련 테이블 모두 논리삭제) - 상품, 상품좋아요, 상품디테일, 상품이미지, 장바구니, 상품옵션매핑
+        * */
+        ///  현재 프로덕트를 삭제할때 카트와 좋아요를 한트랜잭션에 묶고 있지만 이후에 트랜잭션을 분리해야함.
+        ///  상품 , 좋아요, 장바구니는 각각 어그리거트 루트가 다르다.
+        @Transactional(readOnly = false)
+        public void deleteProduct(List<Long> productIds) {
 
-        Long sellerId = JwtHelper.getMemberId();
+            Long sellerId = JwtHelper.getMemberId();
 
-        productRepository.findAllById(productIds).forEach(product -> {
+            productRepository.findAllById(productIds).forEach(product -> {
 
-            if(!product.getMember().getId().equals(sellerId)) {
-                throw ProductException.unauthorizedAccessException();
-            }
-        });
+                if(!product.getMember().getId().equals(sellerId)) {
+                    throw ProductException.unauthorizedAccessException();
+                }
+            });
 
-        productImageService.deleteImagesByProductIds(productIds);
-        productDetailService.deleteProductDetailByProductId(productIds);
-        productLikeService.deleteProductLikeByProductId(productIds);
-        productRepository.deleteAllByProductIds(productIds);
+            productImageService.deleteImagesByProductIds(productIds);
+            productDetailService.deleteProductDetailByProductId(productIds);
+            productLikeService.deleteProductLikeByProductId(productIds);
+            productRepository.deleteAllByProductIds(productIds);
 
+        }
     }
-}

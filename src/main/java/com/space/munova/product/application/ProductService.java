@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -95,7 +96,20 @@ public class ProductService {
         if(doLogging && (categoryId!=null || (keyword!=null && !keyword.isEmpty()) || (optionIds!=null && !optionIds.isEmpty()))) {
             searchLogService.saveSearchLog(categoryId,keyword);
         }
-        return productByConditions;
+
+
+        return productByConditions.stream()
+                .map(dto -> new FindProductResponseDto(
+                        dto.productId(),
+                        productImageService.getImgPath(dto.mainImgSrc()), ///  이미지 풀 패스로 변환.
+                        dto.brandName(),
+                        dto.productName(),
+                        dto.price(),
+                        dto.likeCount(),
+                        dto.salesCount(),
+                        dto.createAt())
+                )
+                .toList();
     }
 
 

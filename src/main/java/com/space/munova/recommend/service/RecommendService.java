@@ -1,5 +1,6 @@
 package com.space.munova.recommend.service;
 
+import com.space.munova.recommend.dto.RecommendReasonResponseDto;
 import com.space.munova.recommend.dto.ResponseDto;
 import java.util.List;
 
@@ -16,7 +17,7 @@ public interface RecommendService {
     void updateUserProductRecommend(Long userId, Long productId);
     void updateSimilarProductRecommend(Long productId);
 
-    List<ResponseDto> getRecommendationReason(Long userId, Long productId);
+    List<RecommendReasonResponseDto> getRecommendationReason(Long userId, Long productId);
     double getRecommendationScore(Long userId, Long productId);
     void updateUserAction(Long userId, Long productId, boolean clicked, boolean liked,
                           boolean inCart, boolean purchased);

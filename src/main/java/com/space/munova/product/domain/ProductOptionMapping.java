@@ -4,6 +4,7 @@ package com.space.munova.product.domain;
 import com.space.munova.core.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 
 @Builder
 @Entity
@@ -25,6 +26,9 @@ public class ProductOptionMapping extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "product_detail_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private ProductDetail productDetail;
+
+    @ColumnDefault("0")
+    private boolean isDeleted;
 
     public static ProductOptionMapping createDefaultProductOptionMapping(Option option, ProductDetail productDetail) {
 

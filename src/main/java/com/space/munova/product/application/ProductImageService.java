@@ -40,6 +40,7 @@ public class ProductImageService {
         productImageRepository.saveAll(productImages);
     }
 
+
     public ProductImageDto findProductImageDtoByProductId(Long productId) {
 
         List<ProductImage> productImages = productImageRepository.findByProductId(productId);
@@ -47,6 +48,9 @@ public class ProductImageService {
         return  seperatedImagesByImageType(productImages);
     }
 
+    public void deleteImagesByProductIds(List<Long> productIds) {
+        productImageRepository.deleteAllByProductIds(productIds);
+    }
 
     private ProductImageDto seperatedImagesByImageType(List<ProductImage> productImages) {
         String mainImgSrc = "";
@@ -64,5 +68,8 @@ public class ProductImageService {
         return new ProductImageDto(mainImgSrc, sideImgSrcList);
     }
 
-
+    ///  파일 주소 가져오는 메서드
+    public String getImgPath(String savedImgName) {
+        return fileStore.getFullPath(savedImgName);
+    }
 }

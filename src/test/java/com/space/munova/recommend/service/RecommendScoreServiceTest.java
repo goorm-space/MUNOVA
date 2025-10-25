@@ -11,7 +11,7 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = {
         "spring.jpa.hibernate.ddl-auto=none" // DDL 실행을 막는 설정 주입
 })
-public class UserActionServiceTest {
+public class RecommendScoreServiceTest {
 
     @Autowired
     private RecommendService recommendService;

@@ -28,4 +28,9 @@ public final class ProductException extends BaseException {
     public static ProductException badRequestException(String... detailMessage) {
         return new ProductException("PRODUCT_05", "유효하지 요청 입니다.", HttpStatus.BAD_REQUEST, detailMessage);
     }
+
+    public static ProductException unauthorizedAccessException(String... detailMessage) {
+        return new ProductException("PRODUCT_05", "권한 없는 접근 입니다.", HttpStatus.FORBIDDEN, detailMessage);
+    }
+
 }

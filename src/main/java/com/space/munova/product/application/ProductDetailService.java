@@ -25,6 +25,7 @@ public class ProductDetailService {
     private final ProductDetailRepository productDetailRepository;
     private final OptionService optionService;
     private final ProductOptionMappingService productOptionMappingService;
+    private final CartService cartService;
 
     public ProductDetail saveProductDetail(ProductDetail productDetail) {
         return productDetailRepository.save(productDetail);
@@ -86,6 +87,29 @@ public class ProductDetailService {
         return  createProductDetailInfoList(classifiedDetailByColorMap, detailIdMappedSizeOptionMap);
     }
 
+
+    public void deleteProductDetailByProductId(List<Long> productIds) {
+
+        List<ProductDetail> productDetails = productDetailRepository.findAllByProductId(productIds);
+        List<Long> productDetailIds = getProductDetailIds(productDetails);
+        /// 디테일 아이디를 가진 매핑 테이플 데이터 논리삭제
+        productOptionMappingService.deleteByProductDetailIds(productDetailIds);
+        /// 디테일 아이디를 가진 카트 테이블 데이터 논리 삭제
+        cartService.deleteByProductDetailIds(productDetailIds);
+        /// 디테일 아이디를 가진 디테일 테이블 데이터 논리 삭제
+        productDetailRepository.deleteProductDetailByIds(productDetailIds);
+    }
+
+
+
+    private List<Long> getProductDetailIds(List<ProductDetail> productDetails) {
+        List<Long> productDetailIds = new ArrayList<>();
+        for (ProductDetail productDetail : productDetails) {
+            productDetailIds.add(productDetail.getId());
+        }
+        return productDetailIds;
+    }
+
     private List<ProductDetailInfoDto> createProductDetailInfoList(Map<ColorOptionDto, List<Long>> classifiedDetailByColorMap, Map<Long, ProductDetailAndSizeDto> detailIdMappedSizeOptionMap) {
         List<ProductDetailInfoDto> productDetailInfoDtos = new ArrayList<>();
 
@@ -145,4 +169,7 @@ public class ProductDetailService {
             classifiedMap.put(colorOptionDto, detailIds);
         }
     }
+
+
+
 }

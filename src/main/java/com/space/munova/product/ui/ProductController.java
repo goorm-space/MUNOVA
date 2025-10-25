@@ -30,7 +30,6 @@ import java.util.List;
 class ProductController {
 
     private final ProductService productService;
-    private final ObjectMapper objectMapper;
 
     /// 상품 등록 메서드
     @Operation(summary = "상품 세부사항 등록", description = "상품의 세부사항을 받아 상품을 등록한다. (판매자만 등록 가능)")
@@ -85,5 +84,16 @@ class ProductController {
         productService.updateProductViewCount(productId);
         return  ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
+
+
+    /// 상품제거
+    @DeleteMapping("/api/product")
+    @Operation(summary = "상품 삭제", description = "단건, 복수건 상품 삭제")
+    public ResponseEntity<ResponseApi<Void>> deleteProduct(@RequestParam("productIds") List<Long> productIds){
+        productService.deleteProduct(productIds);
+        return ResponseEntity.ok().body(ResponseApi.ok());
+    }
+
+
 
 }

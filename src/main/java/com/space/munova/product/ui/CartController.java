@@ -2,9 +2,9 @@ package com.space.munova.product.ui;
 
 import com.space.munova.core.config.ResponseApi;
 import com.space.munova.product.application.CartService;
-import com.space.munova.product.application.dto.DeleteCartItemRequestDto;
-import com.space.munova.product.application.dto.addCartItemRequestDto;
-import com.space.munova.product.domain.Cart;
+import com.space.munova.product.application.dto.cart.DeleteCartItemRequestDto;
+import com.space.munova.product.application.dto.cart.FindCartInfoResponseDto;
+import com.space.munova.product.application.dto.cart.AddCartItemRequestDto;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class CartController {
     private final CartService cartService;
 
     @PostMapping("/api/cart")
-    public ResponseEntity<ResponseApi<Void>> addCartItem(@RequestBody @Valid addCartItemRequestDto reqDto) {
+    public ResponseEntity<ResponseApi<Void>> addCartItem(@RequestBody @Valid AddCartItemRequestDto reqDto) {
 
         cartService.addCartItem(reqDto);
 
@@ -35,6 +35,13 @@ public class CartController {
 
         cartService.deleteByCartIds(reqDto.cartIds());
         return  ResponseEntity.ok().body(ResponseApi.ok());
+    }
+
+    @GetMapping("/api/cart")
+    public ResponseEntity<ResponseApi<List<FindCartInfoResponseDto>>> getCarts() {
+
+        cartService.findCartItemByMember();
+        return ResponseEntity.ok().body(ResponseApi.ok());
     }
 
 

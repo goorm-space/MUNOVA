@@ -2,6 +2,7 @@ package com.space.munova.product.ui;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.space.munova.core.config.ResponseApi;
+import com.space.munova.product.application.ProductClickLogService;
 import com.space.munova.product.application.ProductService;
 import com.space.munova.product.application.dto.AddProductRequestDto;
 import com.space.munova.product.application.dto.FindProductResponseDto;
@@ -29,6 +30,7 @@ import java.util.List;
 class ProductController {
 
     private final ProductService productService;
+    private final ProductClickLogService productClickLogService;
 
     /// 상품 등록 메서드
     @Operation(summary = "상품 세부사항 등록", description = "상품의 세부사항을 받아 상품을 등록한다. (판매자만 등록 가능)")
@@ -62,6 +64,17 @@ class ProductController {
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
 
+    /// (로그인)상품상세 조회
+    @GetMapping("/api/product/{productId}")
+    @Operation(summary = "상품상세 조회", description = "상품상세조회")
+    public ResponseEntity<ResponseApi<ProductDetailResponseDto>> findProductDetailLogin(@PathVariable(name = "productId") Long productId){
+        ProductDetailResponseDto respDto = productService.findProductDetails(productId);
+        /// 상품 상세조회 시 로그
+        productClickLogService.saveProductClickLog(productId);
+        /// 조회수 카운트 증가.
+        productService.updateProductViewCount(productId);
+        return  ResponseEntity.ok().body(ResponseApi.ok(respDto));
+    }
 
     /// 상품상세 조회
     @GetMapping("/product/{productId}")

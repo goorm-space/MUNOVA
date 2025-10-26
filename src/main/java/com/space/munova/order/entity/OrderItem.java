@@ -29,11 +29,11 @@ public class OrderItem {
     @JoinColumn(name = "product_detail_id")
     private ProductDetail productDetail;
 
-    @Column(nullable = false)
-    private String productName;
+    @Column(name = "product_name", nullable = false)
+    private String nameSnapshot;
 
-    @Column(nullable = false)
-    private Long price;
+    @Column(name = "price", nullable = false)
+    private Long priceSnapshot;
 
     @Column(nullable = false)
     private Integer quantity;

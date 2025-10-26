@@ -13,9 +13,9 @@ public record OrderItemDto(
     public static OrderItemDto from(OrderItem orderItem) {
         return new OrderItemDto(
                 orderItem.getId(),
-                orderItem.getProductName(),
+                orderItem.getNameSnapshot(),
                 orderItem.getQuantity(),
-                orderItem.getPrice() * orderItem.getQuantity(),
+                orderItem.getPriceSnapshot() * orderItem.getQuantity(),
                 orderItem.getStatus()
         );
     }

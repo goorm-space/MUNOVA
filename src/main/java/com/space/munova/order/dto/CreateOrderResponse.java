@@ -2,23 +2,26 @@ package com.space.munova.order.dto;
 
 import com.space.munova.order.entity.Order;
 
+import java.util.List;
+
 public record CreateOrderResponse(
     Long orderId,
     String orderNum,
     String userName,
     String address,
-    String userRequest,
-    Long totalPrice
-    // Todo: 결제 수단 가져오자
+    List<OrderItemDto> orderItems
 ) {
     public static CreateOrderResponse from(Order order) {
+        List<OrderItemDto> orderItems = order.getOrderItems().stream()
+                .map(OrderItemDto::from)
+                .toList();
+
         return new CreateOrderResponse(
                 order.getId(),
                 order.getOrderNum(),
                 order.getMember().getUsername(),
                 order.getMember().getAddress(),
-                order.getUserRequest(),
-                order.getTotalPrice()
+                orderItems
         );
     }
 }

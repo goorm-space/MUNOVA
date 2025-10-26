@@ -9,6 +9,7 @@ import com.space.munova.recommend.domain.ProductRecommendation;
 import com.space.munova.recommend.domain.UserActionSummary;
 import com.space.munova.recommend.domain.UserRecommendation;
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
+import com.space.munova.recommend.dto.RecommendationsProductResponseDto;
 import com.space.munova.recommend.dto.ResponseDto;
 import com.space.munova.recommend.repository.ProductRecommendationRepository;
 import com.space.munova.recommend.repository.UserActionSummaryRepository;
@@ -18,7 +19,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -44,33 +44,24 @@ public class RecommendServiceImpl implements RecommendService {
     }
 
     @Override
-    public void createUserRecommendLog(Long userId) {
-        //회원 추천 로그 로직
-        System.out.println("User recommend log created for userId = " + userId);
-    }
-
-    @Override
-    public void updateUserRecommendLog(Long userId) {
-        //회원 추천 로그 로직
-        System.out.println("User recommend log updated for userId = " + userId);
-    }
-
-    @Override
-    public List<ResponseDto> getRecommendationsByProductId(Long productId) {
-        //상품 추천 로그 조회 로직
-        return Collections.emptyList();
-    }
-
-    @Override
-    public void createProductRecommendLog() {
-        //상품 추천 로그 로직
-        System.out.println("Product recommend log created");
-    }
-
-    @Override
-    public void updateProductRecommendLog(Long productId) {
-        //상품 추천 로그 로직
-        System.out.println("Product recommend log updated for productId = " + productId);
+    public List<RecommendationsProductResponseDto> getRecommendationsByProductId(Long productId) {
+        List<ProductRecommendation> recommendations;
+        if(productId==null){
+            recommendations=productRecommendRepository.findAll();
+        }
+        else{
+            recommendations=productRecommendRepository.findBySourceProductId(productId);
+        }
+        //Dto변환
+        List<RecommendationsProductResponseDto> responseList = new ArrayList<>();
+        for(ProductRecommendation rec : recommendations){
+            responseList.add(RecommendationsProductResponseDto.builder()
+                    .sourceProductId(rec.getSourceProduct().getId())
+                    .targetProductId(rec.getTargetProduct().getId())
+                    .createdAt(rec.getCreatedAt())
+                    .build());
+        }
+        return responseList;
     }
 
     @Override

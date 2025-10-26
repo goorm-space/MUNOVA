@@ -1,7 +1,6 @@
 package com.space.munova.recommend.controller;
 
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
-import com.space.munova.recommend.dto.ResponseDto;
 import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -10,7 +9,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-public class RecommendCommonController {
+public class RecommendController {
 
     private final RecommendService recommendService;
 

@@ -1,6 +1,9 @@
 package com.space.munova.product.application;
 
 import com.space.munova.product.application.dto.*;
+import com.space.munova.product.application.dto.cart.CartItemOptionInfoDto;
+import com.space.munova.product.application.dto.cart.ProductInfoForCartDto;
+import com.space.munova.product.application.exception.ProductException;
 import com.space.munova.product.domain.Option;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.ProductDetail;
@@ -12,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.awt.*;
 import java.util.*;
 import java.util.List;
 
@@ -100,6 +102,14 @@ public class ProductDetailService {
         productDetailRepository.deleteProductDetailByIds(productDetailIds);
     }
 
+    public List<ProductInfoForCartDto> findProductInfoByDetailIds(List<Long> productDetailIds) {
+
+        return productDetailRepository.findProductDetailInfosForCart(productDetailIds);
+    }
+
+    public ProductDetail findById(Long detailId) {
+        return productDetailRepository.findById(detailId).orElseThrow(ProductException::badRequestException);
+    }
 
 
     private List<Long> getProductDetailIds(List<ProductDetail> productDetails) {
@@ -171,5 +181,7 @@ public class ProductDetailService {
     }
 
 
-
+    public List<CartItemOptionInfoDto> findProductDetailOptionForCart(List<Long> productDetailIds) {
+        return productDetailRepository.findProductDetailOptionForCart(productDetailIds);
+    }
 }

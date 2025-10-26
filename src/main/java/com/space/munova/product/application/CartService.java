@@ -3,20 +3,20 @@ package com.space.munova.product.application;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
-import com.space.munova.product.application.dto.addCartItemRequestDto;
+import com.space.munova.product.application.dto.cart.*;
 import com.space.munova.product.application.exception.CartException;
-import com.space.munova.product.application.exception.ProductException;
 import com.space.munova.product.domain.Cart;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.Repository.CartRepository;
-import com.space.munova.product.domain.Repository.ProductDetailRepository;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -25,8 +25,8 @@ import java.util.List;
 public class CartService {
 
     private final CartRepository cartRepository;
-    private final ProductDetailRepository productDetailRepository;
     private final MemberRepository memberRepository;
+    private final ProductDetailService productDetailService;
 
     @Transactional(readOnly = false)
     public void deleteByProductDetailIds(List<Long> productDetailIds) {
@@ -35,13 +35,13 @@ public class CartService {
 
     ///  카트 생성 메서드
     @Transactional(readOnly = false)
-    public void addCartItem(addCartItemRequestDto reqDto) {
+    public void addCartItem(AddCartItemRequestDto reqDto) {
 
         Long memberId = JwtHelper.getMemberId();
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(MemberException::notFoundException);
-        ProductDetail productDetail = productDetailRepository.findById((reqDto.productDetailId()))
-                .orElseThrow(ProductException::notFoundProductDetailExeption);
+
+        ProductDetail productDetail = productDetailService.findById((reqDto.productDetailId()));
 
         ///  상품 디테일 수량 및 제거여부 검증
         validProductDetail(reqDto, productDetail);
@@ -63,7 +63,7 @@ public class CartService {
 
 
     /// 장바구니 추가 상품 검증로직
-    private void validProductDetail(addCartItemRequestDto reqDto, ProductDetail productDetail) {
+    private void validProductDetail(AddCartItemRequestDto reqDto, ProductDetail productDetail) {
         if(productDetail.getQuantity() < reqDto.quantity()) {
             throw CartException.badRequestCartException("상품의 수량을 초과하여 상품을 담을 수 없습니다.");
         }
@@ -72,7 +72,8 @@ public class CartService {
         }
     }
 
-    private void upsertCart(addCartItemRequestDto reqDto, Long memberId, ProductDetail productDetail, Member member) {
+
+    private void upsertCart(AddCartItemRequestDto reqDto, Long memberId, ProductDetail productDetail, Member member) {
         if(cartRepository.existsByMemberIdAndProductDetailId(memberId, productDetail.getId())) {
 
             Cart cart = cartRepository.findByProductDetailIdAndMemberId(productDetail.getId(), memberId)
@@ -90,5 +91,44 @@ public class CartService {
             Cart cart = Cart.createDefaultCart(member, productDetail, reqDto.quantity());
             cartRepository.save(cart);
         }
+    }
+
+    public List<FindCartInfoResponseDto> findCartItemByMember() {
+        Long memberId = JwtHelper.getMemberId();
+
+        List<FindCartInfoResponseDto> respDto = new ArrayList<>();
+
+        /// 장바구니 상품아래에 있는 각각의 상품 정보들 가져오는 직
+        /// 사용자의 장바구니 아이템을 조회
+        List<CartItemInfoDto> cartItemInfoByMember = cartRepository.findCartItemInfoByMemberId(memberId);
+
+        /// 장바구니기본정보 - 디테일아이디
+        Map<CartItemInfoDto, Long> cartItemProductDetailIdMapping = new HashMap<>();
+        List<Long> productDetailIds = new ArrayList<>();
+        for (CartItemInfoDto dto : cartItemInfoByMember) {
+            cartItemProductDetailIdMapping.put(dto, dto.productDetailId());
+            productDetailIds.add(dto.productDetailId());
+        }
+
+        List<ProductInfoForCartDto> productInfoByDetailIds = productDetailService.findProductInfoByDetailIds(productDetailIds);
+        productDetailService.findProductDetailOptionForCart(productDetailIds);
+        /// 디테일 아이디 - 상품기본정보
+        Map<Long, ProductInfoForCartDto> productDetailIdProductInfoMapping = new HashMap<>();
+        for (ProductInfoForCartDto dto : productInfoByDetailIds) {
+            productDetailIdProductInfoMapping.put(dto.detailId(), dto);
+        }
+
+        /// 디테일 아이디 - 담은 상품의정보
+        cartItemProductDetailIdMapping.entrySet().forEach(entry -> {
+
+            CartItemInfoDto CartItemInfoDto = entry.getKey();
+            ProductInfoForCartDto productInfoForCartDto = productDetailIdProductInfoMapping.get(entry.getValue());
+
+        });
+
+        /// 상품의 옵션정보. 상품아이디와 매핑되어야함.
+
+
+
     }
 }

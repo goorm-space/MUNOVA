@@ -18,16 +18,4 @@ public class RecommendUserController {
     public List<ResponseDto> getUserRecommendations(@PathVariable Long userId) {
         return recommendService.getRecommendationsByUserId(userId);
     }
-
-    @PostMapping("/{userId}")
-    public String createUserRecommendLog(@PathVariable Long userId) {
-        recommendService.createUserRecommendLog(userId);
-        return "User recommendations log created successfully";
-    }
-
-    @PutMapping("/{userId}")
-    public String updateUserRecommendLog(@PathVariable Long userId) {
-        recommendService.updateUserRecommendLog(userId);
-        return "User recommendations log updated successfully";
-    }
 }

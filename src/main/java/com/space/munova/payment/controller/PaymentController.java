@@ -1,7 +1,9 @@
 package com.space.munova.payment.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.space.munova.core.config.ResponseApi;
+import com.space.munova.payment.dto.CancelPaymentRequest;
 import com.space.munova.payment.dto.ConfirmPaymentRequest;
 import com.space.munova.payment.service.PaymentService;
 import io.swagger.v3.oas.models.responses.ApiResponse;
@@ -21,14 +23,14 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/payment")
+@RequestMapping("/api/payment")
 public class PaymentController {
-
-    @Value("${toss-payments.client-key}")
-    private String clientKey;
 
     @Value("${toss-payments.encoded-secret-key}")
     private String secretKey;
+
+    private static final String BASE_URL = "https://api.tosspayments.com/v1/payments";
+    private static final String CANCEL_PATH = "/cancel";
 
     private final PaymentService paymentService;
 
@@ -37,10 +39,9 @@ public class PaymentController {
 
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonBody = objectMapper.writeValueAsString(requestBody);
-        System.out.println("jsonBody: " + jsonBody);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.tosspayments.com/v1/payments/confirm"))
+                .uri(URI.create(BASE_URL + "/confirm"))
                 .header("Authorization", "Basic " + secretKey)
                 .header("Content-Type", "application/json")
                 .method("POST", HttpRequest.BodyPublishers.ofString(jsonBody))
@@ -48,7 +49,28 @@ public class PaymentController {
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         System.out.println(response.body());
 
-        // Todo: 결제 정보를 저장하자
         paymentService.savePaymentInfo(response.body());
+    }
+
+    @PostMapping("/{paymentKey}/cancel")
+    public void cancelPayment(@PathVariable String paymentKey, @RequestBody CancelPaymentRequest requestBody) throws IOException, InterruptedException {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonBody = objectMapper.writeValueAsString(requestBody);
+
+        String urlTemplate = BASE_URL + "/%s" + CANCEL_PATH;
+        String fullUrl = String.format(urlTemplate, paymentKey);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(fullUrl))
+                .header("Authorization", "Basic " + secretKey)
+                .header("Content-Type", "application/json")
+                .method("POST", HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+        HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println(response.body());
+
+        // Todo: refund 테이블 저장 및 payment 업데이트
+
     }
 }

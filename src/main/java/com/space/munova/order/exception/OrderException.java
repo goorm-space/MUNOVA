@@ -13,4 +13,8 @@ public final class OrderException extends BaseException {
     public static OrderException notFoundException(String... detailMessage) {
         return new OrderException("ORDER_01", "주문정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND, detailMessage);
     }
+
+    public static OrderException amountMismatchException(String... detailMessage) {
+        return new OrderException("ORDER_02", "클라이언트와 서버 간 주문 금액이 일치하지 않습니다.",  HttpStatus.BAD_REQUEST, detailMessage);
+    }
 }

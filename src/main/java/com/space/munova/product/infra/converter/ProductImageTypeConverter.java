@@ -1,4 +1,4 @@
-package com.space.munova.product.infra;
+package com.space.munova.product.infra.converter;
 
 import com.space.munova.product.domain.enums.ProductImageType;
 import jakarta.persistence.AttributeConverter;

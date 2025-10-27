@@ -6,8 +6,8 @@ public record CreateOrderRequest(
         OrderType type,
         List<Long> cartIds,
         Long orderCouponId,
-        List<OrderItemRequest> orderItems,
-        String userRequest
+        String userRequest,
+        Long clientCalculatedAmount,
+        List<OrderItemRequest> orderItems
 ) {
-
 }

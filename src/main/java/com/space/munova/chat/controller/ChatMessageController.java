@@ -23,7 +23,7 @@ public class ChatMessageController {
 
     // 임시로 chatMessageRequestDto에 전송하는 사람 아이디가 들어 있다고 가정
     @MessageMapping("/chat/send")
-    public ChatMessageResponseDto sendMessage(@Payload ChatMessageRequestDto chatMessageRequestDto){
+    public ChatMessageResponseDto sendMessage(@Payload ChatMessageRequestDto chatMessageRequestDto) {
 
         // 메시지 전송
         ChatMessageResponseDto chatMessage = chatMessageService.createChatMessage(chatMessageRequestDto);
@@ -37,7 +37,7 @@ public class ChatMessageController {
     @GetMapping("/chat/messages/{memberId}/{chatId}")
     public List<ChatMessageViewDto> getMessages(
             @PathVariable Long memberId,
-            @PathVariable Long chatId){
+            @PathVariable Long chatId) {
         return chatMessageService.getMessagesByChatId(chatId, memberId);
     }
 

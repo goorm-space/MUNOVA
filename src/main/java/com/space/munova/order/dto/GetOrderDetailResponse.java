@@ -1,6 +1,8 @@
 package com.space.munova.order.dto;
 
 import com.space.munova.order.entity.Order;
+import com.space.munova.payment.entity.Payment;
+import com.space.munova.payment.entity.PaymentMethod;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,11 +19,11 @@ public record GetOrderDetailResponse (
         Long totalPrice,
         LocalDateTime orderDate,
         String paymentReceipt,
-        String paymentMethod,
+        PaymentMethod paymentMethod,
         List<OrderItemDto> orderItems
 
 ) {
-    public static GetOrderDetailResponse from(Order order) {
+    public static GetOrderDetailResponse from(Order order, Payment payment) {
         List<OrderItemDto> orderItems = order.getOrderItems().stream()
                 .map(OrderItemDto::from)
                 .toList();
@@ -37,8 +39,8 @@ public record GetOrderDetailResponse (
                 order.getDiscountPrice(),
                 order.getTotalPrice(),
                 order.getCreatedAt(),
-                "www.paymentReceipt",
-                "KAKAOPAY",
+                payment.getReceipt(),
+                payment.getMethod(),
                 orderItems
         );
     }

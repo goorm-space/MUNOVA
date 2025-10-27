@@ -4,30 +4,29 @@ import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.entity.Member;
 import com.space.munova.order.dto.OrderStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Table(name = "orders")
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 public class Order extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "member_id")
+    @JoinColumn(name = "user_id")
     private Member member;
 
     @Column(nullable = false, unique = true)
@@ -35,27 +34,47 @@ public class Order extends BaseEntity {
 
     private String userRequest;
 
-    @Column(nullable = false)
     private Long originPrice;
 
     private Long couponId;
 
-    @Column(nullable = false)
     private Integer discountPrice;
 
-    @Column(nullable = false)
     private Long totalPrice;
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> orderItems;
+    @Builder.Default
+    private List<OrderItem> orderItems = new ArrayList<>();
 
-    public void setPrices(Long originPrice, int discountPrice, Long totalPrice) {
+    public void addOrderItem(OrderItem orderItem) {
+        this.orderItems.add(orderItem);
+    }
+
+    public void updateFinalOrder(Long originPrice, int discountPrice, Long totalPrice, Long couponId, OrderStatus status) {
         this.originPrice = originPrice;
         this.discountPrice = discountPrice;
         this.totalPrice = totalPrice;
+        this.couponId = couponId;
+        this.status = status;
+
+        if (this.orderItems != null) {
+            for (OrderItem orderItem : this.orderItems) {
+                orderItem.updateStatus(status);
+            }
+        }
+    }
+
+    public void updateStatus(OrderStatus status) {
+        this.status = status;
+
+        if (this.orderItems != null) {
+            for (OrderItem orderItem : this.orderItems) {
+                orderItem.updateStatus(status);
+            }
+        }
     }
 
     public static String generateOrderNum() {

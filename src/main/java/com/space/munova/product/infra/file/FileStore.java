@@ -62,7 +62,7 @@ public class FileStore {
         // transferTo -> 실제 파일을 디스크에 저장
         multipartFile.transferTo(new File(getFullPath(storeFileName)));
 
-        return new UploadFile(originalFilename, storeFileName);
+        return new UploadFile(storeFileName, originalFilename);
     }
 
     // 서버에 저장할 파일명 생성 메서드

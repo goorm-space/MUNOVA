@@ -7,7 +7,9 @@ import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.application.dto.*;
 import com.space.munova.product.application.exception.ProductException;
 import com.space.munova.product.domain.*;
+import com.space.munova.product.domain.Repository.ProductClickLogRepository;
 import com.space.munova.product.domain.Repository.ProductRepository;
+import com.space.munova.product.domain.Repository.ProductSearchLogRepository;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,12 +21,15 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 
+
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ProductService {
 
+    private final ProductClickLogRepository productClickLogRepository;
     private final ProductRepository productRepository;
     private final ProductImageService productImageService;
     private final ProductDetailService productDetailService;
@@ -33,8 +38,7 @@ public class ProductService {
     private final MemberRepository memberRepository;
     private final ProductLikeService productLikeService;
     private final ProductSearchLogRepository productSearchLogRepository;
-    private final JwtHelper jwtHelper;
-    private final SearchLogService searchLogService;
+
 
 
     /// 모든 카테고리 조회 메서드
@@ -82,30 +86,6 @@ public class ProductService {
         }
     }
 
-
-    //통합된 상품 조회
-    public List<FindProductResponseDto> findProductsWithOptionalLogging(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable, boolean doLogging) {
-        List<FindProductResponseDto> productByConditions=findProducts(categoryId,keyword,optionIds,pageable);
-        if(doLogging && (categoryId!=null || (keyword!=null && !keyword.isEmpty()) || (optionIds!=null && !optionIds.isEmpty()))) {
-            searchLogService.saveSearchLog(categoryId,keyword);
-        }
-
-
-        return productByConditions.stream()
-                .map(dto -> new FindProductResponseDto(
-                        dto.productId(),
-                        productImageService.getImgPath(dto.mainImgSrc()), ///  이미지 풀 패스로 변환.
-                        dto.brandName(),
-                        dto.productName(),
-                        dto.price(),
-                        dto.likeCount(),
-                        dto.salesCount(),
-                        dto.createAt())
-                )
-                .toList();
-    }
-
-
     public ProductDetailResponseDto findProductDetails(Long productId) {
 
         ProductInfoDto productInfoDto = productRepository.findProductInfoById(productId).orElseThrow(() -> ProductException.notFoundProductException("Not found Product Information By productId"));
@@ -120,6 +100,16 @@ public class ProductService {
         productRepository.updateProductViewCount(productId);
     }
 
+    @Transactional(readOnly = false)
+    public void saveProductClickLog(Long productId) {
+        Long memberId = JwtHelper.getMemberId();
+        ProductClickLog log = ProductClickLog.builder()
+                .memberId(memberId)
+                .productId(productId)
+                .build();
+
+        productClickLogRepository.save(log);
+    }
 
     /*
     * 상품 제거 메서드 (관련 테이블 모두 논리삭제) - 상품, 상품좋아요, 상품디테일, 상품이미지, 장바구니, 상품옵션매핑
@@ -145,14 +135,29 @@ public class ProductService {
 
     }
 
+
     public List<FindProductResponseDto> findProductsWithOptionalLogging(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
-        List<FindProductResponseDto> productByConditions = findProducts(categoryId,keyword,optionIds,pageable);
-        return productByConditions;
+        List<FindProductResponseDto> productByConditions = productRepository.findProductByConditions(categoryId,optionIds, keyword, pageable);
+        return productByConditions.stream()
+                .map(dto -> new FindProductResponseDto(
+                        dto.productId(),
+                        productImageService.getImgPath(dto.mainImgSrc()), ///  이미지 풀 패스로 변환.
+                        dto.brandName(),
+                        dto.productName(),
+                        dto.price(),
+                        dto.likeCount(),
+                        dto.salesCount(),
+                        dto.createAt())
+                )
+                .toList();
     }
 
     @Transactional
     public void saveSearchLog(Long categoryId, String keyword) {
+
+
         Long memberId = JwtHelper.getMemberId();
+
         ProductSearchLog log = ProductSearchLog.builder()
                 .memberId(memberId)
                 .searchDetail(keyword != null ? keyword : "")
@@ -162,8 +167,8 @@ public class ProductService {
 
     }
 
-    private List<FindProductResponseDto> findProducts(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
-        return productRepository.findProductByConditions(categoryId,optionIds, keyword, pageable);
+    // 상품옵션 조회
+    public List<ProductDetailInfoDto> findProductOptionsByProductId(Long productId) {
+        return productDetailService.findProductDetailInfoDtoByProductId(productId);
     }
-
 }

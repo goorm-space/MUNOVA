@@ -3,9 +3,10 @@ package com.space.munova.product.domain;
 
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.product.domain.enums.OptionCategory;
-import com.space.munova.product.infra.OptionConverter;
+import com.space.munova.product.infra.converter.OptionConverter;
 import jakarta.persistence.*;
 import lombok.*;
+
 
 @Builder
 @Entity

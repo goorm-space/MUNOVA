@@ -26,6 +26,7 @@ public class OrderItemServiceImpl implements OrderItemService {
                 .orElseThrow(OrderItemException::notFoundException);
 
         Long userId = JwtHelper.getMemberId();
+
         validateCancellation(userId, orderItem);
 
         // Todo: 결제 취소 로직

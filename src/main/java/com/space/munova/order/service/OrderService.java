@@ -1,14 +1,12 @@
 package com.space.munova.order.service;
 
-import com.space.munova.order.dto.CreateOrderRequest;
-import com.space.munova.order.dto.CreateOrderResponse;
-import com.space.munova.order.dto.GetOrderDetailResponse;
-import com.space.munova.order.dto.GetOrderListResponse;
+import com.space.munova.order.dto.*;
 import com.space.munova.order.entity.Order;
+import org.springframework.web.bind.annotation.RequestBody;
 
 public interface OrderService {
 
-    Order createOrder(Long userId, CreateOrderRequest request);
+    Order createOrder(CreateOrderRequest request);
     GetOrderListResponse getOrderList(Long userId, int page);
-    GetOrderDetailResponse getOrderDetail(Long userId, Long orderId);
+    Order getOrderDetail(Long orderId);
 }

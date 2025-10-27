@@ -24,11 +24,16 @@ public class Product extends BaseEntity {
     private Long price;
 
     @ColumnDefault("0")
-    private Integer likeCount;
+    @Builder.Default
+    private Integer likeCount = 0;
 
     @ColumnDefault("0")
-    private Integer salesCount;
+    @Builder.Default
+    private Integer salesCount = 0;
 
+    @ColumnDefault("0")
+    @Builder.Default
+    private Integer viewCount = 0;
 
     /// 단방향 매핑으로 설정.
     /// foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT) 외래키 제약 조건을 걸지않음

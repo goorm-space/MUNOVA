@@ -58,10 +58,13 @@ class ProductController {
     @GetMapping("/api/product")
     @Operation(summary ="상품 조회", description = "조건에 맞는 상품 조회")
     public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> findProductLogin (@RequestParam(name = "categoryId", required = false) Long categoryId,
-                                                                                      @RequestParam(name = "keyword", required = false) String keyword,
-                                                                                      @RequestParam(name = "optionIds", required = false) List<Long> optionIds,
-                                                                                      @PageableDefault Pageable pageable){
-        List<FindProductResponseDto> respDto=productService.findProductsWithOptionalLogging(categoryId, keyword, optionIds, pageable,true);
+                                                                                       @RequestParam(name = "keyword", required = false) String keyword,
+                                                                                       @RequestParam(name = "optionIds", required = false) List<Long> optionIds,
+                                                                                       @PageableDefault Pageable pageable){
+        List<FindProductResponseDto> respDto=productService.findProductsWithOptionalLogging(categoryId, keyword, optionIds, pageable);
+        if((categoryId!=null || (keyword!=null && !keyword.isEmpty()) || (optionIds!=null && !optionIds.isEmpty()))) {
+            productService.saveSearchLog(categoryId,keyword);
+        }
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
 
@@ -72,7 +75,7 @@ class ProductController {
                                                                                  @RequestParam(name = "keyword", required = false) String keyword,
                                                                                  @RequestParam(name = "optionIds", required = false) List<Long> optionIds,
                                                                                  @PageableDefault Pageable pageable) {
-        List<FindProductResponseDto> respDto = productService.findProductsWithOptionalLogging(categoryId, keyword, optionIds, pageable,false);
+        List<FindProductResponseDto> respDto = productService.findProductsWithOptionalLogging(categoryId, keyword, optionIds, pageable);
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
 

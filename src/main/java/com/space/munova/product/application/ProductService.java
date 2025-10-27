@@ -8,6 +8,7 @@ import com.space.munova.product.application.dto.*;
 import com.space.munova.product.application.exception.ProductException;
 import com.space.munova.product.domain.*;
 import com.space.munova.product.domain.Repository.ProductRepository;
+import com.space.munova.product.domain.Repository.ProductSearchLogRepository;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,7 @@ public class ProductService {
     private final CategoryService categoryService;
     private final MemberRepository memberRepository;
     private final ProductLikeService productLikeService;
-
+    private final ProductSearchLogRepository productSearchLogRepository;
 
 
     /// 모든 카테고리 조회 메서드
@@ -140,6 +141,25 @@ public class ProductService {
 
     }
 
+    public List<FindProductResponseDto> findProductsWithOptionalLogging(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
+        List<FindProductResponseDto> productByConditions = findProducts(categoryId,keyword,optionIds,pageable);
+        return productByConditions;
+    }
 
+    @Transactional
+    public void saveSearchLog(Long categoryId, String keyword) {
+        Long memberId = JwtHelper.getMemberId();
+        ProductSearchLog log = ProductSearchLog.builder()
+                .memberId(memberId)
+                .searchDetail(keyword != null ? keyword : "")
+                .searchCategoryId(categoryId)
+                .build();
+        productSearchLogRepository.save(log);
+
+    }
+
+    private List<FindProductResponseDto> findProducts(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
+        return productRepository.findProductByConditions(categoryId,optionIds, keyword, pageable);
+    }
 
 }

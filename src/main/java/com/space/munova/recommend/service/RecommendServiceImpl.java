@@ -10,7 +10,7 @@ import com.space.munova.recommend.domain.UserActionSummary;
 import com.space.munova.recommend.domain.UserRecommendation;
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
 import com.space.munova.recommend.dto.RecommendationsProductResponseDto;
-import com.space.munova.recommend.dto.ResponseDto;
+import com.space.munova.recommend.dto.RecommendationsUserResponseDto;
 import com.space.munova.recommend.repository.ProductRecommendationRepository;
 import com.space.munova.recommend.repository.UserActionSummaryRepository;
 import com.space.munova.recommend.repository.UserRecommendationRepository;
@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -38,9 +37,25 @@ public class RecommendServiceImpl implements RecommendService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
-    public List<ResponseDto> getRecommendationsByUserId(Long userId) {
-        //회원 추천 로그 조회 로직
-        return Collections.emptyList();
+    public List<RecommendationsUserResponseDto> getRecommendationsByMemberId(Long memberId) {
+        List<UserRecommendation> recommendations;
+        if(memberId==null){
+            recommendations = userRecommendRepository.findAll();
+        }
+        else{
+            recommendations=userRecommendRepository.findByMemberId(memberId);
+        }
+        //Dto변환
+        List<RecommendationsUserResponseDto> responseList = new ArrayList<>();
+        for(UserRecommendation rec : recommendations){
+            responseList.add(RecommendationsUserResponseDto.builder()
+                    .memberId(rec.getMember().getId())
+                    .productId(rec.getProduct().getId())
+                    .score(rec.getScore())
+                    .createdAt(rec.getCreatedAt())
+                    .build());
+        }
+        return responseList;
     }
 
     @Override

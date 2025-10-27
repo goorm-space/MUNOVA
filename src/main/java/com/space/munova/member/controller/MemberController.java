@@ -3,6 +3,7 @@ package com.space.munova.member.controller;
 import com.space.munova.core.config.ResponseApi;
 import com.space.munova.member.dto.GetMemberResponse;
 import com.space.munova.member.dto.UpdateMemberRequest;
+import com.space.munova.member.dto.UpdateMemberResponse;
 import com.space.munova.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,12 +29,12 @@ public class MemberController {
      * 유저 정보 변경
      */
     @PatchMapping("/{memberId}")
-    public ResponseApi<Void> updateMember(
+    public ResponseApi<UpdateMemberResponse> updateMember(
             @PathVariable Long memberId,
             @Valid @RequestBody UpdateMemberRequest updateMemberRequest
     ) {
-        memberService.updateMember(memberId, updateMemberRequest);
-        return ResponseApi.ok();
+        UpdateMemberResponse updateMemberResponse = memberService.updateMember(memberId, updateMemberRequest);
+        return ResponseApi.ok(updateMemberResponse);
     }
 
 }

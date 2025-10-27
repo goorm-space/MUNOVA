@@ -1,9 +1,13 @@
 package com.space.munova.order.service;
 
+import com.space.munova.auth.exception.AuthException;
 import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.order.entity.OrderItem;
+import com.space.munova.order.exception.OrderItemException;
 import com.space.munova.order.repository.OrderItemRepository;
 import com.space.munova.product.domain.ProductDetail;
+import com.space.munova.product.exception.ProductDetailException;
+import com.space.munova.security.jwt.JwtHelper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,9 +23,11 @@ public class OrderItemServiceImpl implements OrderItemService {
     @Override
     public void updateStatusAndCancel(Long orderItemId) {
         OrderItem orderItem = orderItemRepository.findById(orderItemId)
-                .orElseThrow(() -> new EntityNotFoundException("OrderItem not found"));
+                .orElseThrow(OrderItemException::notFoundException);
 
-        validateCancellation(orderItem.getStatus());
+        Long userId = JwtHelper.getMemberId();
+
+        validateCancellation(userId, orderItem);
 
         // Todo: 결제 취소 로직
 
@@ -33,9 +39,16 @@ public class OrderItemServiceImpl implements OrderItemService {
     /**
      * 취소 가능 여부 유효성 검사
      */
-    private void validateCancellation(OrderStatus status) {
-        if (status != OrderStatus.PAID) {
-            throw new IllegalArgumentException("주문을 취소할 수 없습니다. 현재 상태: " + status.getDescription());
+    private void validateCancellation(Long userId, OrderItem orderItem) {
+        if (!userId.equals(orderItem.getOrder().getMember().getId())) {
+            throw AuthException.unauthorizedException(
+                    "접근 시도한 userId:", userId.toString(),
+                    "orderItemId:", orderItem.getId().toString()
+            );
+        }
+
+        if (orderItem.getStatus() != OrderStatus.PAID) {
+            throw OrderItemException.cancellationNotAllowedException("현재 상태: " + orderItem.getStatus());
         }
     }
 
@@ -45,10 +58,6 @@ public class OrderItemServiceImpl implements OrderItemService {
     private void restoreStock(OrderItem orderItem) {
         ProductDetail productDetail = orderItem.getProductDetail();
         Integer cancelQuantity = orderItem.getQuantity();
-
-        if (productDetail == null) {
-            throw new EntityNotFoundException("Product detail not found");
-        }
 
         int currentStock = productDetail.getQuantity() != null ? productDetail.getQuantity() : 0;
         int newStock = currentStock + cancelQuantity;

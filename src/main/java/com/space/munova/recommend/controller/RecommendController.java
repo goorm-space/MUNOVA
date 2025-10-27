@@ -1,8 +1,12 @@
 package com.space.munova.recommend.controller;
 
+import com.space.munova.core.config.ResponseApi;
+import com.space.munova.product.application.dto.FindProductResponseDto;
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
+import com.space.munova.recommend.dto.ResponseDto;
 import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,15 +18,13 @@ public class RecommendController {
     private final RecommendService recommendService;
 
     @PutMapping("/recommend/{userId}/{productId}")
-    public String updateMemberProductRecommend(@PathVariable Long userId, @PathVariable Long productId) {
-        recommendService.updateUserProductRecommend(userId, productId);
-        return "User recommendation updated successfully";
+    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateMemberProductRecommend(@PathVariable Long userId, @PathVariable Long productId) {
+        return recommendService.updateUserProductRecommend(userId, productId);
     }
 
     @PutMapping("/recommend/{productId}")
-    public String updateSimilarProductRecommend(@PathVariable Long productId) {
-        recommendService.updateSimilarProductRecommend(productId);
-        return "Similar product recommendation updated successfully";
+    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateSimilarProductRecommend(@PathVariable Long productId) {
+        return recommendService.updateSimilarProductRecommend(productId);
     }
 
     @GetMapping("/api/admin/recommend/user/{userId}/product/{productId}/based_on")

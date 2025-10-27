@@ -1,8 +1,6 @@
 package com.space.munova.recommend.controller;
 
-import com.space.munova.recommend.dto.RecommendationsProductResponseDto;
 import com.space.munova.recommend.dto.RecommendationsUserResponseDto;
-import com.space.munova.recommend.dto.ResponseDto;
 import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

@@ -68,8 +68,9 @@ public class CouponServiceImpl implements CouponService {
     public UseCouponResponse useCoupon(Long couponId, UseCouponRequest useCouponRequest) {
         Coupon coupon = couponRepository.findWithCouponDetailById(couponId)
                 .orElseThrow(CouponException::notFoundException);
-        Long originalPrice = useCouponRequest.originalPrice();
+
         // 쿠폰 사용
+        Long originalPrice = useCouponRequest.originalPrice();
         Long finalPrice = coupon.useCoupon(originalPrice);
 
         return UseCouponResponse.of(originalPrice, originalPrice - finalPrice, finalPrice);

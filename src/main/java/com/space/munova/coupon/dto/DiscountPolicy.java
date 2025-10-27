@@ -1,5 +1,6 @@
 package com.space.munova.coupon.dto;
 
+import com.space.munova.coupon.exception.CouponException;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -32,4 +33,19 @@ public class DiscountPolicy {
     @ColumnDefault("0")
     private Long minPaymentAmount = 0L;
 
+    // 할인가격 계산
+    public Long calculateDiscountPrice(Long originalPrice) {
+        // 검증
+        validateDiscountPolicy(originalPrice);
+        // 할인가 계산
+        return couponType.calculateDiscountAmount(originalPrice, discountAmount, maxDiscountAmount);
+    }
+
+    // 할인정책 검증
+    private void validateDiscountPolicy(Long originalPrice) {
+        // 최소금액 확인
+        if (minPaymentAmount > originalPrice) {
+            throw CouponException.invalidMinPaymentException();
+        }
+    }
 }

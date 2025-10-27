@@ -1,14 +1,20 @@
 package com.space.munova.order.service;
 
+import com.space.munova.auth.exception.AuthException;
 import com.space.munova.member.entity.Member;
+import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.order.dto.*;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
+import com.space.munova.order.exception.OrderException;
 import com.space.munova.order.repository.OrderItemRepository;
 import com.space.munova.order.repository.OrderRepository;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.Repository.ProductDetailRepository;
+import com.space.munova.product.exception.ProductDetailException;
+import com.space.munova.product.exception.ProductException;
+import com.space.munova.security.jwt.JwtHelper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -35,51 +41,61 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional
     @Override
-    public Order createOrder(Long userId, CreateOrderRequest request) {
-
+    public Order createTmpOrder(CreateOrderRequest request) {
+        Long userId = JwtHelper.getMemberId();
         Member member = memberRepository.findById(userId)
-                .orElseThrow(EntityNotFoundException::new);
+                .orElseThrow(MemberException::notFoundException);
 
-        // 1. 주문 헤더 생성 및 초기화
         Order order = Order.builder()
                 .member(member)
                 .orderNum(Order.generateOrderNum())
-                .userRequest(request.userRequest())
-                .status(OrderStatus.PAYMENT_PENDING)
+                .status(OrderStatus.CREATED)
                 .build();
 
-        // 2. 주문 상세 항목 (order Items) 처리
+        // 2. 주문 상품 재고 확인
         List<OrderItem> orderItems = createOrderItems(request.orderItems(), order);
+        orderItems.forEach(order::addOrderItem);
 
-        // Todo: 3. 쿠폰 적용 및 금액 계산
-        long originPrice = orderItems.stream()
-                .mapToLong(item -> item.getPrice() * item.getQuantity())
-                .sum();
-        int discountPrice = 0;
-        Long totalPrice = originPrice - discountPrice;
-        order.setPrices(originPrice, discountPrice, totalPrice);
-
-        // Todo: 4. 재고 감소
-
-        // 5. 주문 저장
         orderRepository.save(order);
-        orderItemRepository.saveAll(orderItems);
 
-        // Todo: 6. 장바구니 처리
         return order;
     }
-//    private final CouponRepository couponRepository;
-//    private final CartRepository cartRepository;
+
+    @Transactional
+    @Override
+    public Order confirmOrder(ConfirmOrderRequest request) {
+        Order order = orderRepository.findById(request.orderId())
+                .orElseThrow(OrderException::notFoundException);
+
+        CalculatedAmounts amounts = calculateFinalAmount(order, request.orderCouponId());
+
+        if (!amounts.finalAmount().equals(request.clientCalculatedAmount())) {
+            throw OrderException.amountMismatchException(
+                    "client: " + request.clientCalculatedAmount() + ", server: " + amounts.finalAmount()
+            );
+        }
+
+        order.updateFinalOrder(
+                amounts.productAmount(),
+                amounts.discountAmount(),
+                amounts.finalAmount(),
+                request.orderCouponId(),
+                request.userRequest(),
+                OrderStatus.PAYMENT_PENDING
+        );
+
+        return order;
+    }
 
     @Override
-    public GetOrderListResponse getOrderList(int page) {
+    public GetOrderListResponse getOrderList(Long userId, int page) {
         Pageable pageable = PageRequest.of(
                 page,
                 PAGE_SIZE,
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<Order> orderPage = orderRepository.findAll(pageable);
+        Page<Order> orderPage = orderRepository.findAllByMember_Id(userId, pageable);
 
         Page<OrderSummaryDto> dtoPage = orderPage.map(OrderSummaryDto::from);
 
@@ -87,12 +103,19 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public GetOrderDetailResponse getOrderDetail(Long orderId) {
+    public Order getOrderDetail(Long orderId) {
+        Long userId = JwtHelper.getMemberId();
 
         Order order = orderRepository.findOrderDetailsById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 orderId: " + orderId));
+                .orElseThrow(OrderException::notFoundException);
 
-        return GetOrderDetailResponse.from(order);
+        if (!userId.equals(order.getMember().getId())) {
+            throw AuthException.unauthorizedException(
+                    "접근 시도한 userId:", userId.toString(),
+                    "orderId:", orderId.toString()
+            );
+        }
+        return order;
     }
 
     private List<OrderItem> createOrderItems(List<OrderItemRequest> itemRequests, Order order) {
@@ -100,25 +123,39 @@ public class OrderServiceImpl implements OrderService {
 
         for (OrderItemRequest itemReq : itemRequests) {
             ProductDetail detail = productDetailRepository.findById(itemReq.productId())
-                    .orElseThrow(() -> new EntityNotFoundException("ProductDetail not found with Id: " + itemReq.productId()));
+                    .orElseThrow(ProductDetailException::notFoundException);
 
-            // Todo: 1. 재고 확인 로직 작성 -> 결제 단계에서 확인하는지 여부??
-//            detail.decreaseQuantity(itemReq.quantity());
-//            productDetailRepository.save(detail);
+            // 1. 재고 확인
+            if (detail.getQuantity() == 0) {
+                throw ProductDetailException.noStockException("product_detail_id: " + itemReq.productId());
+            } else if (detail.getQuantity() < itemReq.quantity()) {
+                throw ProductDetailException.stockInsufficientException("product_detail_id: " + itemReq.productId() + ", 요청: " + itemReq.quantity() + ", 재고: " + detail.getQuantity());
+            }
 
             // 2. Orderitem 엔티티 생성
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .productDetail(detail)
-                    .productName(detail.getProduct().getName())
-                    .price(detail.getProduct().getPrice())
+                    .nameSnapshot(detail.getProduct().getName())
+                    .priceSnapshot(detail.getProduct().getPrice())
                     .quantity(itemReq.quantity())
-                    .status(OrderStatus.PAYMENT_PENDING)
+                    .status(OrderStatus.CREATED)
                     .build();
 
             orderItems.add(orderItem);
         }
 
         return orderItems;
+    }
+
+    private CalculatedAmounts calculateFinalAmount(Order order, Long orderCouponId) {
+        long totalProductAmount = order.getOrderItems().stream()
+                .mapToLong(item -> item.getPriceSnapshot() * item.getQuantity())
+                .sum();
+        // Todo: 쿠폰id를 사용해서 할인액 계산하는 로직 필요
+        int discountAmount = 5000;
+        long finalAmount = totalProductAmount - discountAmount;
+
+        return new CalculatedAmounts(totalProductAmount, discountAmount, finalAmount);
     }
 }

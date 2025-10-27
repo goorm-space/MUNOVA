@@ -38,8 +38,8 @@ public class WebSecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers("/api/admin/**").hasRole(MemberRole.ADMIN.getAuthority())
-                        .requestMatchers("/api/seller/**").hasRole(MemberRole.SELLER.getAuthority())
+                        .requestMatchers("/api/admin/**").hasAuthority(MemberRole.ADMIN.getAuthority())
+                        .requestMatchers("/api/seller/**").hasAuthority(MemberRole.SELLER.getAuthority())
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )

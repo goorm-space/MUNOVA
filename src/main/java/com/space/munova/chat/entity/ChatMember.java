@@ -32,11 +32,12 @@ public class ChatMember {
     @JoinColumn(name = "product_id")
     private Product productId;
 
-    private ChatUserType type;
+    @Enumerated(EnumType.STRING)
+    private ChatUserType chatMemberType;
 
     public ChatMember(Chat chatId, Member memberId, ChatUserType type) {
         this.chatId = chatId;
         this.memberId = memberId;
-        this.type = type;
+        this.chatMemberType = type;
     }
 }

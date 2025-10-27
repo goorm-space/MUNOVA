@@ -2,7 +2,6 @@ package com.space.munova.product.application;
 
 import com.space.munova.product.application.dto.*;
 import com.space.munova.product.application.dto.cart.CartItemOptionInfoDto;
-import com.space.munova.product.application.dto.cart.ProductInfoForCartDto;
 import com.space.munova.product.application.exception.ProductException;
 import com.space.munova.product.domain.Option;
 import com.space.munova.product.domain.Product;
@@ -27,7 +26,7 @@ public class ProductDetailService {
     private final ProductDetailRepository productDetailRepository;
     private final OptionService optionService;
     private final ProductOptionMappingService productOptionMappingService;
-    private final CartService cartService;
+    //private final CartService cartService;
 
     public ProductDetail saveProductDetail(ProductDetail productDetail) {
         return productDetailRepository.save(productDetail);
@@ -94,18 +93,21 @@ public class ProductDetailService {
 
         List<ProductDetail> productDetails = productDetailRepository.findAllByProductId(productIds);
         List<Long> productDetailIds = getProductDetailIds(productDetails);
+
         /// 디테일 아이디를 가진 매핑 테이플 데이터 논리삭제
         productOptionMappingService.deleteByProductDetailIds(productDetailIds);
+
         /// 디테일 아이디를 가진 카트 테이블 데이터 논리 삭제
-        cartService.deleteByProductDetailIds(productDetailIds);
+        // cartService.deleteByProductDetailIds(productDetailIds);
+
         /// 디테일 아이디를 가진 디테일 테이블 데이터 논리 삭제
         productDetailRepository.deleteProductDetailByIds(productDetailIds);
     }
 
-    public List<ProductInfoForCartDto> findProductInfoByDetailIds(List<Long> productDetailIds) {
-
-        return productDetailRepository.findProductDetailInfosForCart(productDetailIds);
-    }
+//    public List<ProductInfoForCartDto> findProductInfoByDetailIds(List<Long> productDetailIds) {
+//
+//        return productDetailRepository.findProductDetailInfosForCart(productDetailIds);
+//    }
 
     public ProductDetail findById(Long detailId) {
         return productDetailRepository.findById(detailId).orElseThrow(ProductException::badRequestException);
@@ -181,7 +183,5 @@ public class ProductDetailService {
     }
 
 
-    public List<CartItemOptionInfoDto> findProductDetailOptionForCart(List<Long> productDetailIds) {
-        return productDetailRepository.findProductDetailOptionForCart(productDetailIds);
-    }
+
 }

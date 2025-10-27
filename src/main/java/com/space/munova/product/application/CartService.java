@@ -11,12 +11,13 @@ import com.space.munova.product.domain.Repository.CartRepository;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -27,6 +28,7 @@ public class CartService {
     private final CartRepository cartRepository;
     private final MemberRepository memberRepository;
     private final ProductDetailService productDetailService;
+    private final ProductImageService productImageService;
 
     @Transactional(readOnly = false)
     public void deleteByProductDetailIds(List<Long> productDetailIds) {
@@ -93,42 +95,56 @@ public class CartService {
         }
     }
 
-    public List<FindCartInfoResponseDto> findCartItemByMember() {
+    public List<FindCartInfoResponseDto> findCartItemByMember(Pageable pageable) {
         Long memberId = JwtHelper.getMemberId();
+        List<ProductInfoForCartDto> productInfoForCartDtos =
+                cartRepository.findCartItemInfoByMemberId(memberId, pageable);
 
-        List<FindCartInfoResponseDto> respDto = new ArrayList<>();
+        // detailId로 그룹핑
+        Map<Long, List<ProductInfoForCartDto>> groupedByDetail =
+                productInfoForCartDtos.stream()
+                        .collect(Collectors.groupingBy(
+                                ProductInfoForCartDto::detailId,
+                                LinkedHashMap::new, // 순서 보장
+                                Collectors.toList()
+                        ));
 
-        /// 장바구니 상품아래에 있는 각각의 상품 정보들 가져오는 직
-        /// 사용자의 장바구니 아이템을 조회
-        List<CartItemInfoDto> cartItemInfoByMember = cartRepository.findCartItemInfoByMemberId(memberId);
+        // 맵들을 순회하면서 기본정보와 옵션리스트를 가진 FindCartInfoResponseDto리스트를 만들어 반환.
+        return groupedByDetail.values().stream()
+                .map(this::convertToResponseDto)
+                .collect(Collectors.toList());
+    }
 
-        /// 장바구니기본정보 - 디테일아이디
-        Map<CartItemInfoDto, Long> cartItemProductDetailIdMapping = new HashMap<>();
-        List<Long> productDetailIds = new ArrayList<>();
-        for (CartItemInfoDto dto : cartItemInfoByMember) {
-            cartItemProductDetailIdMapping.put(dto, dto.productDetailId());
-            productDetailIds.add(dto.productDetailId());
-        }
+    /// 기존에 가져온 상품정보는 옵션을 포함한 정보들이다.
+    /// 따라서 상품의 기본정보(상품아이디, 디테일아이디, 이미지등등)은 CartItemBasicInfoDto로 변환한다.
+    /// 옵션은 여러가지가 올수 있다. 사이즈, 컬러 등등
+    /// 따라서 리스트로 변환하여 응답데이터로 변환한다.
+    private FindCartInfoResponseDto convertToResponseDto(List<ProductInfoForCartDto> productGroup) {
+        ProductInfoForCartDto first = productGroup.get(0);
 
-        List<ProductInfoForCartDto> productInfoByDetailIds = productDetailService.findProductInfoByDetailIds(productDetailIds);
-        productDetailService.findProductDetailOptionForCart(productDetailIds);
-        /// 디테일 아이디 - 상품기본정보
-        Map<Long, ProductInfoForCartDto> productDetailIdProductInfoMapping = new HashMap<>();
-        for (ProductInfoForCartDto dto : productInfoByDetailIds) {
-            productDetailIdProductInfoMapping.put(dto.detailId(), dto);
-        }
+        // 기본 정보 생성
+        CartItemBasicInfoDto basicInfo = new CartItemBasicInfoDto(
+                first.productId(),
+                first.cartId(),
+                first.detailId(),
+                first.productName(),
+                first.productPrice(),
+                first.productQuantity(),
+                first.cartItemQuantity(),
+                productImageService.getImgPath(first.mainImgSrc()),
+                first.brandName()
+        );
 
-        /// 디테일 아이디 - 담은 상품의정보
-        cartItemProductDetailIdMapping.entrySet().forEach(entry -> {
+        // 옵션 정보 생성
+        List<CartItemOptionInfoDto> options = productGroup.stream()
+                .filter(p -> p.optionId() != null) // null이 아닌 옵션만
+                .map(p -> new CartItemOptionInfoDto(
+                        p.optionId(),
+                        p.optionType().name(),
+                        p.optionName()
+                ))
+                .collect(Collectors.toList());
 
-            CartItemInfoDto CartItemInfoDto = entry.getKey();
-            ProductInfoForCartDto productInfoForCartDto = productDetailIdProductInfoMapping.get(entry.getValue());
-
-        });
-
-        /// 상품의 옵션정보. 상품아이디와 매핑되어야함.
-
-
-
+        return new FindCartInfoResponseDto(basicInfo, options);
     }
 }

@@ -1,6 +1,7 @@
 package com.space.munova.product.domain.Repository;
 
 import com.space.munova.member.entity.Member;
+import com.space.munova.product.application.dto.cart.CartItemBasicInfoDto;
 import com.space.munova.product.application.dto.cart.CartItemInfoDto;
 import com.space.munova.product.domain.Cart;
 import com.space.munova.product.domain.ProductDetail;
@@ -12,7 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 
-public interface CartRepository extends JpaRepository<Cart, Long> {
+public interface CartRepository extends JpaRepository<Cart, Long>, CartRepositoryCustom {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Cart c " +
             "SET c.isDeleted = true " +
@@ -43,8 +44,10 @@ public interface CartRepository extends JpaRepository<Cart, Long> {
 
     List<Cart> findByMemberId(Long memberId);
 
-    @Query("SELECT new com.space.munova.product.application.dto.cart.CartItemInfoDto(c.id, c.productDetail.id, c.quantity) FROM Cart c " +
-            "WHERE c.member.id = :memberId " +
-            "AND c.isDeleted = false")
-    List<CartItemInfoDto> findCartItemInfoByMemberId(Long memberId);
+//    @Query("SELECT new com.space.munova.product.application.dto.cart.CartItemBasicInfoDto() " +
+//            "FROM Cart c " +
+//            "JOIN " +
+//            "WHERE c.member.id = :memberId " +
+//            "AND c.isDeleted = false")
+//    List<CartItemBasicInfoDto> findCartItemInfoByMemberId(Long memberId);
 }

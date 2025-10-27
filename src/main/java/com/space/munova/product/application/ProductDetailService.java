@@ -9,6 +9,7 @@ import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.ProductOptionMapping;
 import com.space.munova.product.domain.Repository.ProductDetailRepository;
 import com.space.munova.product.domain.enums.OptionCategory;
+import com.space.munova.product.exception.ProductDetailException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -182,6 +183,33 @@ public class ProductDetailService {
         }
     }
 
+    public ProductDetail checkAvailableStock(Long productDetailId, int quantity) {
+        ProductDetail detail = productDetailRepository.findById(productDetailId)
+                .orElseThrow(ProductDetailException::notFoundException);
 
+        if (detail.getQuantity() == 0) {
+            throw ProductDetailException.noStockException("product_detail_id: " + productDetailId);
+        } else if(detail.getQuantity() < quantity) {
+            throw ProductDetailException.stockInsufficientException("product_detail_id: " + productDetailId + ", 요청: " + quantity + ", 재고: " + detail.getQuantity());
+        }
+
+        return detail;
+    }
+
+    @Transactional
+    public ProductDetail deductStock(Long productDetailId, int quantity) {
+        ProductDetail productDetail = productDetailRepository.findByIdWithPessimisticLock(productDetailId)
+                .orElseThrow(ProductDetailException::notFoundException);
+
+        if (productDetail.getQuantity() == 0) {
+            throw ProductDetailException.noStockException("product_detail_id: " + productDetailId);
+        } else if (productDetail.getQuantity() < quantity) {
+            throw ProductDetailException.stockInsufficientException("product_detail_id: " + productDetailId + ", 요청: " + quantity + ", 재고: " + productDetail.getQuantity());
+        }
+
+        productDetail.deductStock(quantity);
+
+        return productDetail;
+    }
 
 }

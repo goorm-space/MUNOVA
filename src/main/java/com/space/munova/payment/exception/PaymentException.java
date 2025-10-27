@@ -13,4 +13,8 @@ public class PaymentException extends BaseException {
     public static PaymentException amountMismatchException(String... detailMessage) {
         return new PaymentException("PAYMENT_01", "실제 결제 금액과 서버 금액이 일치하지 않습니다.", HttpStatus.BAD_REQUEST, detailMessage);
     }
+
+    public static PaymentException orderMismatchException(String... detailMessage) {
+        return new PaymentException("PAYMENT_02", "해당 주문에 대한 결제 내역이 없습니다.", HttpStatus.BAD_REQUEST, detailMessage);
+    }
 }

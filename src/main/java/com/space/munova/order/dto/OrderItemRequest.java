@@ -1,7 +1,7 @@
 package com.space.munova.order.dto;
 
 public record OrderItemRequest(
-        Long productId,
+        Long productDetailId,
         Integer quantity
 ) {
 }

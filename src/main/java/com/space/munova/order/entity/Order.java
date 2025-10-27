@@ -53,12 +53,11 @@ public class Order extends BaseEntity {
         this.orderItems.add(orderItem);
     }
 
-    public void updateFinalOrder(Long originPrice, int discountPrice, Long totalPrice, Long couponId, String userRequest, OrderStatus status) {
+    public void updateFinalOrder(Long originPrice, int discountPrice, Long totalPrice, Long couponId, OrderStatus status) {
         this.originPrice = originPrice;
         this.discountPrice = discountPrice;
         this.totalPrice = totalPrice;
         this.couponId = couponId;
-        this.userRequest = userRequest;
         this.status = status;
 
         if (this.orderItems != null) {

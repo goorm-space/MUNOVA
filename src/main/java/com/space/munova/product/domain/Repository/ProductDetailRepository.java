@@ -2,11 +2,14 @@ package com.space.munova.product.domain.Repository;
 
 import com.space.munova.product.application.dto.ProductOptionInfoDto;
 import com.space.munova.product.domain.ProductDetail;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ProductDetailRepository extends JpaRepository<ProductDetail, Long>, ProductDetailRepositoryCustom {
 
@@ -33,6 +36,8 @@ public interface ProductDetailRepository extends JpaRepository<ProductDetail, Lo
             "WHERE pd.product.id IN :productIds")
     List<ProductDetail> findAllByProductId(List<Long> productIds);
 
-
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT pd FROM ProductDetail pd WHERE pd.id = :id")
+    Optional<ProductDetail> findByIdWithPessimisticLock(Long id);
 
 }

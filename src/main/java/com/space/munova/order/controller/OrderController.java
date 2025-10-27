@@ -4,9 +4,10 @@ import com.space.munova.core.config.ResponseApi;
 import com.space.munova.order.dto.*;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.service.OrderService;
+import com.space.munova.payment.entity.Payment;
+import com.space.munova.payment.service.PaymentService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,22 +16,18 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final OrderService orderService;
+    private final PaymentService paymentService;
 
+    /**
+     * 주문 생성 후 결제에 필요한 응답 보내기
+     */
     @PostMapping
-    public ResponseApi<CreateOrderResponse> createTmpOrder(@RequestBody CreateOrderRequest request) {
-        Order order = orderService.createTmpOrder(request);
-
-        CreateOrderResponse response = CreateOrderResponse.from(order);
-
-        return ResponseApi.created(response);
-    }
-
-    @PatchMapping
-    public ResponseApi<?> confirmOrder(@RequestBody ConfirmOrderRequest request) {
-        Order order = orderService.confirmOrder(request);
+    public ResponseApi<PaymentPrepareResponse> createOrder(@RequestBody CreateOrderRequest request) {
+        Order order = orderService.createOrder(request);
 
         PaymentPrepareResponse response = PaymentPrepareResponse.from(order);
-        return ResponseApi.ok(response);
+
+        return ResponseApi.created(response);
     }
 
     @GetMapping
@@ -45,8 +42,9 @@ public class OrderController {
     @GetMapping("/{orderId}")
     public ResponseApi<?> getOrderDetail(@PathVariable("orderId") Long orderId) {
         Order order = orderService.getOrderDetail(orderId);
+        Payment payment = paymentService.getPaymentInfo(orderId);
 
-        GetOrderDetailResponse response = GetOrderDetailResponse.from(order);
+        GetOrderDetailResponse response = GetOrderDetailResponse.from(order, payment);
 
         return ResponseApi.ok(response);
     }

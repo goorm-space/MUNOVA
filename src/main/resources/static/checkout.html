@@ -30,20 +30,20 @@
         <!-- 이용약관 UI -->
         <div id="agreement"></div>
         <!-- 쿠폰 체크박스 -->
-        <div style="padding-left: 25px">
-            <div class="checkable typography--p">
-                <label for="coupon-box" class="checkable__label typography--regular"
-                ><input
-                        id="coupon-box"
-                        class="checkable__input"
-                        type="checkbox"
-                        aria-checked="true"
-                /><span class="checkable__label-text"
-                >5,000원 쿠폰 적용</span
-                ></label
-                >
-            </div>
-        </div>
+<!--        <div style="padding-left: 25px">-->
+<!--            <div class="checkable typography&#45;&#45;p">-->
+<!--                <label for="coupon-box" class="checkable__label typography&#45;&#45;regular"-->
+<!--                ><input-->
+<!--                        id="coupon-box"-->
+<!--                        class="checkable__input"-->
+<!--                        type="checkbox"-->
+<!--                        aria-checked="true"-->
+<!--                /><span class="checkable__label-text"-->
+<!--                >5,000원 쿠폰 적용</span-->
+<!--                ></label-->
+<!--                >-->
+<!--            </div>-->
+<!--        </div>-->
         <!-- 결제하기 버튼 -->
         <div class="result wrapper">
             <button class="button" id="payment-button" style="margin-top: 30px">
@@ -57,7 +57,7 @@
     const coupon = document.getElementById("coupon-box");
     const generateRandomString = () =>
         window.btoa(Math.random()).slice(0, 20);
-    const amount = 50000;
+    const amount = 324000;
     // ------  결제위젯 초기화 ------
     // TODO: clientKey는 개발자센터의 결제위젯 연동 키 > 클라이언트 키로 바꾸세요.
     // TODO: 구매자의 고유 아이디를 불러와서 customerKey로 설정하세요. 이메일・전화번호와 같이 유추가 가능한 값은 안전하지 않습니다.
@@ -94,10 +94,10 @@
     // ------ '결제하기' 버튼 누르면 결제창 띄우기 ------
     // @docs https://docs.tosspayments.com/reference/widget-sdk#requestpayment결제-정보
     button.addEventListener("click", function () {
-        // 결제를 요청하기 전에 orderId, amount를 서버에 저장하세요.
+        // Todo: 결제를 요청하기 전에 orderId, amount를 서버에 저장하세요.
         // 결제 과정에서 악의적으로 결제 금액이 바뀌는 것을 확인하는 용도입니다.
         paymentWidget.requestPayment({
-            orderId: "20250210saddvdf3",
+            orderId: "20251026B92DAB2A",
             orderName: "토스 티셔츠 외 2건",
             successUrl: window.location.origin + "/success.html",
             failUrl: window.location.origin + "/fail.html",

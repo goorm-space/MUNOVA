@@ -15,21 +15,25 @@ import com.space.munova.chat.repository.ChatMemberRepository;
 import com.space.munova.chat.repository.ChatRepository;
 import com.space.munova.member.dto.MemberRole;
 import com.space.munova.member.entity.Member;
+import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.Repository.ProductRepository;
+import com.space.munova.security.jwt.JwtHelper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChatRoomServiceImpl implements ChatRoomService {
 
-    private final MemberRepository userRepository;
+    private final MemberRepository memberRepository;
     private final ChatRepository chatRepository;
     private final ProductRepository productRepository;
     private final ChatMemberRepository chatMemberRepository;
@@ -37,137 +41,159 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     // 1:1 채팅방 생성
     @Override
     @Transactional
-    public OneToOneChatResponseDto createOneToOneChatRoom(Long memberId, Long productId) {
-        System.out.println(userRepository.findAll());
+    public OneToOneChatResponseDto createOneToOneChatRoom(Long productId) {
 
-        // 구매자 조회
-        Member buyer = userRepository.findById(memberId)
-                .orElseThrow(() -> ChatException.cannotFindMemberException("buyerId=" + memberId));
+        // 채팅방 생성자(구매자)
+        Long buyerId = JwtHelper.getMemberId();
+
+        Member buyer = memberRepository.findById(buyerId)
+                .orElseThrow(() -> MemberException.notFoundException("buyerId :" + buyerId));
 
         // 상품 조회
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> ChatException.cannotFindProductException("productId :" + productId));
 
-//        // 판매자 조회
-//        Member seller = userRepository.findById(product.)
-//                .orElseThrow(() -> ChatException.cannotFindMemberException("buyerId=" + memberId));
+        // 판매자(상품 등록자, 문의 대상) 조회 -> 꼭 필요할까?
+        Member seller = memberRepository.findById(product.getMember().getId())
+                .orElseThrow(() -> MemberException.notFoundException("memberId :" + product.getMember().getId()));
+        log.info("Creating chat room for product " + productId + " and buyer " + buyerId);
+
+
+        // 판매자와 문의자 동일인일 경우 생성 불가
+        if (seller.getId().equals(buyerId)) {
+            throw ChatException.notAllowedToCreateChatWithSelf();
+        }
 
         // 채팅방 이미 있는지 확인
-        Optional<ChatMember> existingChat = chatMemberRepository.findByMemberIdAndProductId(buyer, product);
+        Optional<ChatMember> existingChat = chatMemberRepository.findExistingChatRoom(buyerId, product.getId());
 
         // 있으면 기존 채팅방 반환
         if (existingChat.isPresent()) {
-            return OneToOneChatResponseDto.to(existingChat.get().getChatId(), buyer, buyer);
+            return OneToOneChatResponseDto.of(existingChat.get().getChatId(), buyerId, seller.getId());
         }
 
         // 1:1 채팅방 생성
         Chat chat = chatRepository.save(Chat.builder()
-                .name(generateChatRoomName(product, buyer))
+                .name(generateChatRoomName(product.getName(), JwtHelper.getMemberName()))
                 .type(ChatType.ONE_ON_ONE)
                 .status(ChatStatus.OPENED)
                 .maxParticipant(2)
                 .curParticipant(2)
                 .build());
-        // 채팅방 참가자(판매자) 등록
-        chatMemberRepository.save(new ChatMember(chat, buyer, ChatUserType.MEMBER));
-        chatMemberRepository.save(new ChatMember(chat, buyer, ChatUserType.OWNER));
 
-        return OneToOneChatResponseDto.to(chat, buyer, buyer);
+        // 채팅방 참가자(판매자) 등록
+        chatMemberRepository.save(new ChatMember(chat, seller, ChatUserType.OWNER, product));
+        chatMemberRepository.save(new ChatMember(chat, buyer, ChatUserType.MEMBER, product));
+
+        return OneToOneChatResponseDto.of(chat, buyerId, seller.getId());
     }
 
-    // 채팅방 목록 조회
+    // 1:1 채팅 목록 조회(판매자, 구매자)
     @Override
     @Transactional
-    public List<ChatItemDto> getOneToOneChatRoomsByMember(Long memberId, ChatUserType chatUserType) {
+    public List<ChatItemDto> getOneToOneChatRoomsByMember(ChatUserType chatUserType) {
         // 사용자 조회
-        Member buyer = userRepository.findById(memberId)
-                .orElseThrow(() -> ChatException.cannotFindMemberException("memberId=" + memberId));
+        Long memberId = JwtHelper.getMemberId();
 
         // 사용자 아이디로 Chat 리스트 조회
         return chatMemberRepository.findAllChats(memberId, ChatType.ONE_ON_ONE, chatUserType, ChatStatus.OPENED);
     }
 
-    // group 채팅방 생성
+    // group 채팅방 생성, 중복 이름 생성 불가
     @Override
     @Transactional
     public ChatInfoResponseDto createGroupChatRoom(GroupChatRequestDto requestDto) {
 
         // 채팅방 생성자 조회
-        Member member = userRepository.findById(requestDto.getMemberId())
-                .orElseThrow(() -> ChatException.cannotFindMemberException("sellerId=" + requestDto.getMemberId()));
+        Long memberId = JwtHelper.getMemberId();
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> MemberException.notFoundException("memberId :" + memberId));
+
+        // 채팅방 이름 중복 확인
+        if (chatRepository.existsByName(requestDto.chatName())) {
+            throw ChatException.duplicateChatNameException("chatName :" + requestDto.chatName());
+        }
 
         // Group 채팅방 생성
         Chat chat = chatRepository.save(Chat.builder()
-                .name(requestDto.getName())
+                .name(requestDto.chatName())
                 .type(ChatType.GROUP)
                 .status(ChatStatus.OPENED)
                 .curParticipant(1)
-                .maxParticipant(requestDto.getMaxParticipants())
+                .maxParticipant(requestDto.maxParticipants())
                 .build());
 
         chatMemberRepository.save(new ChatMember(chat, member, ChatUserType.OWNER));
 
-        return ChatInfoResponseDto.to(chat);
+        return ChatInfoResponseDto.of(chat);
     }
 
     // 그룹 채팅 목록 조회
     @Override
     @Transactional
-    public List<ChatItemDto> getGroupChatRooms(Long memberId) {
+    public List<ChatItemDto> getGroupChatRooms() {
+        return chatMemberRepository.findGroupChats(
+                JwtHelper.getMemberId(), ChatType.GROUP, ChatStatus.OPENED);
+    }
 
-        // 사용자 조회
-        Member buyer = userRepository.findById(memberId)
-                .orElseThrow(() -> ChatException.cannotFindMemberException("memberId=" + memberId));
-
-        return chatMemberRepository.findAllGroupChats(memberId, ChatType.GROUP, ChatStatus.OPENED);
+    @Override
+    @Transactional
+    public List<ChatItemDto> getAllGroupChatRooms() {
+        return chatRepository.findAllGroupChats();
     }
 
     // 1:1 채팅방 상태 -> 판매자(SELLER)가 CLOSED로 변경
     @Override
     @Transactional
-    public ChatInfoResponseDto setChatRoomClosed(Long memberId, Long chatId) {
-        // 해당 멤버가 실제로 존재하고 판매자인지,
-        Member seller = userRepository.findById(memberId)
-                .orElseThrow(() -> ChatException.cannotFindMemberException("buyerId=" + memberId));
+    public ChatInfoResponseDto setChatRoomClosed(Long chatId) {
 
-        if (seller.getRole() != MemberRole.SELLER) {
-            throw ChatException.unauthorizedAccessException("sellerId=" + seller.getId());
+        // 해당 멤버가 실제로 존재하고 판매자인지
+        Long sellerId = JwtHelper.getMemberId();
+        if (JwtHelper.getMemberRole() != MemberRole.SELLER) {
+            throw ChatException.unauthorizedAccessException("sellerId=" + sellerId);
         }
 
-        ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, ChatStatus.OPENED, ChatType.ONE_ON_ONE, ChatUserType.MEMBER)
-                .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId=" + chatId));
+        // OPENED 되어 있는 채팅방 확인
+        Chat chat = chatRepository.findByIdAndType(chatId, ChatType.ONE_ON_ONE)
+                .orElseThrow(() -> ChatException.cannotFindChatException("chatId=" + chatId));
 
-        chatMember.getChatId().updateStatus(ChatStatus.CLOSED);
+        // 해당 채팅방 참여 멤버인지 확인
+        if (!chatMemberRepository.existsChatMemberAndMemberIdBy(chat.getId(), sellerId)) {
+            throw ChatException.unauthorizedParticipantException("sellerId=" + sellerId);
+        }
 
-        return ChatInfoResponseDto.to(chatMember.getChatId());
+        // 이미 닫혀있는 경우 예외 던짐
+        chat.updateChatStatusClosed(ChatStatus.CLOSED);
+
+        return ChatInfoResponseDto.of(chat);
     }
 
     // 그룹 채팅방 정보 변경
     @Override
     @Transactional
-    public ChatInfoResponseDto updateGroupChatInfo(Long memberId, Long chatId, GroupChatUpdateRequestDto groupChatUpdateDto) {
+    public ChatInfoResponseDto updateGroupChatInfo(Long chatId, GroupChatUpdateRequestDto groupChatUpdateDto) {
 
         // 사용자 조회
-        Member member = userRepository.findById(memberId)
-                .orElseThrow(() -> ChatException.cannotFindMemberException("buyerId=" + memberId));
+        Long memberId = JwtHelper.getMemberId();
 
         // 채팅방 정보 및 해당 사용자가 해당 방의 생성자인지 확인
         ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, ChatStatus.OPENED, ChatType.GROUP, ChatUserType.OWNER)
                 .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId=" + chatId));
 
-        chatMember.getChatId().updateMaxParticipant(groupChatUpdateDto.getMaxParticipants());
-        chatMember.getChatId().updateName(groupChatUpdateDto.getName());
+        chatMember.getChatId().updateMaxParticipant(groupChatUpdateDto.maxParticipants());
+        chatMember.getChatId().updateName(groupChatUpdateDto.name());
 
-        return ChatInfoResponseDto.to(chatMember.getChatId());
+        return ChatInfoResponseDto.of(chatMember.getChatId());
     }
 
     // 일반 멤버의 채팅방 나가기
     @Override
     @Transactional
-    public void leaveGroupChat(Long memberId, Long chatId) {
-        Member member = userRepository.findById(memberId)
-                .orElseThrow(() -> ChatException.cannotFindMemberException("buyerId=" + memberId));
+    public void leaveGroupChat(Long chatId) {
+        // 멤버 아이디 조회
+        Long memberId = JwtHelper.getMemberId();
 
+        // 해당 채팅방이 유효한지, 해당 채팅방의 참여자인지 조회
         ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, ChatStatus.OPENED, ChatType.GROUP, ChatUserType.MEMBER)
                 .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId=" + chatId));
 
@@ -178,21 +204,23 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     // 그룹 채팅방 참여
     @Override
     @Transactional
-    public void joinGroupChat(Long memberId, Long chatId) {
-        Member member = userRepository.findById(memberId)
-                .orElseThrow(() -> ChatException.cannotFindMemberException("buyerId=" + memberId));
+    public void joinGroupChat(Long chatId) {
 
-        // OPENED 상태의 채팅방 확인
-        Chat chat = chatRepository.findOpenedChatById(chatId)
-                .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId=" + chatId));
+        // 참여자 id 확인
+        Long memberId = JwtHelper.getMemberId();
+
+        // OPENED 상태의 GROUP 채팅방 확인
+        Chat chat = chatRepository.findOpenedGroupChatById(chatId)
+                .orElseThrow(() -> ChatException.invalidChatRoomException("chatId=" + chatId));
 
         // 해당 채팅방에 이미 참여중인지 확인
-        if (chatMemberRepository.existsBy(chatId, memberId, ChatStatus.OPENED)) {
-            throw ChatException.alreadyJoinedException("chatId=" + chatId);
-        }
+        if (chatMemberRepository.existsBy(chatId, memberId, ChatStatus.OPENED)) return;
 
         // 정원 증가
         chat.incrementParticipant();
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> MemberException.notFoundException("memberId=" + memberId));
 
         chatMemberRepository.save(new ChatMember(chat, member, ChatUserType.MEMBER));
     }
@@ -200,22 +228,19 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     // OWNER가 채팅방 CLOSED로 전환
     @Override
     @Transactional
-    public void closeGroupChat(Long memberId, Long chatId) {
-        Member member = userRepository.findById(memberId)
-                .orElseThrow(() -> ChatException.cannotFindMemberException("memberId=" + memberId));
+    public void closeGroupChat(Long chatId) {
 
-        // OPENED 되어 있는 채팅방인지 확인
-        Chat chat = chatRepository.findOpenedChatById(chatId)
-                .orElseThrow(() -> ChatException.chatClosedException("chatId=" + chatId));
+        Long memberId = JwtHelper.getMemberId();
 
+        // 해당 채팅방이 OPENED 되어 있고, 이에 대한 OWENER 인 경우
         ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, ChatStatus.OPENED, ChatType.GROUP, ChatUserType.OWNER)
-                .orElseThrow(() -> ChatException.chatClosedException("chatId=" + chatId));
+                .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId=" + chatId));
 
-        chatMember.getChatId().updateStatus(ChatStatus.CLOSED);
+        chatMember.getChatId().updateChatStatusClosed(ChatStatus.CLOSED);
     }
 
 
-    private String generateChatRoomName(Product product, Member otherUser) {
-        return "[" + product.getName() + "] 문의 - " + otherUser.getUsername() + "님";
+    private String generateChatRoomName(String productName, String userName) {
+        return "[" + productName + "] 문의 - " + userName + "님";
     }
 }

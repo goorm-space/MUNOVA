@@ -1,5 +1,6 @@
 package com.space.munova.chat.repository;
 
+import com.space.munova.chat.dto.message.ChatMessageViewDto;
 import com.space.munova.chat.entity.Message;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,9 +12,11 @@ import java.util.List;
 @Repository
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
-    @Query("SELECT m FROM Message m " +
-            "JOIN FETCH m.chatId c " +
-            "JOIN FETCH m.userId u " +
-            "WHERE c.id = :chatId ORDER BY m.createdAt ASC")
-    List<Message> findAllByChatIdWithChat(@Param("chatId") Long chatId);
+    @Query("SELECT new com.space.munova.chat.dto.message.ChatMessageViewDto" +
+            "(m.content, m.type, u.username, m.createdAt) " +
+            "FROM Message m " +
+            "JOIN m.userId u " +
+            "WHERE m.chatId.id = :chatId " +
+            "ORDER BY m.createdAt ASC")
+    List<ChatMessageViewDto> findAllByChatId(@Param("chatId") Long chatId);
 }

@@ -27,7 +27,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // @MessageMapping 달린 메서드로 라우팅 -> 클라이언트가 서버로 메세지를 보낼 때 사용
         registry.setApplicationDestinationPrefixes("/mpub");
 
-        // msub 접두사로 시작하는 주제를 구독해 메시지를 받을 수 있음
+        // /msub/chat 접두사로 시작하는 주제를 구독해 메시지를 받을 수 있음
         registry.enableSimpleBroker("/msub");
     }
 

@@ -56,6 +56,13 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         // 판매자(상품 등록자, 문의 대상) 조회 -> 꼭 필요할까?
         Member seller = memberRepository.findById(product.getMember().getId())
                 .orElseThrow(() -> MemberException.notFoundException("memberId :" + product.getMember().getId()));
+        log.info("Creating chat room for product " + productId + " and buyer " + buyerId);
+
+
+        // 판매자와 문의자 동일인일 경우 생성 불가
+        if (seller.getId().equals(buyerId)) {
+            throw ChatException.notAllowedToCreateChatWithSelf();
+        }
 
         // 채팅방 이미 있는지 확인
         Optional<ChatMember> existingChat = chatMemberRepository.findExistingChatRoom(buyerId, product.getId());
@@ -75,8 +82,8 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                 .build());
 
         // 채팅방 참가자(판매자) 등록
-        chatMemberRepository.save(new ChatMember(chat, seller, ChatUserType.MEMBER, product));
-        chatMemberRepository.save(new ChatMember(chat, buyer, ChatUserType.OWNER, product));
+        chatMemberRepository.save(new ChatMember(chat, seller, ChatUserType.OWNER, product));
+        chatMemberRepository.save(new ChatMember(chat, buyer, ChatUserType.MEMBER, product));
 
         return OneToOneChatResponseDto.of(chat, buyerId, seller.getId());
     }
@@ -125,8 +132,14 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Override
     @Transactional
     public List<ChatItemDto> getGroupChatRooms() {
-        return chatMemberRepository.findAllGroupChats(
+        return chatMemberRepository.findGroupChats(
                 JwtHelper.getMemberId(), ChatType.GROUP, ChatStatus.OPENED);
+    }
+
+    @Override
+    @Transactional
+    public List<ChatItemDto> getAllGroupChatRooms() {
+        return chatRepository.findAllGroupChats();
     }
 
     // 1:1 채팅방 상태 -> 판매자(SELLER)가 CLOSED로 변경
@@ -197,7 +210,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         Long memberId = JwtHelper.getMemberId();
 
         // OPENED 상태의 GROUP 채팅방 확인
-        Chat chat = chatRepository.findOpenedChatById(chatId)
+        Chat chat = chatRepository.findOpenedGroupChatById(chatId)
                 .orElseThrow(() -> ChatException.invalidChatRoomException("chatId=" + chatId));
 
         // 해당 채팅방에 이미 참여중인지 확인

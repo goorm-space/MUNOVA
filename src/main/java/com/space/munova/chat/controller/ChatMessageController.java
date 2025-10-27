@@ -5,6 +5,7 @@ import com.space.munova.chat.dto.message.ChatMessageResponseDto;
 import com.space.munova.chat.dto.message.ChatMessageViewDto;
 import com.space.munova.chat.service.ChatMessageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 public class ChatMessageController {
@@ -27,6 +29,8 @@ public class ChatMessageController {
             @DestinationVariable Long chatId,
             @Payload ChatMessageRequestDto chatMessageRequestDto) {
 
+        log.info("Sending message to chat: {}", chatMessageRequestDto);
+        log.info("chatId: {}", chatId);
         // 메시지 전송
         ChatMessageResponseDto chatMessage = chatMessageService.createChatMessage(chatMessageRequestDto, chatId);
 
@@ -36,11 +40,10 @@ public class ChatMessageController {
     }
 
     // 채팅 메시지 조회
-    @GetMapping("/chat/messages/{memberId}/{chatId}")
+    @GetMapping("/api/chat/messages/{chatId}")
     public List<ChatMessageViewDto> getMessages(
-            @PathVariable Long memberId,
             @PathVariable Long chatId) {
-        return chatMessageService.getMessagesByChatId(chatId, memberId);
+        return chatMessageService.getMessagesByChatId(chatId);
     }
 
 }

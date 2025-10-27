@@ -50,6 +50,10 @@ public class ChatException extends BaseException {
         return new ChatException("CHAT_10", "유효하지 않은 채팅방입니다.", HttpStatus.NOT_FOUND, detailMessage);
     }
 
+    public static ChatException notAllowedToCreateChatWithSelf(String... detailMessage) {
+        return new ChatException("CHAT_11", "자신이 등록한 상품에는 문의할 수 없습니다.", HttpStatus.BAD_REQUEST, detailMessage);
+    }
+
 // ======================
 
     public static ChatException cannotFindMemberException(String... detailMessage) {

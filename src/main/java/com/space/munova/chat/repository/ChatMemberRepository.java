@@ -50,11 +50,10 @@ public interface ChatMemberRepository extends CrudRepository<ChatMember, Long> {
             "AND c.status = :chatStatus " +
             "AND c.type = :chatType " +
             "ORDER BY c.lastMessageTime DESC")
-    List<ChatItemDto> findAllGroupChats(
+    List<ChatItemDto> findGroupChats(
             @Param("memberId") Long memberId,
             @Param("chatType") ChatType chatType,
             @Param("chatStatus") ChatStatus chatStatus);
-
 
     // 참여자 여부 확인 (메시지 전송/조회용)
     @Query("SELECT CASE WHEN COUNT(cm) > 0 THEN true ELSE false END " +

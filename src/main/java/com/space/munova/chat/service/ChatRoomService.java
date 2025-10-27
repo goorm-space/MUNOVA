@@ -20,6 +20,8 @@ public interface ChatRoomService {
 
     List<ChatItemDto> getGroupChatRooms();
 
+    List<ChatItemDto> getAllGroupChatRooms();
+
     ChatInfoResponseDto setChatRoomClosed(Long chatId);
 
     ChatInfoResponseDto updateGroupChatInfo(Long chatId, GroupChatUpdateRequestDto groupChatUpdateDto);

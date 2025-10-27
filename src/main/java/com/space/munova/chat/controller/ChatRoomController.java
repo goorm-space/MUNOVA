@@ -32,13 +32,13 @@ public class ChatRoomController {
     // 구매자의 1:1 문의 채팅 목록 확인
     @GetMapping("/one-to-one")
     public ResponseApi<List<ChatItemDto>> getBuyerChatRooms() {
-        return ResponseApi.ok(chatService.getOneToOneChatRoomsByMember(ChatUserType.OWNER));
+        return ResponseApi.ok(chatService.getOneToOneChatRoomsByMember(ChatUserType.MEMBER));
     }
 
     // 판매자 1:1 문의 채팅 목록 확인
     @GetMapping("/seller/one-to-one")
     public ResponseApi<List<ChatItemDto>> getSellerChatRooms() {
-        return ResponseApi.ok(chatService.getOneToOneChatRoomsByMember(ChatUserType.MEMBER));
+        return ResponseApi.ok(chatService.getOneToOneChatRoomsByMember(ChatUserType.OWNER));
     }
 
     // 판매자 1:1 문의 채팅 비활성화
@@ -58,6 +58,12 @@ public class ChatRoomController {
     @GetMapping("/group")
     public ResponseApi<List<ChatItemDto>> getGroupChatRooms() {
         return ResponseApi.ok(chatService.getGroupChatRooms());
+    }
+
+    // 전체 그룹 채팅 목록 확인
+    @GetMapping("/group/all")
+    public ResponseApi<List<ChatItemDto>> getAllGroupChatRooms() {
+        return ResponseApi.ok(chatService.getAllGroupChatRooms());
     }
 
     // 그룹 채팅방 정보 변경 (이름, 최대 참여자 수)

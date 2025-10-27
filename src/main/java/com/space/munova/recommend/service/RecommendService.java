@@ -2,12 +2,13 @@ package com.space.munova.recommend.service;
 
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
 import com.space.munova.recommend.dto.RecommendationsProductResponseDto;
+import com.space.munova.recommend.dto.RecommendationsUserResponseDto;
 import com.space.munova.recommend.dto.ResponseDto;
 import java.util.List;
 
 public interface RecommendService {
 
-    List<ResponseDto> getRecommendationsByUserId(Long userId);
+    List<RecommendationsUserResponseDto> getRecommendationsByMemberId(Long memberId);
 
     List<RecommendationsProductResponseDto> getRecommendationsByProductId(Long productId);
 

@@ -58,4 +58,10 @@ public class PaymentServiceImpl implements PaymentService {
             paymentRepository.save(payment);
         }
     }
+
+    @Override
+    public Payment getPaymentInfo(Long orderId) {
+        return paymentRepository.findPaymentByOrderId(orderId)
+                .orElseThrow(PaymentException::orderMismatchException);
+    }
 }

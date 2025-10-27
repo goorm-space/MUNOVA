@@ -10,6 +10,7 @@ import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.exception.OrderException;
 import com.space.munova.order.repository.OrderItemRepository;
 import com.space.munova.order.repository.OrderRepository;
+import com.space.munova.product.application.ProductDetailService;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.Repository.ProductDetailRepository;
 import com.space.munova.product.exception.ProductDetailException;
@@ -34,57 +35,36 @@ public class OrderServiceImpl implements OrderService {
 
     private static final int PAGE_SIZE = 5;
 
+    private final ProductDetailService productDetailService;
+
     private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
     private final MemberRepository memberRepository;
-    private final ProductDetailRepository productDetailRepository;
 
     @Transactional
     @Override
-    public Order createTmpOrder(CreateOrderRequest request) {
+    public Order createOrder(CreateOrderRequest request) {
         Long userId = JwtHelper.getMemberId();
         Member member = memberRepository.findById(userId)
                 .orElseThrow(MemberException::notFoundException);
 
+        // 초기 주문 생성
         Order order = Order.builder()
                 .member(member)
                 .orderNum(Order.generateOrderNum())
+                .userRequest(request.userRequest())
                 .status(OrderStatus.CREATED)
                 .build();
 
-        // 2. 주문 상품 재고 확인
-        List<OrderItem> orderItems = createOrderItems(request.orderItems(), order);
+        // --- 1. 재고 감소
+        List<OrderItem> orderItems = deductStockAndCreateOrderItems(request.orderItems(), order);
         orderItems.forEach(order::addOrderItem);
 
-        orderRepository.save(order);
+        // --- 2. 쿠폰 적용
+        Order finalOrder = applyCouponAndOrder(order, request);
 
-        return order;
-    }
+        orderRepository.save(finalOrder);
 
-    @Transactional
-    @Override
-    public Order confirmOrder(ConfirmOrderRequest request) {
-        Order order = orderRepository.findById(request.orderId())
-                .orElseThrow(OrderException::notFoundException);
-
-        CalculatedAmounts amounts = calculateFinalAmount(order, request.orderCouponId());
-
-        if (!amounts.finalAmount().equals(request.clientCalculatedAmount())) {
-            throw OrderException.amountMismatchException(
-                    "client: " + request.clientCalculatedAmount() + ", server: " + amounts.finalAmount()
-            );
-        }
-
-        order.updateFinalOrder(
-                amounts.productAmount(),
-                amounts.discountAmount(),
-                amounts.finalAmount(),
-                request.orderCouponId(),
-                request.userRequest(),
-                OrderStatus.PAYMENT_PENDING
-        );
-
-        return order;
+        return finalOrder;
     }
 
     @Override
@@ -118,19 +98,11 @@ public class OrderServiceImpl implements OrderService {
         return order;
     }
 
-    private List<OrderItem> createOrderItems(List<OrderItemRequest> itemRequests, Order order) {
+    private List<OrderItem> deductStockAndCreateOrderItems(List<OrderItemRequest> itemRequests, Order order) {
         List<OrderItem> orderItems = new ArrayList<>();
 
         for (OrderItemRequest itemReq : itemRequests) {
-            ProductDetail detail = productDetailRepository.findById(itemReq.productId())
-                    .orElseThrow(ProductDetailException::notFoundException);
-
-            // 1. 재고 확인
-            if (detail.getQuantity() == 0) {
-                throw ProductDetailException.noStockException("product_detail_id: " + itemReq.productId());
-            } else if (detail.getQuantity() < itemReq.quantity()) {
-                throw ProductDetailException.stockInsufficientException("product_detail_id: " + itemReq.productId() + ", 요청: " + itemReq.quantity() + ", 재고: " + detail.getQuantity());
-            }
+            ProductDetail detail = productDetailService.deductStock(itemReq.productDetailId(), itemReq.quantity());
 
             // 2. Orderitem 엔티티 생성
             OrderItem orderItem = OrderItem.builder()
@@ -148,7 +120,7 @@ public class OrderServiceImpl implements OrderService {
         return orderItems;
     }
 
-    private CalculatedAmounts calculateFinalAmount(Order order, Long orderCouponId) {
+    private Order applyCouponAndOrder(Order order, CreateOrderRequest request) {
         long totalProductAmount = order.getOrderItems().stream()
                 .mapToLong(item -> item.getPriceSnapshot() * item.getQuantity())
                 .sum();
@@ -156,6 +128,20 @@ public class OrderServiceImpl implements OrderService {
         int discountAmount = 5000;
         long finalAmount = totalProductAmount - discountAmount;
 
-        return new CalculatedAmounts(totalProductAmount, discountAmount, finalAmount);
+        if (finalAmount != request.clientCalculatedAmount()) {
+            throw OrderException.amountMismatchException(
+                    String.format("client: %d, server: %d", request.clientCalculatedAmount(), finalAmount)
+            );
+        }
+
+        order.updateFinalOrder(
+                totalProductAmount,
+                discountAmount,
+                finalAmount,
+                request.orderCouponId(),
+                OrderStatus.PAYMENT_PENDING
+        );
+
+        return order;
     }
 }

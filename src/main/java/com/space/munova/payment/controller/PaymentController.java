@@ -23,7 +23,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/payment")
+@RequestMapping("/payment")
 public class PaymentController {
 
     @Value("${toss-payments.encoded-secret-key}")
@@ -41,8 +41,8 @@ public class PaymentController {
         String jsonBody = objectMapper.writeValueAsString(requestBody);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + "/confirm"))
-                .header("Authorization", "Basic " + secretKey)
+                .uri(URI.create(String.format("%s/confirm", BASE_URL)))
+                .header("Authorization", String.format("Basic %s", secretKey))
                 .header("Content-Type", "application/json")
                 .method("POST", HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();

@@ -2,6 +2,7 @@ package com.space.munova.product.domain;
 
 
 import com.space.munova.core.entity.BaseEntity;
+import com.space.munova.product.exception.ProductDetailException;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -44,5 +45,12 @@ public class ProductDetail extends BaseEntity {
                 .product(product)
                 .quantity(quantity)
                 .build();
+    }
+
+    public void deductStock(int quantity) {
+        if (this.quantity < quantity) {
+            throw ProductDetailException.stockInsufficientException("재고 차감 오류: 재고가 부족합니다.");
+        }
+        this.quantity -= quantity;
     }
 }

@@ -1,9 +1,17 @@
 package com.space.munova.product.application.dto.cart;
 
-public record ProductInfoForCartDto(Long detailId,
-                                    Long productId,
+import com.space.munova.product.domain.enums.OptionCategory;
+
+public record ProductInfoForCartDto(Long productId,
+                                    Long cartId,
+                                    Long detailId,
                                     String productName,
                                     Long productPrice,
+                                    int productQuantity,
+                                    int cartItemQuantity,
                                     String mainImgSrc,
-                                    String brandName) {
+                                    String brandName,
+                                    Long optionId,
+                                    OptionCategory optionType,
+                                    String optionName) {
 }

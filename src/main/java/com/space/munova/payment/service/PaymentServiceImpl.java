@@ -3,14 +3,20 @@ package com.space.munova.payment.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.space.munova.order.dto.CancelOrderItemRequest;
 import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.order.entity.Order;
+import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.repository.OrderRepository;
+import com.space.munova.payment.client.TossApiClient;
+import com.space.munova.payment.dto.CancelPaymentRequest;
 import com.space.munova.payment.dto.TossPaymentResponse;
 import com.space.munova.payment.entity.Payment;
 import com.space.munova.payment.entity.PaymentStatus;
+import com.space.munova.payment.entity.Refund;
 import com.space.munova.payment.exception.PaymentException;
 import com.space.munova.payment.repository.PaymentRepository;
+import com.space.munova.payment.repository.RefundRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final RefundRepository refundRepository;
     private final OrderRepository orderRepository;
+    private final TossApiClient tossApiClient;
 
     @Transactional
     @Override
@@ -60,8 +68,36 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public Payment getPaymentInfo(Long orderId) {
+    public Payment getPaymentByOrderId(Long orderId) {
         return paymentRepository.findPaymentByOrderId(orderId)
                 .orElseThrow(PaymentException::orderMismatchException);
     }
+
+    @Transactional
+    @Override
+    public void cancelPayment(OrderItem orderItem, Long orderId, CancelOrderItemRequest request) {
+        Payment payment = getPaymentByOrderId(orderId);
+
+        CancelPaymentRequest paymentRequest = new CancelPaymentRequest(request.cancelReason(), request.cancelAmount());
+
+        TossPaymentResponse response = tossApiClient.sendCancelRequest(payment.getTossPaymentKey(), paymentRequest);
+
+        if (response.cancels().cancelStatus().equals("DONE")) {
+            payment.updatePaymentInfo(response);
+
+            Refund refund = Refund.builder()
+                    .payment(payment)
+                    .orderItem(orderItem)
+                    .transactionKey(response.cancels().transactionKey())
+                    .cancelReason(response.cancels().cancelReason())
+                    .cancelAmount(response.cancels().cancelAmount())
+                    .cancelStatus(response.cancels().cancelStatus())
+                    .canceledAt(response.cancels().canceledAt())
+                    .build();
+
+            refundRepository.save(refund);
+        }
+
+    }
+
 }

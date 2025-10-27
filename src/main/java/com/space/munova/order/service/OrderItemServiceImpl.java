@@ -1,10 +1,14 @@
 package com.space.munova.order.service;
 
 import com.space.munova.auth.exception.AuthException;
+import com.space.munova.order.dto.CancelOrderItemRequest;
+import com.space.munova.order.dto.CancelType;
 import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.exception.OrderItemException;
 import com.space.munova.order.repository.OrderItemRepository;
+import com.space.munova.payment.service.PaymentService;
+import com.space.munova.product.application.ProductDetailService;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
@@ -13,23 +17,26 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class OrderItemServiceImpl implements OrderItemService {
 
     private final OrderItemRepository orderItemRepository;
+    private final ProductDetailService productDetailService;
+    private final PaymentService paymentService;
 
+    @Transactional
     @Override
-    public void updateStatusAndCancel(Long orderItemId) {
+    public void cancelOrderItem(Long orderItemId, CancelOrderItemRequest request) {
         OrderItem orderItem = orderItemRepository.findById(orderItemId)
                 .orElseThrow(OrderItemException::notFoundException);
 
         Long userId = JwtHelper.getMemberId();
 
-        validateCancellation(userId, orderItem);
+        validateCancellation(userId, orderItem, request.cancelType());
 
-        // Todo: 결제 취소 로직
+        paymentService.cancelPayment(orderItem, orderItem.getOrder().getId(), request);
 
-        restoreStock(orderItem);
+        restoreProductDetailStock(orderItem);
 
         orderItem.updateStatus(OrderStatus.CANCELED);
     }
@@ -37,7 +44,7 @@ public class OrderItemServiceImpl implements OrderItemService {
     /**
      * 취소 가능 여부 유효성 검사
      */
-    private void validateCancellation(Long userId, OrderItem orderItem) {
+    private void validateCancellation(Long userId, OrderItem orderItem, CancelType type) {
         if (!userId.equals(orderItem.getOrder().getMember().getId())) {
             throw AuthException.unauthorizedException(
                     "접근 시도한 userId:", userId.toString(),
@@ -45,21 +52,37 @@ public class OrderItemServiceImpl implements OrderItemService {
             );
         }
 
-        if (orderItem.getStatus() != OrderStatus.PAID) {
-            throw OrderItemException.cancellationNotAllowedException("현재 상태: " + orderItem.getStatus());
+        OrderStatus currentStatus = orderItem.getStatus();
+        switch (type) {
+            case ORDER_CANCEL:
+                if (currentStatus != OrderStatus.PAID) {
+                    throw OrderItemException.cancellationNotAllowedException(
+                            String.format("주문 취소는 'PAID' 상태에서만 가능합니다. 현재 상태: %s", currentStatus)
+                    );
+                }
+                break;
+
+            case RETURN_REFUND:
+                if (currentStatus != OrderStatus.SHIPPING && currentStatus != OrderStatus.DELIVERED) {
+                    throw OrderItemException.cancellationNotAllowedException(
+                            String.format("반품은 'SHIPPING' 또는 'DELIVERED' 상태에서만 가능합니다. 현재 상태: %s", currentStatus)
+                    );
+                }
+                break;
+
+            default:
+                throw OrderItemException.cancellationNotAllowedException("정의되지 않은 취소 유형입니다.");
         }
     }
 
     /**
      * OrderItem에 해당하는 상품 재고 복구
      */
-    private void restoreStock(OrderItem orderItem) {
-        ProductDetail productDetail = orderItem.getProductDetail();
-        Integer cancelQuantity = orderItem.getQuantity();
+    private void restoreProductDetailStock(OrderItem orderItem) {
+        Long productDetailId = orderItem.getProductDetail().getId();
+        int cancelQuantity = orderItem.getQuantity();
 
-        int currentStock = productDetail.getQuantity() != null ? productDetail.getQuantity() : 0;
-        int newStock = currentStock + cancelQuantity;
-        System.out.println(currentStock + "에서 " + newStock + "으로 재고 증가 완료");
-//        productDetail.setQuantity(currentStock + cancelQuantity);
+        productDetailService.restoreProductDetailStock(productDetailId, cancelQuantity);
+
     }
 }

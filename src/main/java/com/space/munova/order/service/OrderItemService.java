@@ -1,5 +1,7 @@
 package com.space.munova.order.service;
 
+import com.space.munova.order.dto.CancelOrderItemRequest;
+
 public interface OrderItemService {
-    void updateStatusAndCancel(Long orderItemId);
+    void cancelOrderItem(Long orderItemId, CancelOrderItemRequest request);
 }

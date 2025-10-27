@@ -23,7 +23,7 @@ public enum CouponType {
     // 퍼센트 할인 계산
     private static Long calculatePercent(Long originalPrice, Long discountAmount) {
         BigDecimal originPrice = BigDecimal.valueOf(originalPrice);
-        BigDecimal discountRate = BigDecimal.valueOf(discountAmount).divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP);
+        BigDecimal discountRate = BigDecimal.valueOf(discountAmount).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         // 할인금액 계산 (원가 * 할인율), 소수점 버림
         BigDecimal discountPrice = originPrice.multiply(discountRate).setScale(0, RoundingMode.FLOOR);
         // 최종 금액

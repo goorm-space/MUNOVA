@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
@@ -53,6 +54,17 @@ class ProductController {
         return ResponseEntity.ok().body(ResponseApi.ok(productCategories));
     }
 
+    /// 상품 로그 + 조회 (로그인 한 경우)
+    @GetMapping("/api/product")
+    @Operation(summary ="상품 조회", description = "조건에 맞는 상품 조회")
+    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> findProductLogin (@RequestParam(name = "categoryId", required = false) Long categoryId,
+                                                                                      @RequestParam(name = "keyword", required = false) String keyword,
+                                                                                      @RequestParam(name = "optionIds", required = false) List<Long> optionIds,
+                                                                                      @PageableDefault Pageable pageable){
+        List<FindProductResponseDto> respDto=productService.findProductsWithOptionalLogging(categoryId, keyword, optionIds, pageable,true);
+        return ResponseEntity.ok().body(ResponseApi.ok(respDto));
+    }
+
     /// 상품조회
     @GetMapping("/product")
     @Operation(summary = "상품 조회", description = "조건에 맞는 상품 조회")
@@ -60,7 +72,7 @@ class ProductController {
                                                                                  @RequestParam(name = "keyword", required = false) String keyword,
                                                                                  @RequestParam(name = "optionIds", required = false) List<Long> optionIds,
                                                                                  @PageableDefault Pageable pageable) {
-        List<FindProductResponseDto> respDto = productService.findProductByConditions(categoryId, keyword, optionIds, pageable);
+        List<FindProductResponseDto> respDto = productService.findProductsWithOptionalLogging(categoryId, keyword, optionIds, pageable,false);
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
 

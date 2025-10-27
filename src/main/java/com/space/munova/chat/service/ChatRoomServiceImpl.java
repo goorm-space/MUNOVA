@@ -38,6 +38,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Override
     @Transactional
     public OneToOneChatResponseDto createOneToOneChatRoom(Long memberId, Long productId) {
+        System.out.println(userRepository.findAll());
 
         // 구매자 조회
         Member buyer = userRepository.findById(memberId)
@@ -66,7 +67,6 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                 .status(ChatStatus.OPENED)
                 .maxParticipant(2)
                 .curParticipant(2)
-//                        .userId(buyer)
                 .build());
         // 채팅방 참가자(판매자) 등록
         chatMemberRepository.save(new ChatMember(chat, buyer, ChatUserType.MEMBER));

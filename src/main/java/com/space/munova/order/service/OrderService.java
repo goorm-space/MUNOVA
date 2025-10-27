@@ -9,6 +9,6 @@ import com.space.munova.order.entity.Order;
 public interface OrderService {
 
     Order createOrder(Long userId, CreateOrderRequest request);
-    GetOrderListResponse getOrderList(int page);
-    GetOrderDetailResponse getOrderDetail(Long orderId);
+    GetOrderListResponse getOrderList(Long userId, int page);
+    GetOrderDetailResponse getOrderDetail(Long userId, Long orderId);
 }

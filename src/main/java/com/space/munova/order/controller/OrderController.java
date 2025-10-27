@@ -7,6 +7,7 @@ import com.space.munova.order.dto.GetOrderDetailResponse;
 import com.space.munova.order.dto.GetOrderListResponse;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.service.OrderService;
+import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,24 +20,28 @@ public class OrderController {
 
     @PostMapping
     public ResponseApi<?> createOrder(@RequestBody CreateOrderRequest request) {
-        // Todo: userId 가져오기
-        Long userId = 1L;
+        Long userId = JwtHelper.getMemberId();
+
         Order order = orderService.createOrder(userId, request);
+
         CreateOrderResponse response = CreateOrderResponse.from(order);
         return ResponseApi.created(response);
     }
 
     @GetMapping
     public ResponseApi<?> getOrders(@RequestParam(value = "page", defaultValue = "0") int page) {
-        GetOrderListResponse response = orderService.getOrderList(page);
+        Long userId = JwtHelper.getMemberId();
+
+        GetOrderListResponse response = orderService.getOrderList(userId, page);
 
         return ResponseApi.ok(response);
     }
 
     @GetMapping("/{orderId}")
     public ResponseApi<?> getOrderDetail(@PathVariable("orderId") Long orderId) {
+        Long userId = JwtHelper.getMemberId();
 
-        GetOrderDetailResponse response = orderService.getOrderDetail(orderId);
+        GetOrderDetailResponse response = orderService.getOrderDetail(userId, orderId);
 
         return ResponseApi.ok(response);
     }

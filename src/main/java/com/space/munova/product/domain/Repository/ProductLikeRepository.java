@@ -19,7 +19,8 @@ public interface ProductLikeRepository extends JpaRepository<ProductLike, Long>,
     @Query("UPDATE ProductLike pl " +
             "SET pl.isDeleted = true " +
             "WHERE pl.product.id IN :productIds " +
-            "AND pl.member.id = :memberId")
+            "AND pl.member.id = :memberId " +
+            "AND pl.isDeleted = false")
     int deleteAllByProductIdsAndMemberId(List<Long> productIds, Long memberId);
 
 }

@@ -28,6 +28,7 @@ public class ProductLikeService {
     private final MemberRepository memberRepository;
     private final ProductImageService productImageService;
 
+    @Transactional(readOnly = false)
     public void deleteProductLikeByProductId(List<Long> productIds) {
         if (productIds == null || productIds.isEmpty()) {
             return;

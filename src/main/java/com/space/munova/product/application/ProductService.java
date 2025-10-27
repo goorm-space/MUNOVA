@@ -36,7 +36,7 @@ public class ProductService {
     private final BrandService brandService;
     private final CategoryService categoryService;
     private final MemberRepository memberRepository;
-    private final ProductLikeService productLikeService;
+    //private final ProductLikeService productLikeService;  -> 이후 카프카로 이벤트를 쏴주어야함.
     private final ProductSearchLogRepository productSearchLogRepository;
 
 
@@ -130,7 +130,7 @@ public class ProductService {
 
         productImageService.deleteImagesByProductIds(productIds);
         productDetailService.deleteProductDetailByProductId(productIds);
-        productLikeService.deleteProductLikeByProductId(productIds);
+       // productLikeService.deleteProductLikeByProductId(productIds);
         productRepository.deleteAllByProductIds(productIds);
 
     }
@@ -171,4 +171,11 @@ public class ProductService {
     public List<ProductDetailInfoDto> findProductOptionsByProductId(Long productId) {
         return productDetailService.findProductDetailInfoDtoByProductId(productId);
     }
+
+
+    public Product findByIdAndIsDeletedFalse(Long productId) {
+        return productRepository.findByIdAndIsDeletedFalse(productId).orElseThrow(()-> ProductException.badRequestException("해당 상품 정보를 찾을 수 없습니다."));
+    }
+
+
 }

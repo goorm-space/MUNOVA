@@ -4,7 +4,6 @@ import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.coupon.dto.CouponType;
 import com.space.munova.coupon.dto.DiscountPolicy;
 import com.space.munova.coupon.dto.RegisterCouponDetailRequest;
-import com.space.munova.coupon.exception.CouponException;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -41,24 +40,6 @@ public class CouponDetail extends BaseEntity {
     // 만료일자
     private LocalDateTime expiredAt;
 
-    // 할인금액 계산
-    // 최종금액(원가 - 할인가) 반환
-    public Long calculateFinalPrice(Long originalPrice) {
-        validateDiscount(originalPrice);
-        CouponType couponType = discountPolicy.getCouponType();
-        Long maxDiscountAmount = discountPolicy.getMaxDiscountAmount();
-        Long priceAfterDiscount = couponType.calculate(originalPrice, discountPolicy.getDiscountAmount());
-
-        if (maxDiscountAmount <= 0) {
-            // 최대 결제금액 제한이 없을때 할인 금액 적용
-            return priceAfterDiscount;
-        }
-
-        long calculateDiscount = originalPrice - priceAfterDiscount;
-        long actualDiscount = Math.min(calculateDiscount, maxDiscountAmount);
-        return originalPrice - actualDiscount;
-    }
-
     // RegisterCouponDetailRequest DTO -> Entity 변환
     public static CouponDetail of(RegisterCouponDetailRequest request, Long publisherId) {
         DiscountPolicy discountPolicy = DiscountPolicy.builder()
@@ -76,19 +57,6 @@ public class CouponDetail extends BaseEntity {
                 .publishedAt(LocalDateTime.now())
                 .expiredAt(request.expiredAt())
                 .build();
-    }
-
-    // 할인 가능여부
-    private void validateDiscount(Long originalPrice) {
-        // 만료일자 확인
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isAfter(expiredAt)) {
-            throw CouponException.expiredException();
-        }
-        // 최소금액 확인
-        if (discountPolicy.getMinPaymentAmount() > originalPrice) {
-            throw CouponException.invalidMinPaymentException();
-        }
     }
 
 }

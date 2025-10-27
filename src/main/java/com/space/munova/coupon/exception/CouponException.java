@@ -25,4 +25,12 @@ public class CouponException extends BaseException {
     public static CouponException notFoundException(String... detailMessage) {
         return new CouponException("COUPON_04", "만료된 쿠폰이거나 등록되지 않은 쿠폰입니다.", HttpStatus.NOT_FOUND, detailMessage);
     }
+
+    public static CouponException duplicateIssueException(String... detailMessage) {
+        return new CouponException("COUPON_05", "이미 발급된 쿠폰입니다.", HttpStatus.BAD_REQUEST, detailMessage);
+    }
+
+    public static CouponException alreadyUsedException(String... detailMessage) {
+        return new CouponException("COUPON_06", "이미 사용한 쿠폰입니다.", HttpStatus.BAD_REQUEST, detailMessage);
+    }
 }

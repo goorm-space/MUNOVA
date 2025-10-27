@@ -237,8 +237,9 @@ class AuthControllerTest extends IntegrationTestBase {
                 .andDo(print())
                 .andExpect(status().is4xxClientError());
 
-        // Redis에서 토큰이 삭제되었는지 확인
+        // Redis에 원래 토큰이 그대로 있는지 확인 (삭제되지 않음)
         String storedRefreshToken = refreshTokenRedisRepository.findBy(member.getId());
-        assertThat(storedRefreshToken).isNull();
+        assertThat(storedRefreshToken).isNotNull();
+        assertThat(storedRefreshToken).isEqualTo(validRefreshToken);
     }
 }

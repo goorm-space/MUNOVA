@@ -33,10 +33,13 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         List<FindProductResponseDto> findProductByConditions = queryFactory
                 .select(Projections.constructor(FindProductResponseDto.class,
                         product.id.as("productId"),
-                        productImage.originName.as("mainImgSrc"),
+                        productImage.savedName.as("mainImgSrc"),
                         brand.brandName.as("brandName"),
                         product.name.as("productName"),
-                        product.price.as("price")
+                        product.price.as("price"),
+                        product.likeCount.as("likeCount"),
+                        product.salesCount.as("salesCount"),
+                        product.createdAt.as("createAt")
                         ))
                 .from(product)
                 .leftJoin(productImage)
@@ -54,9 +57,11 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 .on(option.id.eq(productOptionMapping.option.id))
                 .where(andCategory(categoryId),
                         andOption(optionIds),
-                        likeProductName(keyword)
+                        likeProductName(keyword),
+                        product.isDeleted.eq(false)
                         )
                 .distinct()
+                .orderBy(product.createdAt.desc())
                 .limit(pageable.getPageSize())
                 .offset(pageable.getOffset())
                 .fetch();

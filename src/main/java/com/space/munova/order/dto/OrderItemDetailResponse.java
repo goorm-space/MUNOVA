@@ -13,9 +13,9 @@ public record OrderItemDetailResponse(
     public static OrderItemDetailResponse from(OrderItem orderItem) {
         return new OrderItemDetailResponse(
                 orderItem.getId(),
-                orderItem.getProductName(),
+                orderItem.getNameSnapshot(),
                 orderItem.getQuantity(),
-                orderItem.getPrice() * orderItem.getQuantity(),
+                orderItem.getPriceSnapshot() * orderItem.getQuantity(),
                 orderItem.getStatus()
         );
     }

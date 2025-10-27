@@ -1,5 +1,6 @@
 package com.space.munova.product.application;
 
+import com.space.munova.product.application.exception.ProductException;
 import com.space.munova.product.domain.Brand;
 import com.space.munova.product.domain.Repository.BrandRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,6 @@ public class BrandService {
 
     // 브랜드 조회 메서드
     public Brand findById(Long id) {
-        return brandRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Brand id " + id + " not found"));
+        return brandRepository.findById(id).orElseThrow(ProductException::notFoundBrandException);
     }
 }

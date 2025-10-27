@@ -17,4 +17,8 @@ public final class AuthException extends BaseException {
     public static AuthException invalidTokenException(String... detailMessage) {
         return new AuthException("AUTH_02", "토큰이 유효하지 않습니다. 다시 로그인해주세요.", HttpStatus.UNAUTHORIZED, detailMessage);
     }
+
+    public static AuthException unauthorizedException(String... detailMessage) {
+        return new AuthException("AUTH_03", "접근 권한이 없습니다.", HttpStatus.FORBIDDEN, detailMessage);
+    }
 }

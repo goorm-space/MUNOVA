@@ -6,9 +6,9 @@ import com.space.munova.product.application.dto.like.ProductLikeRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,6 +22,14 @@ public class LikeController {
 
         productLikeService.addLike(reqDto.productId());
         return  ResponseEntity.ok().body(ResponseApi.ok());
+    }
+
+
+    @DeleteMapping("/api/like")
+    public ResponseEntity<ResponseApi<Void>> deleteProductLike(@RequestParam List<Long> productId) {
+
+        productLikeService.deleteProductLikeByProductId(productId);
+        return ResponseEntity.ok().body(ResponseApi.ok());
     }
 
 }

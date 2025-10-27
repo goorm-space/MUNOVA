@@ -36,4 +36,12 @@ public class ProductLike extends BaseEntity {
                 .member(member)
                 .build();
     }
+
+    public void deleteLike(Long reqMemberId) {
+        if(!reqMemberId.equals(this.member.getId())) {
+            throw new IllegalArgumentException("유효하지 않은 요청입니다.");
+        }
+
+        this.isDeleted = true;
+    }
 }

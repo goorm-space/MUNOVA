@@ -33,4 +33,11 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
     void deleteAllByProductIds(List<Long> productIds);
 
     Optional<Product> findByIdAndIsDeletedFalse(Long productId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Product p " +
+            "SET p.likeCount = p.likeCount - 1 " +
+            "WHERE p.id IN :productIds " +
+            "AND p.likeCount > 0")
+    void minusLikeCountInProductIds(List<Long> productIds);
 }

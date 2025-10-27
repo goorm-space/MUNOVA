@@ -177,5 +177,8 @@ public class ProductService {
         return productRepository.findByIdAndIsDeletedFalse(productId).orElseThrow(()-> ProductException.badRequestException("해당 상품 정보를 찾을 수 없습니다."));
     }
 
-
+    @Transactional(readOnly = false)
+    public void minusLikeCountInProductIds(List<Long> productIds) {
+        productRepository.minusLikeCountInProductIds(productIds);
+    }
 }

@@ -1,7 +1,9 @@
 package com.space.munova.recommend.service;
 
+import com.space.munova.core.config.ResponseApi;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.repository.MemberRepository;
+import com.space.munova.product.application.dto.FindProductResponseDto;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.Repository.ProductRepository;
 import com.space.munova.product.domain.enums.ProductCategory;
@@ -11,18 +13,19 @@ import com.space.munova.recommend.domain.UserRecommendation;
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
 import com.space.munova.recommend.dto.RecommendationsProductResponseDto;
 import com.space.munova.recommend.dto.RecommendationsUserResponseDto;
+import com.space.munova.recommend.dto.ResponseDto;
 import com.space.munova.recommend.repository.ProductRecommendationRepository;
 import com.space.munova.recommend.repository.UserActionSummaryRepository;
 import com.space.munova.recommend.repository.UserRecommendationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -79,37 +82,51 @@ public class RecommendServiceImpl implements RecommendService {
         return responseList;
     }
 
+    //비슷한 상품 4개와 추천 4개로 총 16개 추천
     @Override
     @Transactional
-    public void updateUserProductRecommend(Long userId, Long productId) {
-        // 1. 사용자 조회
-        Member user = memberRepository.findById(userId)
-                .orElseThrow();
-
-        // 2. 클릭/좋아요/장바구니 기준 상품 조회
-        Product clickedProduct = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
-
-        // 3. 같은 카테고리에서 4개 추천 상품 조회
-        List<Product> recommendedProducts = productRepository
-                .findTop4ByCategory_IdAndIdNotOrderByIdAsc(clickedProduct.getCategory().getId(), clickedProduct.getId());
-        double recommendedScore=getRecommendationScore(userId,productId);
-        // 4. 추천 기록 저장
-        for (Product rec : recommendedProducts) {
+    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateUserProductRecommend(Long userId, Long productId) {
+        List<UserActionSummary> summaries= summaryRepository.findByMemberId(userId);
+        if (summaries.isEmpty()) {
+            return ResponseEntity.ok(ResponseApi.ok(Collections.emptyList()));
+        }
+        // 점수 계산
+        Map<Long, Double> productScores = new HashMap<>();
+        for(UserActionSummary summary : summaries){
+            double score=getRecommendationScore(userId,summary.getProductId());
+            productScores.put(summary.getProductId(),score);
+        }
+        // 점수 높은 상품 정렬
+        List<Long> topProductIds=productScores.entrySet().stream()
+                .sorted(Map.Entry.<Long,Double>comparingByValue().reversed())
+                .limit(4)
+                .map(Map.Entry::getKey)
+                .toList();
+        // 유사 상품 조회
+        List<Product> Recommendations=new ArrayList<>();
+        for(Long topId : topProductIds){
+            Recommendations.addAll(
+                    productRepository.findTop4ByCategory_IdAndIdNotOrderByIdAsc(
+                            productRepository.findById(topId).get().getCategory().getId(),
+                            topId
+                    )
+            );
+        }
+        List<FindProductResponseDto> dtoList = toFindProductResponseDtoList(Recommendations);
+        for (Product rec : Recommendations) {
             UserRecommendation ur = UserRecommendation.builder()
-                    .member(user)
+                    .member(memberRepository.getReferenceById(userId))
                     .product(rec)
-                    .score(recommendedScore)
+                    .score(getRecommendationScore(userId, rec.getId()))
                     .build();
             userRecommendRepository.save(ur);
         }
-
-        System.out.println("User recommendations updated for user " + userId + " based on product " + productId);
+        return ResponseEntity.ok(ResponseApi.ok(dtoList));
     }
 
     @Override
     @Transactional
-    public void updateSimilarProductRecommend(Long productId) {
+    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateSimilarProductRecommend(Long productId) {
         // 1. 상품 조회
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
@@ -118,7 +135,7 @@ public class RecommendServiceImpl implements RecommendService {
 
         if (product.getCategory() == null) {
             System.out.println("Product id=" + productId + " has no category. Cannot generate recommendations.");
-            return; // 추천 로직 종료
+            return null; // 추천 로직 종료
         }
 
         // 2. 같은 카테고리에서 4개 유사 상품 조회 (본 상품 제외)
@@ -128,7 +145,7 @@ public class RecommendServiceImpl implements RecommendService {
 
         if (Recommendations == null || Recommendations.isEmpty()) {
             System.out.println("추천할 상품이 없습니다.");
-            return;
+            return null;
         }
         // 3. 추천 기록 저장
         for (Product rec : Recommendations) {
@@ -140,8 +157,23 @@ public class RecommendServiceImpl implements RecommendService {
 
             System.out.println(product.getName() + " -> " + rec.getName());
         }
+        List<FindProductResponseDto> dtoList = toFindProductResponseDtoList(Recommendations);
+        return ResponseEntity.ok(ResponseApi.ok(dtoList));
+    }
 
-        System.out.println("Similar products updated for productId = " + productId);
+    private List<FindProductResponseDto> toFindProductResponseDtoList(List<Product> products) {
+        return products.stream()
+                .map(p -> new FindProductResponseDto(
+                        p.getId(),
+                        null, // mainImgSrc 없으면 null
+                        p.getBrand() != null ? p.getBrand().getBrandName() : null,
+                        p.getName(),
+                        p.getPrice(),
+                        p.getLikeCount(),
+                        p.getSalesCount(),
+                        p.getCreatedAt()
+                ))
+                .toList();
     }
 
     @Override

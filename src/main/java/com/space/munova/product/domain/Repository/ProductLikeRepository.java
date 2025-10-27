@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
-public interface ProductLikeRepository extends JpaRepository<ProductLike, Long> {
+public interface ProductLikeRepository extends JpaRepository<ProductLike, Long>, ProductLikeRepositoryCustom {
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE ProductLike pl " +

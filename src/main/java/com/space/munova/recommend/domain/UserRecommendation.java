@@ -30,7 +30,7 @@ public class UserRecommendation {
     private Product product;
 
     @Column(nullable = false)
-    private int score;
+    private double score;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

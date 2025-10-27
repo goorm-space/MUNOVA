@@ -3,7 +3,7 @@ package com.space.munova.product.domain;
 
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.product.domain.enums.ProductCategory;
-import com.space.munova.product.infra.ProductCategoryConverter;
+import com.space.munova.product.infra.converter.ProductCategoryConverter;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

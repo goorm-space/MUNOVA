@@ -22,11 +22,6 @@ public interface ProductDetailRepository extends JpaRepository<ProductDetail, Lo
             "AND pd.isDeleted = false ")
     List<ProductOptionInfoDto> findProductDetailAndOptionsByProductId(Long productId);
 
-//    @Query("SELECT pd.id " +
-//            "FROM ProductDetail pd " +
-//            "WHERE pd.product.id = :productId")
-//    List<ProductDetail> findByProductId(Long productId);
-
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE ProductDetail pd " +
             "SET pd.isDeleted = true " +
@@ -37,4 +32,7 @@ public interface ProductDetailRepository extends JpaRepository<ProductDetail, Lo
             "FROM ProductDetail pd " +
             "WHERE pd.product.id IN :productIds")
     List<ProductDetail> findAllByProductId(List<Long> productIds);
+
+
+
 }

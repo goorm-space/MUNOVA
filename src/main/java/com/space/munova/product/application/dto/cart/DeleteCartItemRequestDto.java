@@ -1,4 +1,4 @@
-package com.space.munova.product.application.dto;
+package com.space.munova.product.application.dto.cart;
 
 import jakarta.validation.constraints.Size;
 

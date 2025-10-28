@@ -53,6 +53,12 @@ public class CouponServiceImpl implements CouponService {
             throw CouponException.duplicateIssueException();
         }
 
+        CouponDetail couponDetail = couponDetailRepository.findById(couponDetailId)
+                .orElseThrow(CouponException::notFoundException);
+
+        // 발행일자 이전에 발급 요청시 예외
+        couponDetail.validatePublished();
+
         // 쿠폰 재고 차감
         Long couponRemain = couponRedisRepository.decreaseQuantity(couponDetailId);
         if (couponRemain == null) {
@@ -63,9 +69,6 @@ public class CouponServiceImpl implements CouponService {
             couponRedisRepository.delete(couponDetailId);
             throw CouponException.soldOutException();
         }
-
-        CouponDetail couponDetail = couponDetailRepository.findById(couponDetailId)
-                .orElseThrow(CouponException::notFoundException);
 
         // 쿠폰 발급
         Coupon coupon = Coupon.issuedCoupon(memberId, couponDetail);

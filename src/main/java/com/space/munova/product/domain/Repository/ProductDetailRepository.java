@@ -40,4 +40,5 @@ public interface ProductDetailRepository extends JpaRepository<ProductDetail, Lo
     @Query("SELECT pd FROM ProductDetail pd WHERE pd.id = :id")
     Optional<ProductDetail> findByIdWithPessimisticLock(Long id);
 
+    Optional<Long> findProductIdById(Long id);
 }

@@ -10,6 +10,7 @@ import com.space.munova.product.domain.*;
 import com.space.munova.product.domain.Repository.ProductClickLogRepository;
 import com.space.munova.product.domain.Repository.ProductRepository;
 import com.space.munova.product.domain.Repository.ProductSearchLogRepository;
+import com.space.munova.product.domain.enums.ProductCategory;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +44,7 @@ public class ProductService {
 
     /// 모든 카테고리 조회 메서드
     public List<ProductCategoryResponseDto> findProductCategories() {
-        return categoryService.findAllProductCategories();
+        return ProductCategory.findCategoryInfoList();
     }
 
     /// 상품 등록 메서드
@@ -178,8 +179,12 @@ public class ProductService {
     }
 
     @Transactional(readOnly = false)
-    public void minusLikeCountInProductIds(List<Long> productIds) {
-        productRepository.minusLikeCountInProductIds(productIds);
+    public int minusLikeCountInProductIds(Long productId) {
+        int rowCount = productRepository.minusLikeCountInProductIds(productId);
+        if(rowCount == 0) {
+            throw ProductException.notFoundProductException("취소한 상품을 찾을 수 없습니다.");
+        }
+        return rowCount;
     }
 
 
@@ -200,4 +205,6 @@ public class ProductService {
                 ))
                 .toList();
     }
+
+
 }

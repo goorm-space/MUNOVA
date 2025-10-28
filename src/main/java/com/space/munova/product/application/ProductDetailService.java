@@ -211,4 +211,10 @@ public class ProductDetailService {
         return productDetail;
     }
 
+
+    public Long findProductIdByDetailId(Long detailId) {
+        return productDetailRepository
+                .findProductIdById(detailId)
+                .orElseThrow(ProductDetailException::notFoundException);
+    }
 }

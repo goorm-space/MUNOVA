@@ -42,7 +42,7 @@ public class OrderController {
     @GetMapping("/{orderId}")
     public ResponseApi<?> getOrderDetail(@PathVariable("orderId") Long orderId) {
         Order order = orderService.getOrderDetail(orderId);
-        Payment payment = paymentService.getPaymentInfo(orderId);
+        Payment payment = paymentService.getPaymentByOrderId(orderId);
 
         GetOrderDetailResponse response = GetOrderDetailResponse.from(order, payment);
 

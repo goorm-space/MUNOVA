@@ -61,11 +61,12 @@ public class ChatRoomController {
     @GetMapping("/group/search")
     public ResponseApi<List<GroupChatInfoResponseDto>> searchGroupChatRooms(
             @RequestParam(required = false, name = "keyword") String keyword,
-            @RequestParam(required = false, name = "tagIds") List<Long> tagIds
+            @RequestParam(required = false, name = "tagIds") List<Long> tagIds,
+            @RequestParam(defaultValue = "false", name = "isMine") Boolean isMine
     ) {
         log.info("keyword: {}, tagIds: {}", keyword, tagIds);
 
-        return ResponseApi.ok(chatService.searchGroupChatRooms(keyword, tagIds));
+        return ResponseApi.ok(chatService.searchGroupChatRooms(keyword, tagIds, isMine));
     }
 
     // 참여 중인 그룹 채팅 목록 확인

@@ -10,14 +10,15 @@ import java.util.List;
 public record GroupChatInfoResponseDto(
         Long chatId,
         String name,
-        int maxParticipant,
+        Integer maxParticipant,
+        Integer currentParticipant,
         ChatStatus status,
         LocalDateTime createdAt,
         List<ProductCategory> productCategoryList
 ) {
     public static GroupChatInfoResponseDto of(Chat chat, List<ProductCategory> productCategory) {
         return new GroupChatInfoResponseDto(
-                chat.getId(), chat.getName(), chat.getMaxParticipant(), chat.getStatus(), chat.getCreatedAt(), productCategory
+                chat.getId(), chat.getName(), chat.getMaxParticipant(), chat.getCurParticipant(), chat.getStatus(), chat.getCreatedAt(), productCategory
         );
     }
 }

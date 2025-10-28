@@ -86,7 +86,6 @@ public class OrderServiceImpl implements OrderService {
                     .orderStatus(item.getStatus())
                     .build();
             orderProductLogRepository.save(log);
-            System.out.println(memberId+"의 "+productId+"상품 총 "+quantity+"개 주문");
         }
     }
 

@@ -69,6 +69,46 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         return findProductByConditions;
     }
 
+    @Override
+    public List<FindProductResponseDto> findProductBySeller(Pageable pageable, Long sellerId) {
+        return queryFactory
+                .select(Projections.constructor(FindProductResponseDto.class,
+                        product.id.as("productId"),
+                        productImage.savedName.as("mainImgSrc"),
+                        brand.brandName.as("brandName"),
+                        product.name.as("productName"),
+                        product.price.as("price"),
+                        product.likeCount.as("likeCount"),
+                        product.salesCount.as("salesCount"),
+                        product.createdAt.as("createAt")
+                ))
+                .from(product)
+                .leftJoin(productImage)
+                .on(product.id.eq(productImage.product.id)
+                        .and(productImage.imageType.eq(ProductImageType.MAIN)))
+                .leftJoin(category)
+                .on(category.id.eq(product.category.id))
+                .leftJoin(brand)
+                .on(brand.id.eq(product.brand.id))
+                .leftJoin(productDetail)
+                .on(product.id.eq(productDetail.product.id))
+                .leftJoin(productOptionMapping)
+                .on(productDetail.id.eq(productOptionMapping.productDetail.id))
+                .leftJoin(option)
+                .on(option.id.eq(productOptionMapping.option.id))
+                .where(product.member.id.eq(sellerId),
+                        product.isDeleted.eq(false)
+                )
+                .distinct()
+                .orderBy(product.createdAt.desc())
+                .limit(pageable.getPageSize())
+                .offset(pageable.getOffset())
+                .fetch();
+
+    }
+
+
+
 
     private BooleanExpression andCategory(Long categoryId) {
 

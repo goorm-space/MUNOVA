@@ -181,4 +181,23 @@ public class ProductService {
     public void minusLikeCountInProductIds(List<Long> productIds) {
         productRepository.minusLikeCountInProductIds(productIds);
     }
+
+
+    public List<FindProductResponseDto> findProductBySeller(Pageable pageable) {
+        Long memberId = JwtHelper.getMemberId();
+
+        return productRepository.findProductBySeller(pageable, memberId)
+                .stream()
+                .map(dto -> new FindProductResponseDto(
+                        dto.productId(),
+                        productImageService.getImgPath(dto.mainImgSrc()),
+                        dto.brandName(),
+                        dto.productName(),
+                        dto.price(),
+                        dto.likeCount(),
+                        dto.salesCount(),
+                        dto.createAt()
+                ))
+                .toList();
+    }
 }

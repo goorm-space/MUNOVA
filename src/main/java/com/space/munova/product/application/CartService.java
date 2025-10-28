@@ -171,4 +171,11 @@ public class CartService {
            throw CartException.badRequestCartException(e.getMessage());
         }
     }
+
+    @Transactional
+    public void deleteByProductDetailIdsAndMemberId(List<Long> productDetailIds) {
+        Long memberId = JwtHelper.getMemberId();
+
+        cartRepository.deleteByProductDetailIdsAndMemberId(productDetailIds,memberId);
+    }
 }

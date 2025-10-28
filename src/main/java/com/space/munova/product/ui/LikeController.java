@@ -27,7 +27,6 @@ public class LikeController {
     public ResponseEntity<ResponseApi<Void>> productLike(@RequestBody ProductLikeRequestDto reqDto) {
 
         productLikeService.addLike(reqDto.productId());
-        recommendService.updateUserAction(reqDto.productId(), null, true, null, null);
         return  ResponseEntity.ok().body(ResponseApi.ok());
     }
 
@@ -36,7 +35,6 @@ public class LikeController {
     public ResponseEntity<ResponseApi<Void>> deleteProductLike(@PathVariable(name = "productId") @NotNull Long productId) {
 
         productLikeService.deleteProductLikeByProductId(productId);
-        recommendService.updateUserAction(123L, null, false, null, null);
 
         return ResponseEntity.ok().body(ResponseApi.ok());
     }

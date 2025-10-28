@@ -9,7 +9,6 @@ import com.space.munova.order.exception.OrderItemException;
 import com.space.munova.order.repository.OrderItemRepository;
 import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.ProductDetailService;
-import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,11 +33,16 @@ public class OrderItemServiceImpl implements OrderItemService {
 
         validateCancellation(userId, orderItem, request.cancelType());
 
-        paymentService.cancelPayment(orderItem, orderItem.getOrder().getId(), request);
+        paymentService.cancelPaymentAndSaveRefund(orderItem, orderItem.getOrder().getId(), request);
 
         restoreProductDetailStock(orderItem);
 
-        orderItem.updateStatus(OrderStatus.CANCELED);
+        if (request.cancelType().equals(CancelType.ORDER_CANCEL)) {
+            orderItem.updateStatus(OrderStatus.CANCELED);
+        } else if (request.cancelType().equals(CancelType.RETURN_REFUND)) {
+            orderItem.updateStatus(OrderStatus.REFUNDED);
+        }
+
     }
 
     /**

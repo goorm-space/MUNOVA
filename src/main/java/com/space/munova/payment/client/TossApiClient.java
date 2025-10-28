@@ -1,5 +1,6 @@
 package com.space.munova.payment.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.space.munova.payment.dto.CancelPaymentRequest;
@@ -25,7 +26,7 @@ public class TossApiClient {
 
     private static final String BASE_URL = "https://api.tosspayments.com/v1/payments";
 
-    public TossPaymentResponse sendConfirmRequest(ConfirmPaymentRequest requestBody) {
+    public String sendConfirmRequest(ConfirmPaymentRequest requestBody) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             String jsonBody = objectMapper.writeValueAsString(requestBody);
@@ -41,7 +42,7 @@ public class TossApiClient {
 
             if (response.statusCode() == 200) {
                 System.out.println(response.body());
-                return objectMapper.registerModule(new JavaTimeModule()).readValue(response.body(), TossPaymentResponse.class);
+                return response.body();
             } else {
                 throw PaymentException.tossApiCallFailedException();
             }
@@ -53,7 +54,7 @@ public class TossApiClient {
         }
     }
 
-    public TossPaymentResponse sendCancelRequest(String paymentKey, CancelPaymentRequest requestBody) {
+    public String sendCancelRequest(String paymentKey, CancelPaymentRequest requestBody) {
         try {
             String fullUrl = String.format("%s/%s/cancel", BASE_URL, paymentKey);
 
@@ -71,7 +72,7 @@ public class TossApiClient {
 
             if (response.statusCode() == 200) {
                 System.out.println(response.body());
-                return objectMapper.registerModule(new JavaTimeModule()).readValue(response.body(), TossPaymentResponse.class);
+                return response.body();
             } else {
                 throw PaymentException.tossApiCallFailedException();
             }

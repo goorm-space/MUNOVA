@@ -9,7 +9,9 @@ import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.repository.OrderRepository;
 import com.space.munova.payment.client.TossApiClient;
+import com.space.munova.payment.dto.CancelDto;
 import com.space.munova.payment.dto.CancelPaymentRequest;
+import com.space.munova.payment.dto.ConfirmPaymentRequest;
 import com.space.munova.payment.dto.TossPaymentResponse;
 import com.space.munova.payment.entity.Payment;
 import com.space.munova.payment.entity.PaymentStatus;
@@ -33,38 +35,43 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Transactional
     @Override
-    public void savePaymentInfo(String responseBody) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
+    public void confirmPaymentAndSavePayment(ConfirmPaymentRequest request) {
+        String tossResponse = tossApiClient.sendConfirmRequest(request);
 
-        TossPaymentResponse paymentResponse = objectMapper.readValue(responseBody, TossPaymentResponse.class);
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            TossPaymentResponse response = objectMapper.registerModule(new JavaTimeModule()).readValue(tossResponse, TossPaymentResponse.class);
 
-        if (paymentResponse.status().equals(PaymentStatus.DONE)) {
-            Order order = orderRepository.findByOrderNum(paymentResponse.orderId());
+            if (response.status().equals(PaymentStatus.DONE)) {
+                Order order = orderRepository.findByOrderNum(response.orderId());
 
-            if (!paymentResponse.totalAmount().equals(order.getTotalPrice())) {
-                throw PaymentException.amountMismatchException(
-                        "payments: " + paymentResponse.totalAmount() + "server: " +  order.getTotalPrice()
-                );
+                if (!response.totalAmount().equals(order.getTotalPrice())) {
+                    throw PaymentException.amountMismatchException(
+                            String.format("payments: %d, server: %d", response.totalAmount(), order.getTotalPrice())
+                    );
+                }
+
+                order.updateStatus(OrderStatus.PAID);
+
+                Payment payment = Payment.builder()
+                        .order(order)
+                        .tossPaymentKey(response.paymentKey())
+                        .status(response.status())
+                        .method(response.method())
+                        .totalAmount(response.totalAmount())
+                        .requestedAt(response.requestedAt())
+                        .approvedAt(response.approvedAt())
+                        .receipt(response.receipt().url())
+                        .lastTransactionKey(response.lastTransactionKey())
+                        .paymentObject(tossResponse)
+                        .build();
+
+                paymentRepository.save(payment);
             }
-
-            order.updateStatus(OrderStatus.PAID);
-
-            Payment payment = Payment.builder()
-                    .order(order)
-                    .tossPaymentKey(paymentResponse.paymentKey())
-                    .status(paymentResponse.status())
-                    .method(paymentResponse.method())
-                    .totalAmount(paymentResponse.totalAmount())
-                    .requestedAt(paymentResponse.requestedAt())
-                    .approvedAt(paymentResponse.approvedAt())
-                    .receipt(paymentResponse.receipt().url())
-                    .lastTransactionKey(paymentResponse.lastTransactionKey())
-                    .paymentObject(responseBody)
-                    .build();
-
-            paymentRepository.save(payment);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("JSON 변환 오류 발생", e);
         }
+
     }
 
     @Override
@@ -75,29 +82,42 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Transactional
     @Override
-    public void cancelPayment(OrderItem orderItem, Long orderId, CancelOrderItemRequest request) {
+    public void cancelPaymentAndSaveRefund(OrderItem orderItem, Long orderId, CancelOrderItemRequest request) {
         Payment payment = getPaymentByOrderId(orderId);
 
         CancelPaymentRequest paymentRequest = new CancelPaymentRequest(request.cancelReason(), request.cancelAmount());
 
-        TossPaymentResponse response = tossApiClient.sendCancelRequest(payment.getTossPaymentKey(), paymentRequest);
+        String tossResponse = tossApiClient.sendCancelRequest(payment.getTossPaymentKey(), paymentRequest);
 
-        if (response.cancels().cancelStatus().equals("DONE")) {
-            payment.updatePaymentInfo(response);
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            TossPaymentResponse response = objectMapper.registerModule(new JavaTimeModule()).readValue(tossResponse, TossPaymentResponse.class);
 
-            Refund refund = Refund.builder()
-                    .payment(payment)
-                    .orderItem(orderItem)
-                    .transactionKey(response.cancels().transactionKey())
-                    .cancelReason(response.cancels().cancelReason())
-                    .cancelAmount(response.cancels().cancelAmount())
-                    .cancelStatus(response.cancels().cancelStatus())
-                    .canceledAt(response.cancels().canceledAt())
-                    .build();
+            for (CancelDto cancel : response.cancels()) {
+                String transactionKey = cancel.transactionKey();
 
-            refundRepository.save(refund);
+                if (refundRepository.findByTransactionKey(transactionKey).isPresent()) {
+                    continue;
+                }
+
+                if (cancel.cancelStatus().equals("DONE")) {
+                    payment.updatePaymentInfo(response, tossResponse);
+
+                    Refund refund = Refund.builder()
+                            .payment(payment)
+                            .orderItem(orderItem)
+                            .transactionKey(cancel.transactionKey())
+                            .cancelReason(cancel.cancelReason())
+                            .cancelAmount(cancel.cancelAmount())
+                            .cancelStatus(cancel.cancelStatus())
+                            .canceledAt(cancel.canceledAt())
+                            .build();
+
+                    refundRepository.save(refund);
+                }
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("JSON 변환 오류 발생", e);
         }
-
     }
-
 }

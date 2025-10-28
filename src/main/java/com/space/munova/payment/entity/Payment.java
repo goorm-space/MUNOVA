@@ -54,7 +54,7 @@ public class Payment extends BaseEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     private String paymentObject;
 
-    public void updatePaymentInfo(TossPaymentResponse response) {
+    public void updatePaymentInfo(TossPaymentResponse response, String originResponse) {
         if (this.status != PaymentStatus.DONE && this.status != PaymentStatus.PARTIAL_CANCELED) {
             throw PaymentException.illegalPaymentStateException(
                     String.format("현재 결제 상태: %s", this.status)
@@ -63,6 +63,6 @@ public class Payment extends BaseEntity {
 
         this.status = response.status();
         this.lastTransactionKey = response.lastTransactionKey();
-        this.paymentObject = response.toString();
+        this.paymentObject = originResponse;
     }
 }

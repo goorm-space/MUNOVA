@@ -5,6 +5,7 @@ import com.space.munova.payment.entity.PaymentMethod;
 import com.space.munova.payment.entity.PaymentStatus;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record TossPaymentResponse (
@@ -17,6 +18,6 @@ public record TossPaymentResponse (
         ZonedDateTime approvedAt,
         ReceiptInfo receipt,
         String lastTransactionKey,
-        CancelDto cancels
+        List<CancelDto> cancels
 ){
 }

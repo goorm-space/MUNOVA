@@ -24,7 +24,7 @@ public class RecommendScoreServiceTest {
         Long productId = 101L;
 
         // 1️⃣ 유저 행동 업데이트
-        recommendService.updateUserAction(userId, productId, true, true, false, true);
+        recommendService.updateUserAction(productId, true, true, false, true);
 
         // 2️⃣ Redis에서 데이터 가져오기
         UserActionSummary summary = (UserActionSummary) redisTemplate

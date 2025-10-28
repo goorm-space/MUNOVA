@@ -8,6 +8,7 @@ import com.space.munova.product.application.exception.LikeException;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.ProductLike;
 import com.space.munova.product.domain.Repository.ProductLikeRepository;
+import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ public class ProductLikeService {
     private final ProductService productService;
     private final MemberRepository memberRepository;
     private final ProductImageService productImageService;
+    private final RecommendService recommendService;
 
     @Transactional(readOnly = false)
     public void deleteProductLikeByProductId(Long productId) {
@@ -43,7 +45,7 @@ public class ProductLikeService {
        if(rowCount == 0) {
            throw LikeException.badRequestException("취소한 상품을 찾을 수 없습니다.");
        }
-
+       upsertUserAction(productId,false);
     }
 
     @Transactional(readOnly = false)
@@ -60,6 +62,7 @@ public class ProductLikeService {
 
         /// 상품 좋아요수 증가.
         product.plusLike();
+        upsertUserAction(productId,true);
     }
 
     public List<FindProductResponseDto> findLikeProducts(Pageable pageable) {
@@ -77,5 +80,9 @@ public class ProductLikeService {
                         dto.salesCount(),
                         dto.createAt()
                 )).toList();
+    }
+
+    private void upsertUserAction(Long productId, Boolean liked){
+        recommendService.updateUserAction(productId, 0, liked, null, null);
     }
 }

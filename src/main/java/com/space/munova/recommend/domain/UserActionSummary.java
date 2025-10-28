@@ -23,19 +23,19 @@ public class UserActionSummary {
     private Long memberId;
     private Long productId;
 
-    private boolean clicked;
-    private boolean liked;
-    private boolean inCart;
-    private boolean purchased;
+    private Integer clicked;
+    private Boolean liked;
+    private Boolean inCart;
+    private Boolean purchased;
 
     private LocalDateTime clickedAt;
     private LocalDateTime likedAt;
-    private LocalDateTime incartAt;
+    private LocalDateTime inCartAt;
     private LocalDateTime purchasedAt;
 
     private LocalDateTime lastUpdated;
 
-    public UserActionSummary(Long memberId, Long productId, boolean clicked, boolean liked, boolean inCart, boolean purchased) {
+    public UserActionSummary(Long memberId, Long productId, Integer clicked, Boolean liked, Boolean inCart, Boolean purchased) {
         this.memberId = memberId;
         this.productId = productId;
         this.clicked = clicked;

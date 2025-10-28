@@ -29,14 +29,13 @@ public class CartController {
     public ResponseEntity<ResponseApi<Void>> addCartItem(@RequestBody @Valid AddCartItemRequestDto reqDto) {
 
         cartService.addCartItem(reqDto);
-
         return  ResponseEntity.ok().body(ResponseApi.ok());
     }
 
     @DeleteMapping("/api/cart")
-    public ResponseEntity<ResponseApi<Void>> deleteCartItem(@RequestParam("cartId") DeleteCartItemRequestDto reqDto) {
+    public ResponseEntity<ResponseApi<Void>> deleteCartItem(@RequestParam("cartIds")  List<Long> cartIds) {
 
-        cartService.deleteByCartIds(reqDto.cartIds());
+        cartService.deleteByCartIds(cartIds);
         return  ResponseEntity.ok().body(ResponseApi.ok());
     }
 

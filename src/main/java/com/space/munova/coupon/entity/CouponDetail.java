@@ -4,6 +4,7 @@ import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.coupon.dto.CouponType;
 import com.space.munova.coupon.dto.DiscountPolicy;
 import com.space.munova.coupon.dto.RegisterCouponDetailRequest;
+import com.space.munova.coupon.exception.CouponException;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -57,6 +58,13 @@ public class CouponDetail extends BaseEntity {
                 .publishedAt(LocalDateTime.now())
                 .expiredAt(request.expiredAt())
                 .build();
+    }
+
+    // 쿠폰 발행일자 검증
+    public void validatePublished() {
+        if (LocalDateTime.now().isBefore(publishedAt)) {
+            throw CouponException.notPublishedException();
+        }
     }
 
 }

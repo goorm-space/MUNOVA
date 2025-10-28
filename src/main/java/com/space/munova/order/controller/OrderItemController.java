@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 public class OrderItemController {
 
     private final OrderItemService orderItemService;
-    private final RecommendService recommendService;
 
     @PostMapping("/{orderItemId}/cancel")
     public ResponseApi<Void>  cancelOrder(@PathVariable Long orderItemId, @RequestBody CancelOrderItemRequest request) {

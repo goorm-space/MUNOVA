@@ -74,7 +74,7 @@ public class OrderServiceImpl implements OrderService {
         List<Long> productDetailIds=orderItemRepository.findProductDetailIdsByOrderItemIds(orderItemIds);
         for(Long productDetailId:productDetailIds){
             Long productId=productDetailService.findProductIdByDetailId(productDetailId);
-            recommendService.updateUserAction(productId,null,null,null,true);
+            recommendService.updateUserAction(productId,0,null,null,true);
         }
         return finalOrder;
     }

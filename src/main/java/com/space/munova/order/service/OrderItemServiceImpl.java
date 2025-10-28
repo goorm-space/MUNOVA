@@ -50,7 +50,7 @@ public class OrderItemServiceImpl implements OrderItemService {
         List<Long> singleOrderItemId= List.of(orderItemId);
         List<Long> productDetailId=orderItemRepository.findProductDetailIdsByOrderItemIds(singleOrderItemId);
         Long productId=productDetailService.findProductIdByDetailId(productDetailId.get(0));
-        recommendService.updateUserAction(productId,null,null,null,false);
+        recommendService.updateUserAction(productId,0,null,null,false);
     }
 
     /**

@@ -19,8 +19,6 @@ public class OrderController {
 
     private final OrderService orderService;
     private final PaymentService paymentService;
-    private final RecommendService recommendService;
-    private final ProductDetailService productDetailService;
 
     /**
      * 주문 생성 후 결제에 필요한 응답 보내기

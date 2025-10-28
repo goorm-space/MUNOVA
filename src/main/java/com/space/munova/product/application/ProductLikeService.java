@@ -29,28 +29,21 @@ public class ProductLikeService {
     private final ProductImageService productImageService;
 
     @Transactional(readOnly = false)
-    public void deleteProductLikeByProductId(List<Long> productIds) {
-        if (productIds == null || productIds.isEmpty()) {
-            return;
-        }
+    public void deleteProductLikeByProductId(Long productId) {
         Long memberId = JwtHelper.getMemberId();
 
-        List<Long> distinctProductIds = new HashSet<>(productIds)
-                .stream().toList();
-
         ///  멤버의 좋아요리스트 제거후 영향받은 로우카운드 리턴받음.
-        int rowCount = productLikeRepository.deleteAllByProductIdsAndMemberId(distinctProductIds, memberId);
-
-
-        ///  productIds 가 모두다 사용자가 좋아요한 상품일경우 제거 아닐경우 에러반환
-        if (distinctProductIds.size() == rowCount) {
-
-            /// 상품 좋아요숫자 --
-            productService.minusLikeCountInProductIds(distinctProductIds);
-        } else {
-            /// 롤백
-            throw LikeException.badRequestException();
+        int rowCount = productLikeRepository.deleteAllByProductIdsAndMemberId(productId, memberId);
+        if(rowCount == 0) {
+            throw LikeException.badRequestException("취소한 상품을 찾을수 없습니다.");
         }
+
+        /// 상품 좋아요숫자 --
+       rowCount = productService.minusLikeCountInProductIds(productId);
+       if(rowCount == 0) {
+           throw LikeException.badRequestException("취소한 상품을 찾을 수 없습니다.");
+       }
+
     }
 
     @Transactional(readOnly = false)

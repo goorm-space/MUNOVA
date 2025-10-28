@@ -37,7 +37,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Product p " +
             "SET p.likeCount = p.likeCount - 1 " +
-            "WHERE p.id IN :productIds " +
+            "WHERE p.id = :productId " +
             "AND p.likeCount > 0")
-    void minusLikeCountInProductIds(List<Long> productIds);
+    int minusLikeCountInProductIds(Long productId);
 }

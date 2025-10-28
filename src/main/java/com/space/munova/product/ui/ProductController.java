@@ -90,7 +90,6 @@ class ProductController {
         productService.saveProductClickLog(productId);
         /// 조회수 카운트 증가.
         productService.updateProductViewCount(productId);
-        recommendService.updateUserAction(productId, 1, null, null, null);
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
 

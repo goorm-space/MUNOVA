@@ -11,6 +11,7 @@ import com.space.munova.product.domain.Repository.ProductClickLogRepository;
 import com.space.munova.product.domain.Repository.ProductRepository;
 import com.space.munova.product.domain.Repository.ProductSearchLogRepository;
 import com.space.munova.product.domain.enums.ProductCategory;
+import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +40,7 @@ public class ProductService {
     private final MemberRepository memberRepository;
     //private final ProductLikeService productLikeService;  -> 이후 카프카로 이벤트를 쏴주어야함.
     private final ProductSearchLogRepository productSearchLogRepository;
-
+    private final RecommendService recommendService;
 
 
     /// 모든 카테고리 조회 메서드
@@ -99,6 +100,7 @@ public class ProductService {
     @Transactional(readOnly = false)
     public void updateProductViewCount(Long productId) {
         productRepository.updateProductViewCount(productId);
+        recommendService.updateUserAction(productId, 1, null, null, null);
     }
 
     @Transactional(readOnly = false)

@@ -2,28 +2,35 @@ package com.space.munova.chat.service;
 
 import com.space.munova.chat.dto.ChatItemDto;
 import com.space.munova.chat.dto.group.ChatInfoResponseDto;
+import com.space.munova.chat.dto.group.GroupChatInfoResponseDto;
 import com.space.munova.chat.dto.group.GroupChatRequestDto;
 import com.space.munova.chat.dto.group.GroupChatUpdateRequestDto;
 import com.space.munova.chat.dto.onetoone.OneToOneChatResponseDto;
 import com.space.munova.chat.entity.Chat;
 import com.space.munova.chat.entity.ChatMember;
+import com.space.munova.chat.entity.ChatTag;
 import com.space.munova.chat.enums.ChatStatus;
 import com.space.munova.chat.enums.ChatType;
 import com.space.munova.chat.enums.ChatUserType;
 import com.space.munova.chat.exception.ChatException;
 import com.space.munova.chat.repository.ChatMemberRepository;
 import com.space.munova.chat.repository.ChatRepository;
+import com.space.munova.chat.repository.ChatRepositoryCustom;
+import com.space.munova.chat.repository.ChatTagRepository;
 import com.space.munova.member.dto.MemberRole;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
+import com.space.munova.product.domain.Category;
 import com.space.munova.product.domain.Product;
+import com.space.munova.product.domain.Repository.CategoryRepository;
 import com.space.munova.product.domain.Repository.ProductRepository;
+import com.space.munova.product.domain.enums.ProductCategory;
 import com.space.munova.security.jwt.JwtHelper;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +44,9 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     private final ChatRepository chatRepository;
     private final ProductRepository productRepository;
     private final ChatMemberRepository chatMemberRepository;
+    private final CategoryRepository categoryRepository;
+    private final ChatTagRepository chatTagRepository;
+    private final ChatRepositoryCustom chatRepositoryCustom;
 
     // 1:1 채팅방 생성
     @Override
@@ -90,7 +100,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 
     // 1:1 채팅 목록 조회(판매자, 구매자)
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public List<ChatItemDto> getOneToOneChatRoomsByMember(ChatUserType chatUserType) {
         // 사용자 조회
         Long memberId = JwtHelper.getMemberId();
@@ -102,7 +112,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     // group 채팅방 생성, 중복 이름 생성 불가
     @Override
     @Transactional
-    public ChatInfoResponseDto createGroupChatRoom(GroupChatRequestDto requestDto) {
+    public GroupChatInfoResponseDto createGroupChatRoom(GroupChatRequestDto requestDto) {
 
         // 채팅방 생성자 조회
         Long memberId = JwtHelper.getMemberId();
@@ -123,21 +133,46 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                 .maxParticipant(requestDto.maxParticipants())
                 .build());
 
-        chatMemberRepository.save(new ChatMember(chat, member, ChatUserType.OWNER));
+        List<Category> categoryList = categoryRepository.findAllById(requestDto.productCategoryId());
 
-        return ChatInfoResponseDto.of(chat);
+        for (Category category : categoryList) {
+            ChatTag chatTag = ChatTag.of(chat, category);
+            chatTagRepository.save(chatTag);
+        }
+
+        chatMemberRepository.save(new ChatMember(chat, member, ChatUserType.OWNER));
+        List<ProductCategory> list = categoryList.stream().map(Category::getCategoryType).toList();
+
+        return GroupChatInfoResponseDto.of(chat, list);
     }
 
-    // 그룹 채팅 목록 조회
+    // 그룹 채팅방 검색
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
+    public List<GroupChatInfoResponseDto> searchGroupChatRooms(String keyword, List<Long> tagIds) {
+        List<Chat> chatRoomLists = chatRepositoryCustom.findByNameAndTags(keyword, tagIds);
+
+        return chatRoomLists.stream()
+                .map(chat -> GroupChatInfoResponseDto.of(
+                        chat,
+                        chat.getChatTags().stream()
+                                .map(ChatTag::getCategoryType)
+                                .toList()))
+                .toList();
+    }
+
+
+    // 참여 중인 그룹 채팅 목록 조회
+    @Override
+    @Transactional(readOnly = true)
     public List<ChatItemDto> getGroupChatRooms() {
         return chatMemberRepository.findGroupChats(
                 JwtHelper.getMemberId(), ChatType.GROUP, ChatStatus.OPENED);
     }
 
+    // 전체 그룹 채팅방
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public List<ChatItemDto> getAllGroupChatRooms() {
         return chatRepository.findAllGroupChats();
     }

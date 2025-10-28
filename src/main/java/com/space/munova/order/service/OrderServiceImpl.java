@@ -7,7 +7,9 @@ import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.order.dto.*;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
+import com.space.munova.order.entity.OrderProductLog;
 import com.space.munova.order.exception.OrderException;
+import com.space.munova.order.repository.OrderProductLogRepository;
 import com.space.munova.order.repository.OrderRepository;
 import com.space.munova.product.application.ProductDetailService;
 import com.space.munova.product.domain.ProductDetail;
@@ -35,6 +37,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
 
+    private final OrderProductLogRepository orderProductLogRepository;
+
     @Transactional
     @Override
     public Order createOrder(CreateOrderRequest request) {
@@ -60,6 +64,24 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(finalOrder);
 
         return finalOrder;
+    }
+
+    @Transactional(readOnly = false)
+    @Override
+    public void saveOrderLog(Order order){
+        Long memberId = order.getMember().getId();
+        for(OrderItem item : order.getOrderItems()) {
+            Long productId=item.getProductDetail().getProduct().getId();
+            Integer quantity=item.getQuantity();
+            OrderProductLog log=OrderProductLog.builder()
+                    .memberId(memberId)
+                    .productId(productId)
+                    .quantity(quantity)
+                    .price(item.getPriceSnapshot())
+                    .orderStatus(item.getStatus())
+                    .build();
+            orderProductLogRepository.save(log);
+        }
     }
 
     @Override

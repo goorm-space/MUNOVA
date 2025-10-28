@@ -15,7 +15,7 @@ public record GetOrderDetailResponse (
         String userRequest,
         OrderStatus status,
         Long originPrice,
-        int discountPrice,
+        Long discountPrice,
         Long totalPrice,
         LocalDateTime orderDate,
         String paymentReceipt,

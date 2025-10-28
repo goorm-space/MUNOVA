@@ -9,4 +9,5 @@ public interface OrderService {
     Order createOrder(CreateOrderRequest request);
     GetOrderListResponse getOrderList(Long userId, int page);
     Order getOrderDetail(Long orderId);
+    void saveOrderLog(Order order);
 }

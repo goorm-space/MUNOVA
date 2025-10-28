@@ -24,7 +24,7 @@ public class OrderController {
     @PostMapping
     public ResponseApi<PaymentPrepareResponse> createOrder(@RequestBody CreateOrderRequest request) {
         Order order = orderService.createOrder(request);
-
+        orderService.saveOrderLog(order);
         PaymentPrepareResponse response = PaymentPrepareResponse.from(order);
 
         return ResponseApi.created(response);

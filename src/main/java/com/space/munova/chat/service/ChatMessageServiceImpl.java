@@ -11,7 +11,9 @@ import com.space.munova.chat.repository.ChatMemberRepository;
 import com.space.munova.chat.repository.ChatRepository;
 import com.space.munova.chat.repository.MessageRepository;
 import com.space.munova.member.entity.Member;
+import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
+import com.space.munova.security.jwt.JwtHelper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,69 +28,60 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 
     private final MessageRepository messageRepository;
     private final ChatRepository chatRepository;
-    private final MemberRepository userRepository;
+    private final MemberRepository memberRepository;
     private final ChatMemberRepository chatMemberRepository;
 
     // 메시지 DB에 저장
     @Override
     @Transactional
-    public ChatMessageResponseDto createChatMessage(ChatMessageRequestDto chatMessageRequest) {
+    public ChatMessageResponseDto createChatMessage(ChatMessageRequestDto chatMessageRequest, Long chatId) {
 
         log.info("Creating chat message: {}", chatMessageRequest);
-        // 송신자 확인
-        Member senderId = userRepository.findById(chatMessageRequest.getSenderId())
-                .orElseThrow(() -> ChatException.cannotFindMemberException("senderId=" + chatMessageRequest.getSenderId()));
+
+        Member member = memberRepository.findById(chatMessageRequest.senderId())
+                .orElseThrow(() -> MemberException.notFoundException("memberId : " + chatMessageRequest.senderId()));
 
         // 채팅방 확인
-        Chat chatId = chatRepository.findById(chatMessageRequest.getChatId())
-                .orElseThrow(() -> ChatException.cannotFindChatException("chatId=" + chatMessageRequest.getChatId()));
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> ChatException.cannotFindChatException("chatId=" + chatId));
 
         // 2. 채팅방 상태 확인
-        if (chatId.getStatus() != ChatStatus.OPENED) {
-            throw ChatException.chatClosedException("chatId=" + chatId.getId());
+        if (chat.getStatus() != ChatStatus.OPENED) {
+            throw ChatException.chatClosedException("chatId=" + chat.getId());
         }
 
         // 메시지를 repository에 저장 + 현재 시간
         Message message = messageRepository.save(Message.builder()
-                .chatId(chatId)
-                .userId(senderId)
-                .content(chatMessageRequest.getContent())
-                .type(chatMessageRequest.getMessageType())
+                .chatId(chat)
+                .userId(member)
+                .content(chatMessageRequest.content())
+                .type(chatMessageRequest.messageType())
                 .build());
 
         // 가장 최신 메시지 id, 최근 대화 시간 업데이트
-        chatId.modifyLastMessageContent(message.getContent(), message.getCreatedAt());
+        chat.modifyLastMessageContent(message.getContent(), message.getCreatedAt());
 
-        return new ChatMessageResponseDto(chatId.getId(), senderId.getId(), message);
+        return ChatMessageResponseDto.of(chat.getId(), member.getId(), member.getUsername(), message.getContent(), message.getCreatedAt(), message.getType());
     }
 
 
     // 채팅방 메시지 List 조회 (1:1)
     @Override
     @Transactional
-    public List<ChatMessageViewDto> getMessagesByChatId(Long chatId, Long memberId) {
+    public List<ChatMessageViewDto> getMessagesByChatId(Long chatId) {
 
-        // 참여자 확인
-        Member member = userRepository.findById(memberId)
-                .orElseThrow(() -> ChatException.cannotFindMemberException("senderId=" + memberId));
+        Long memberId = JwtHelper.getMemberId();
 
-        // 1. 채팅방 확인
-        Chat chat = chatRepository.findById(chatId)
-                .orElseThrow(() -> ChatException.cannotFindChatException("chatId=" + chatId));
+        // 채팅방 확인, OPENED 확인
+        Chat chat = chatRepository.findOpenedChatById(chatId)
+                .orElseThrow(() -> ChatException.invalidChatRoomException("chatId=" + chatId));
 
-        // 2. 채팅방 상태 확인
-        if (chat.getStatus() != ChatStatus.OPENED) {
-            throw ChatException.chatClosedException("chatId=" + chatId);
-        }
-
-        // 3. 참여자 권한 확인 (1:1 채팅)
-        if (!chatMemberRepository.existsBy(chatId, memberId, ChatStatus.OPENED)) {
+        // 참여자 권한 확인
+        if (!chatMemberRepository.existsChatMemberAndMemberIdBy(chatId, memberId)) {
             throw ChatException.unauthorizedParticipantException("userId=" + memberId);
         }
 
-        return messageRepository.findAllByChatIdWithChat(chatId).stream()
-                .map(ChatMessageViewDto::new).toList();
-
+        return messageRepository.findAllByChatId(chatId);
     }
 
 }

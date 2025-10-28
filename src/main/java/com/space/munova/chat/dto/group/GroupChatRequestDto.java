@@ -1,23 +1,23 @@
 package com.space.munova.chat.dto.group;
 
+import io.micrometer.common.lang.Nullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.Size;
 
-@Getter
-@AllArgsConstructor
-public class GroupChatRequestDto {
+import java.util.List;
 
-    private Long memberId;  // 채팅방 생성자 아이디
 
-//    private ChatUserType chatUserType;  // 채팅방 참여자 권한 -> 생성자는 권한 굳이 안받아도 되지 뭐 참여할때나 그렇지
-
-    @NotBlank(message = "채팅방 이름은 필수입니다.")
-    private String name;    // 채팅방 이름
-
-    @NotNull(message = "최대 참여 인원 설정은 필수입니다.")
-    private Integer maxParticipants;    // 최대 참여 인원 제한
-
+public record GroupChatRequestDto(
+        @NotBlank(message = "채팅방 이름은 필수입니다.")
+        String chatName,
+        @NotNull(message = "최대 참여 인원 설정은 필수입니다.")
+        Integer maxParticipants,
+        @Nullable
+        @Size(max = 4, message = "채팅방 태그는 최대 4개까지 선택 가능합니다.")
+        List<Long> productCategoryId
+) {
+    public static GroupChatRequestDto of(String chatName, Integer maxParticipants, List<Long> productCategoryId) {
+        return new GroupChatRequestDto(chatName, maxParticipants, productCategoryId);
+    }
 }

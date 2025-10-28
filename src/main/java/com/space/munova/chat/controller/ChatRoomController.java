@@ -3,6 +3,7 @@ package com.space.munova.chat.controller;
 
 import com.space.munova.chat.dto.ChatItemDto;
 import com.space.munova.chat.dto.group.ChatInfoResponseDto;
+import com.space.munova.chat.dto.group.GroupChatInfoResponseDto;
 import com.space.munova.chat.dto.group.GroupChatRequestDto;
 import com.space.munova.chat.dto.group.GroupChatUpdateRequestDto;
 import com.space.munova.chat.dto.onetoone.OneToOneChatResponseDto;
@@ -11,10 +12,12 @@ import com.space.munova.chat.service.ChatRoomService;
 import com.space.munova.core.config.ResponseApi;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/chat")
@@ -49,9 +52,20 @@ public class ChatRoomController {
 
     // 그룹 채팅방 생성
     @PostMapping("/group")
-    public ResponseApi<ChatInfoResponseDto> createGroupChatRoom(
+    public ResponseApi<GroupChatInfoResponseDto> createGroupChatRoom(
             @RequestBody @Valid GroupChatRequestDto requestDto) {
         return ResponseApi.ok(chatService.createGroupChatRoom(requestDto));
+    }
+
+    // 그룹 채팅방 조건 검색
+    @GetMapping("/group/search")
+    public ResponseApi<List<GroupChatInfoResponseDto>> searchGroupChatRooms(
+            @RequestParam(required = false, name = "keyword") String keyword,
+            @RequestParam(required = false, name = "tagIds") List<Long> tagIds
+    ) {
+        log.info("keyword: {}, tagIds: {}", keyword, tagIds);
+
+        return ResponseApi.ok(chatService.searchGroupChatRooms(keyword, tagIds));
     }
 
     // 참여 중인 그룹 채팅 목록 확인
@@ -67,14 +81,14 @@ public class ChatRoomController {
     }
 
     // 그룹 채팅방 정보 변경 (이름, 최대 참여자 수)
-    @PatchMapping("/group/{chatId}")
+    @PatchMapping("/group/{chatId:\\d+}")
     public ResponseApi<ChatInfoResponseDto> updateGroupChatRoom(
             @PathVariable Long chatId, @RequestBody GroupChatUpdateRequestDto updateDto) {
         return ResponseApi.ok(chatService.updateGroupChatInfo(chatId, updateDto));
     }
 
     // 그룹 채팅방 참여
-    @PostMapping("/group/{chatId}")
+    @PostMapping("/group/{chatId:\\d+}")
     public ResponseApi<Void> joinGroupChat(@PathVariable Long chatId) {
         chatService.joinGroupChat(chatId);
         return ResponseApi.ok();

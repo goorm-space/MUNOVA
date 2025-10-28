@@ -9,6 +9,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
@@ -38,6 +40,9 @@ public class Chat extends BaseEntity {
     private String lastMessageContent;
 
     private LocalDateTime lastMessageTime;
+
+    @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatTag> chatTags = new ArrayList<>();
 
     @Builder
     public Chat(@NonNull String name, ChatStatus status, ChatType type, Integer curParticipant, Integer maxParticipant) {

@@ -12,6 +12,7 @@ import com.space.munova.recommend.domain.UserRecommendation;
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
 import com.space.munova.recommend.dto.RecommendationsProductResponseDto;
 import com.space.munova.recommend.dto.RecommendationsUserResponseDto;
+import com.space.munova.recommend.exception.RecommendException;
 import com.space.munova.recommend.repository.ProductRecommendationRepository;
 import com.space.munova.recommend.repository.UserActionSummaryRepository;
 import com.space.munova.recommend.repository.UserRecommendationRepository;
@@ -131,7 +132,7 @@ public class RecommendServiceImpl implements RecommendService {
     public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateSimilarProductRecommend(Long productId) {
         // 1. 상품 조회
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> RecommendException.productNotFound("id=" + productId));
 
         productRecommendRepository.deleteBySourceProduct(product);
 
@@ -154,10 +155,10 @@ public class RecommendServiceImpl implements RecommendService {
 
     private List<Product> findSimilarProductsByCategory(Long productId, int limit) {
         Product base = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+                .orElseThrow(() -> RecommendException.productNotFound("id=" + productId));
 
         if (base.getCategory() == null) {
-            throw new IllegalStateException("카테고리가 없는 상품은 추천할 수 없습니다.");
+            throw RecommendException.categoryNotFound("productId=" + productId);
         }
 
         return productRepository.findTop4ByCategory_IdAndIdNotOrderByIdAsc(
@@ -189,7 +190,7 @@ public class RecommendServiceImpl implements RecommendService {
 
         Product base = recentLog.getProduct();
         Product target = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("추천 상품이 존재하지 않습니다."));
+                .orElseThrow(() -> RecommendException.targetProductNotFound("productId=" + productId));
 
         List<RecommendReasonResponseDto> reasons = new ArrayList<>();
 
@@ -201,12 +202,11 @@ public class RecommendServiceImpl implements RecommendService {
         return reasons;
     }
 
-    /* ✅ 헬퍼 함수: 존재할 경우만 추가 */
     private void addIfPresent(List<RecommendReasonResponseDto> reasons, Optional<RecommendReasonResponseDto> reasonOpt) {
         reasonOpt.ifPresent(reasons::add);
     }
 
-    /* ✅ 카테고리 비교 */
+    //카테고리 비교
     private Optional<RecommendReasonResponseDto> compareCategory(Product base, Product target) {
         if (base.getCategory() != null && base.getCategory().equals(target.getCategory())) {
             return Optional.of(new RecommendReasonResponseDto("category", "같은 카테고리의 상품이에요."));
@@ -214,7 +214,7 @@ public class RecommendServiceImpl implements RecommendService {
         return Optional.empty();
     }
 
-    /* ✅ 브랜드 비교 */
+    //브랜드 비교
     private Optional<RecommendReasonResponseDto> compareBrand(Product base, Product target) {
         if (base.getBrand() != null && base.getBrand().equals(target.getBrand())) {
             return Optional.of(new RecommendReasonResponseDto("brand", "같은 브랜드의 상품이에요."));
@@ -222,7 +222,7 @@ public class RecommendServiceImpl implements RecommendService {
         return Optional.empty();
     }
 
-    /* ✅ 가격 비교 */
+    //가격 비교
     private Optional<RecommendReasonResponseDto> comparePrice(Product base, Product target) {
         long diff = Math.abs(base.getPrice() - target.getPrice());
         if (diff < 10_000) {
@@ -233,7 +233,7 @@ public class RecommendServiceImpl implements RecommendService {
         return Optional.empty();
     }
 
-    /* ✅ 상품명 기반 유사도 비교 */
+    //상품명 유사도 비교
     private Optional<RecommendReasonResponseDto> compareName(Product base, Product target) {
         if (isNameSimilar(base.getName(), target.getName())) {
             return Optional.of(new RecommendReasonResponseDto("name", "이름이 비슷한 상품이에요."));
@@ -269,14 +269,12 @@ public class RecommendServiceImpl implements RecommendService {
         return summary;
     }
 
-    /* ✅ 감쇠(Decay) 계산 공통 함수 */
     private double scoreWithDecay(LocalDateTime actionTime, double weight, LocalDateTime now) {
         if (actionTime == null) return 0;
         long days = ChronoUnit.DAYS.between(actionTime, now);
         return weight * Math.max(MIN_DECAY, 1 - DECAY_RATE * days);
     }
 
-    /* ✅ Boolean 조건이 있는 경우 오버로딩 */
     private double scoreWithDecay(LocalDateTime actionTime, double weight, LocalDateTime now, Boolean condition) {
         if (Boolean.FALSE.equals(condition)) return 0;
         return scoreWithDecay(actionTime, weight, now);

@@ -1,4 +1,4 @@
-package com.space.munova.product.exception;
+package com.space.munova.product.application.exception;
 
 import com.space.munova.core.exception.BaseException;
 import org.springframework.http.HttpStatus;

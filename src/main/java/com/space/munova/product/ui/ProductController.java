@@ -25,6 +25,12 @@ class ProductController {
 
     private final ProductService productService;
 
+    @GetMapping("/api/product/seller")
+    public ResponseEntity<List<FindProductResponseDto>> findProductBySeller(@PageableDefault Pageable pageable) {
+
+        List<FindProductResponseDto> respDto = productService.findProductBySeller(pageable);
+        return ResponseEntity.ok().body(respDto);
+    }
 
     /// 상품 등록 메서드
     @Operation(summary = "상품 세부사항 등록", description = "상품의 세부사항을 받아 상품을 등록한다. (판매자만 등록 가능)")

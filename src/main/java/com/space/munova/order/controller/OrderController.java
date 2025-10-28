@@ -6,6 +6,7 @@ import com.space.munova.order.entity.Order;
 import com.space.munova.order.service.OrderService;
 import com.space.munova.payment.entity.Payment;
 import com.space.munova.payment.service.PaymentService;
+import com.space.munova.product.application.ProductDetailService;
 import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ public class OrderController {
     private final OrderService orderService;
     private final PaymentService paymentService;
     private final RecommendService recommendService;
+    private final ProductDetailService productDetailService;
 
     /**
      * 주문 생성 후 결제에 필요한 응답 보내기
@@ -27,7 +29,6 @@ public class OrderController {
     public ResponseApi<PaymentPrepareResponse> createOrder(@RequestBody CreateOrderRequest request) {
         Order order = orderService.createOrder(request);
         orderService.saveOrderLog(order);
-        recommendService.updateUserAction(123L,null,null,null,true);
         PaymentPrepareResponse response = PaymentPrepareResponse.from(order);
 
         return ResponseApi.created(response);

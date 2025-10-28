@@ -19,6 +19,6 @@ public class OrderItemController {
     @PostMapping("/{orderItemId}/cancel")
     public ResponseApi<Void>  cancelOrder(@PathVariable Long orderItemId, @RequestBody CancelOrderItemRequest request) {
         orderItemService.cancelOrderItem(orderItemId, request);
-        recommendService.updateUserAction(orderItemId,null,null,null,false);
+        return ResponseApi.ok();
     }
 }

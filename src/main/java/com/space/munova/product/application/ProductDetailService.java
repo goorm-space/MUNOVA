@@ -182,23 +182,15 @@ public class ProductDetailService {
         }
     }
 
-    public ProductDetail checkAvailableStock(Long productDetailId, int quantity) {
-        ProductDetail detail = productDetailRepository.findById(productDetailId)
+    public ProductDetail getProductDetailWithPessimisticLock(Long productDetailId) {
+
+        return productDetailRepository.findByIdWithPessimisticLock(productDetailId)
                 .orElseThrow(ProductDetailException::notFoundException);
-
-        if (detail.getQuantity() == 0) {
-            throw ProductDetailException.noStockException("product_detail_id: " + productDetailId);
-        } else if(detail.getQuantity() < quantity) {
-            throw ProductDetailException.stockInsufficientException("product_detail_id: " + productDetailId + ", 요청: " + quantity + ", 재고: " + detail.getQuantity());
-        }
-
-        return detail;
     }
 
     @Transactional(readOnly = false)
     public ProductDetail deductStock(Long productDetailId, int quantity) {
-        ProductDetail productDetail = productDetailRepository.findByIdWithPessimisticLock(productDetailId)
-                .orElseThrow(ProductDetailException::notFoundException);
+        ProductDetail productDetail = getProductDetailWithPessimisticLock(productDetailId);
 
         if (productDetail.getQuantity() == 0) {
             throw ProductDetailException.noStockException("product_detail_id: " + productDetailId);
@@ -211,10 +203,17 @@ public class ProductDetailService {
         return productDetail;
     }
 
-
     public Long findProductIdByDetailId(Long detailId) {
         return productDetailRepository
                 .findProductIdById(detailId)
                 .orElseThrow(ProductDetailException::notFoundException);
     }
+
+    @Transactional
+    public void restoreProductDetailStock(Long productDetailId, int cancelQuantity) {
+        ProductDetail productDetail = getProductDetailWithPessimisticLock(productDetailId);
+
+        productDetail.restoreStock(cancelQuantity);
+    }
+
 }

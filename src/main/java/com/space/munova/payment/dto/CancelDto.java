@@ -12,7 +12,7 @@ public record CancelDto(
         Integer transferDiscountAmount,
         Integer easyPayDiscountAmount,
         String receiptKey,
-        Integer cancelAmount,
+        Long cancelAmount,
         Integer taxFreeAmount,
         Integer refundableAmount,
         String cancelStatus,

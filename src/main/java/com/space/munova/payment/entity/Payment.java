@@ -2,6 +2,8 @@ package com.space.munova.payment.entity;
 
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.order.entity.Order;
+import com.space.munova.payment.dto.TossPaymentResponse;
+import com.space.munova.payment.exception.PaymentException;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -51,4 +53,16 @@ public class Payment extends BaseEntity {
 
     @JdbcTypeCode(SqlTypes.JSON)
     private String paymentObject;
+
+    public void updatePaymentInfo(TossPaymentResponse response, String originResponse) {
+        if (this.status != PaymentStatus.DONE && this.status != PaymentStatus.PARTIAL_CANCELED) {
+            throw PaymentException.illegalPaymentStateException(
+                    String.format("현재 결제 상태: %s", this.status)
+            );
+        }
+
+        this.status = response.status();
+        this.lastTransactionKey = response.lastTransactionKey();
+        this.paymentObject = originResponse;
+    }
 }

@@ -60,7 +60,12 @@ public class AuthServiceImpl implements AuthService {
         GenerateTokens generateTokens = tokenService.saveRefreshToken(member);
         log.info("로그인 성공: {}", username);
 
-        return SignInGenerateToken.of(member.getId(), generateTokens.accessToken(), generateTokens.refreshToken());
+        return SignInGenerateToken.of(
+                member.getId(),
+                generateTokens.accessToken(),
+                generateTokens.refreshToken(),
+                member.getRole()
+        );
     }
 
     /**

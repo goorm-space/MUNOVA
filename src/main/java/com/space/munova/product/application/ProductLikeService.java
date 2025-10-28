@@ -83,6 +83,6 @@ public class ProductLikeService {
     }
 
     private void upsertUserAction(Long productId, Boolean liked){
-        recommendService.updateUserAction(productId, null, liked, null, null);
+        recommendService.updateUserAction(productId, 0, liked, null, null);
     }
 }

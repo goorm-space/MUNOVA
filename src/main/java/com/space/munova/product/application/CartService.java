@@ -54,7 +54,7 @@ public class CartService {
         upsertCart(reqDto, memberId, productDetail, member);
 
         Long productId=productDetailService.findProductIdByDetailId(reqDto.productDetailId());
-        recommendService.updateUserAction(productId,null,null,true,null);
+        recommendService.updateUserAction(productId,0,null,true,null);
     }
 
 
@@ -64,15 +64,15 @@ public class CartService {
     public void deleteByCartIds(List<Long> cartIds) {
 
         Long memberId = JwtHelper.getMemberId();
+        upsertUserAction(cartIds);
         cartRepository.deleteByCartIdsAndMemberId(cartIds,memberId);
 
-        upsertUserAction(cartIds);
     }
 
     private void upsertUserAction(List<Long> cartIds) {
         List<Long> productIdsByCartIds = cartRepository.findProductIdsByCartIds(cartIds);
         for(Long productId:productIdsByCartIds){
-            recommendService.updateUserAction(productId,null,null,false,null);
+            recommendService.updateUserAction(productId,0,null,false,null);
         }
     }
 

@@ -41,7 +41,6 @@ public class TossApiClient {
             HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) {
-                System.out.println(response.body());
                 return response.body();
             } else {
                 throw PaymentException.tossApiCallFailedException();
@@ -71,7 +70,6 @@ public class TossApiClient {
             HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) {
-                System.out.println(response.body());
                 return response.body();
             } else {
                 throw PaymentException.tossApiCallFailedException();

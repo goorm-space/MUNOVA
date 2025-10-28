@@ -1,11 +1,14 @@
 package com.space.munova.auth.dto;
 
+import com.space.munova.member.dto.MemberRole;
+
 public record SignInGenerateToken(
         Long memberId,
         String accessToken,
-        String refreshToken
+        String refreshToken,
+        MemberRole role
 ) {
-    public static SignInGenerateToken of(Long memberId, String accessToken, String refreshToken) {
-        return new SignInGenerateToken(memberId, accessToken, refreshToken);
+    public static SignInGenerateToken of(Long memberId, String accessToken, String refreshToken, MemberRole role) {
+        return new SignInGenerateToken(memberId, accessToken, refreshToken, role);
     }
 }

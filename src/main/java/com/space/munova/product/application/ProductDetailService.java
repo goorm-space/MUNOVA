@@ -196,7 +196,7 @@ public class ProductDetailService {
         return detail;
     }
 
-    @Transactional
+    @Transactional(readOnly = false)
     public ProductDetail deductStock(Long productDetailId, int quantity) {
         ProductDetail productDetail = productDetailRepository.findByIdWithPessimisticLock(productDetailId)
                 .orElseThrow(ProductDetailException::notFoundException);

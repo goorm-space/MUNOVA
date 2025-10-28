@@ -7,11 +7,20 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
-public interface ProductLikeRepository extends JpaRepository<ProductLike, Long> {
+public interface ProductLikeRepository extends JpaRepository<ProductLike, Long>, ProductLikeRepositoryCustom {
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE ProductLike pl " +
             "SET pl.isDeleted = true " +
             "WHERE pl.product.id IN :productIds")
     void deleteAllByProductIds(List<Long> productIds);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ProductLike pl " +
+            "SET pl.isDeleted = true " +
+            "WHERE pl.product.id IN :productIds " +
+            "AND pl.member.id = :memberId " +
+            "AND pl.isDeleted = false")
+    int deleteAllByProductIdsAndMemberId(List<Long> productIds, Long memberId);
+
 }

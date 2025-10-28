@@ -5,6 +5,7 @@ import com.space.munova.product.application.CartService;
 import com.space.munova.product.application.dto.cart.DeleteCartItemRequestDto;
 import com.space.munova.product.application.dto.cart.FindCartInfoResponseDto;
 import com.space.munova.product.application.dto.cart.AddCartItemRequestDto;
+import com.space.munova.product.application.dto.cart.UpdateCartRequestDto;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -46,5 +47,11 @@ public class CartController {
         return ResponseEntity.ok().body(ResponseApi.ok(cartItemByMember));
     }
 
+    @PatchMapping("/api/cart")
+    public ResponseEntity<ResponseApi<Void>> updateCartItem(@Valid @RequestBody UpdateCartRequestDto reqDto) {
+
+        cartService.updateCartByMemeber(reqDto);
+        return  ResponseEntity.ok().body(ResponseApi.ok());
+    }
 
 }

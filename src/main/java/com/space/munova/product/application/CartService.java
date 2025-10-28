@@ -147,4 +147,28 @@ public class CartService {
 
         return new FindCartInfoResponseDto(basicInfo, options);
     }
+
+    @Transactional(readOnly = false)
+    public void updateCartByMemeber(UpdateCartRequestDto reqDto) {
+        Long memberId = JwtHelper.getMemberId();
+        Cart cartItem = cartRepository.findByIdAndMemberIdAndIsDeletedFalse(reqDto.cartId(), memberId).orElseThrow(CartException::badRequestCartException);
+        ProductDetail productDetail = productDetailService.findById(reqDto.detailId());
+
+        /// 더티체킹으로 카트 아이템 업데이트
+        try{
+
+            if(cartItem.isDeleted()) {
+                throw new IllegalArgumentException("제거된 장바구니 상품입니다.");
+            }
+
+            if(productDetail.isDeleted()) {
+                throw new IllegalArgumentException("제거된 상품입니다.");
+            }
+
+            cartItem.updateCart(productDetail, reqDto.quantity());
+
+        }catch (Exception e){
+           throw CartException.badRequestCartException(e.getMessage());
+        }
+    }
 }

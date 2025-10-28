@@ -16,7 +16,7 @@ public enum CouponType {
     private final DiscountCalculator calculator;
     private final String description;
 
-    public Long calculate(Long originalPrice, Long discountAmount) {
+    public Long calculateDiscountAmount(Long originalPrice, Long discountAmount) {
         return calculator.calculate(originalPrice, discountAmount);
     }
 

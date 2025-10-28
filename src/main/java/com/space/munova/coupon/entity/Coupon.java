@@ -67,7 +67,7 @@ public class Coupon extends BaseEntity {
         DiscountPolicy discountPolicy = couponDetail.getDiscountPolicy();
         CouponType couponType = discountPolicy.getCouponType();
         Long maxDiscountAmount = discountPolicy.getMaxDiscountAmount();
-        Long priceAfterDiscount = couponType.calculate(originalPrice, discountPolicy.getDiscountAmount());
+        Long priceAfterDiscount = couponType.calculateDiscountAmount(originalPrice, discountPolicy.getDiscountAmount());
 
         if (maxDiscountAmount <= 0) {
             // 최대 할인금액 제한이 없을때 할인 금액 적용

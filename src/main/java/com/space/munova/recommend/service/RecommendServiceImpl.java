@@ -1,7 +1,6 @@
 package com.space.munova.recommend.service;
 
 import com.space.munova.core.config.ResponseApi;
-import com.space.munova.member.entity.Member;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.application.dto.FindProductResponseDto;
 import com.space.munova.product.domain.Product;
@@ -13,6 +12,7 @@ import com.space.munova.recommend.domain.UserRecommendation;
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
 import com.space.munova.recommend.dto.RecommendationsProductResponseDto;
 import com.space.munova.recommend.dto.RecommendationsUserResponseDto;
+import com.space.munova.recommend.exception.RecommendException;
 import com.space.munova.recommend.repository.ProductRecommendationRepository;
 import com.space.munova.recommend.repository.UserActionSummaryRepository;
 import com.space.munova.recommend.repository.UserRecommendationRepository;
@@ -27,10 +27,20 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class RecommendServiceImpl implements RecommendService {
+
+    private static final double CLICK_WEIGHT = 0.1;
+    private static final double LIKE_WEIGHT = 0.15;
+    private static final double CART_WEIGHT = 0.35;
+    private static final double PURCHASE_WEIGHT = 0.5;
+    private static final double DECAY_RATE = 0.05; // 하루당 5% 감쇠
+    private static final double MIN_DECAY = 0.5;   // 최소 유지 비율
+    private static final long CACHE_TTL_MINUTES = 10;
 
     private final MemberRepository memberRepository;
     private final ProductRepository productRepository;
@@ -91,29 +101,22 @@ public class RecommendServiceImpl implements RecommendService {
             return ResponseEntity.ok(ResponseApi.ok(Collections.emptyList()));
         }
         // 점수 계산
-        Map<Long, Double> productScores = new HashMap<>();
-        for(UserActionSummary summary : summaries){
-            double score=getRecommendationScore(userId,summary.getProductId());
-            productScores.put(summary.getProductId(),score);
-        }
-        // 점수 높은 상품 정렬
-        List<Long> topProductIds=productScores.entrySet().stream()
-                .sorted(Map.Entry.<Long,Double>comparingByValue().reversed())
+        List<Long> topProductIds = summaries.stream()
+                .collect(Collectors.toMap(
+                        UserActionSummary::getProductId,
+                        s -> getRecommendationScore(userId, s.getProductId())
+                ))
+                .entrySet().stream()
+                .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
                 .limit(4)
                 .map(Map.Entry::getKey)
                 .toList();
         // 유사 상품 조회
-        List<Product> Recommendations=new ArrayList<>();
-        for(Long topId : topProductIds){
-            Recommendations.addAll(
-                    productRepository.findTop4ByCategory_IdAndIdNotOrderByIdAsc(
-                            productRepository.findById(topId).get().getCategory().getId(),
-                            topId
-                    )
-            );
-        }
-        List<FindProductResponseDto> dtoList = toFindProductResponseDtoList(Recommendations);
-        for (Product rec : Recommendations) {
+        List<Product> recommendations = topProductIds.stream()
+                .map(id -> findSimilarProductsByCategory(id, 4))
+                .flatMap(List::stream)
+                .toList();
+        for (Product rec : recommendations) {
             UserRecommendation ur = UserRecommendation.builder()
                     .member(memberRepository.getReferenceById(userId))
                     .product(rec)
@@ -121,7 +124,7 @@ public class RecommendServiceImpl implements RecommendService {
                     .build();
             userRecommendRepository.save(ur);
         }
-        return ResponseEntity.ok(ResponseApi.ok(dtoList));
+        return ResponseEntity.ok(ResponseApi.ok(toFindProductResponseDtoList(recommendations)));
     }
 
     @Override
@@ -129,36 +132,38 @@ public class RecommendServiceImpl implements RecommendService {
     public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateSimilarProductRecommend(Long productId) {
         // 1. 상품 조회
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> RecommendException.productNotFound("id=" + productId));
 
         productRecommendRepository.deleteBySourceProduct(product);
 
-        if (product.getCategory() == null) {
-            System.out.println("Product id=" + productId + " has no category. Cannot generate recommendations.");
-            return null; // 추천 로직 종료
+        List<Product> recommendations = findSimilarProductsByCategory(productId, 4);
+
+        if (recommendations.isEmpty()) {
+            return ResponseEntity.ok(ResponseApi.ok(Collections.emptyList()));
         }
 
-        // 2. 같은 카테고리에서 4개 유사 상품 조회 (본 상품 제외)
-        Long categoryId = product.getCategory().getId();
-        List<Product> Recommendations = productRepository
-                .findTop4ByCategory_IdAndIdNotOrderByIdAsc(categoryId, product.getId());
-
-        if (Recommendations == null || Recommendations.isEmpty()) {
-            System.out.println("추천할 상품이 없습니다.");
-            return null;
-        }
         // 3. 추천 기록 저장
-        for (Product rec : Recommendations) {
+        for (Product rec : recommendations) {
             ProductRecommendation pr = ProductRecommendation.builder()
                     .sourceProduct(product)
                     .targetProduct(rec)
                     .build();
             productRecommendRepository.save(pr);
-
-            System.out.println(product.getName() + " -> " + rec.getName());
         }
-        List<FindProductResponseDto> dtoList = toFindProductResponseDtoList(Recommendations);
-        return ResponseEntity.ok(ResponseApi.ok(dtoList));
+        return ResponseEntity.ok(ResponseApi.ok(toFindProductResponseDtoList(recommendations)));
+    }
+
+    private List<Product> findSimilarProductsByCategory(Long productId, int limit) {
+        Product base = productRepository.findById(productId)
+                .orElseThrow(() -> RecommendException.productNotFound("id=" + productId));
+
+        if (base.getCategory() == null) {
+            throw RecommendException.categoryNotFound("productId=" + productId);
+        }
+
+        return productRepository.findTop4ByCategory_IdAndIdNotOrderByIdAsc(
+                base.getCategory().getId(), base.getId()
+        );
     }
 
     private List<FindProductResponseDto> toFindProductResponseDtoList(List<Product> products) {
@@ -178,46 +183,136 @@ public class RecommendServiceImpl implements RecommendService {
 
     @Override
     public List<RecommendReasonResponseDto> getRecommendationReason(Long userId, Long productId) {
-        List<RecommendReasonResponseDto> reasons = new ArrayList<>();
-
-        // 최근 추천 로그(기준 상품) 조회
+        // 최근 추천 로그 조회
         UserRecommendation recentLog = userRecommendRepository.findTopByMemberIdOrderByCreatedAtDesc(userId)
                 .orElse(null);
-        if (recentLog == null) return reasons;
+        if (recentLog == null) return Collections.emptyList();
 
-        Product baseProduct = recentLog.getProduct();
-        Product targetProduct = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("추천 상품이 존재하지 않습니다."));
+        Product base = recentLog.getProduct();
+        Product target = productRepository.findById(productId)
+                .orElseThrow(() -> RecommendException.targetProductNotFound("productId=" + productId));
 
-        // 카테고리 비교
-        if (baseProduct.getCategory() != null && baseProduct.getCategory().equals(targetProduct.getCategory())) {
-            reasons.add(new RecommendReasonResponseDto("category", "같은 카테고리의 상품이에요."));
-        }
+        List<RecommendReasonResponseDto> reasons = new ArrayList<>();
 
-        // 브랜드 비교
-        if (baseProduct.getBrand() != null && baseProduct.getBrand().equals(targetProduct.getBrand())) {
-            reasons.add(new RecommendReasonResponseDto("brand", "같은 브랜드의 상품이에요."));
-        }
-
-        // 가격 비교
-        long priceDiff = Math.abs(baseProduct.getPrice() - targetProduct.getPrice());
-        if (priceDiff < 10000) {
-            reasons.add(new RecommendReasonResponseDto("price", "비슷한 가격대의 상품이에요."));
-        } else if (priceDiff > 30000) {
-            reasons.add(new RecommendReasonResponseDto("price", "조금 다른 가격대의 상품이에요."));
-        }
-
-        // 상품명 기반 유사도 (예: “스니커즈”, “부츠”, “캔버스” 등)
-        if (isNameSimilar(baseProduct.getName(), targetProduct.getName())) {
-            reasons.add(new RecommendReasonResponseDto("name", "이름이 비슷한 상품이에요."));
-        }
-
-//        // 설명(info) 기반 스타일 비교
-//        if (isInfoSimilar(baseProduct.getInfo(), targetProduct.getInfo())) {
-//            reasons.add(new RecommendReasonResponseDto("style", "스타일이나 소재가 비슷한 상품이에요."));
-//        }
+        addIfPresent(reasons, compareCategory(base, target));
+        addIfPresent(reasons, compareBrand(base, target));
+        addIfPresent(reasons, comparePrice(base, target));
+        addIfPresent(reasons, compareName(base, target));
 
         return reasons;
+    }
+
+    private void addIfPresent(List<RecommendReasonResponseDto> reasons, Optional<RecommendReasonResponseDto> reasonOpt) {
+        reasonOpt.ifPresent(reasons::add);
+    }
+
+    //카테고리 비교
+    private Optional<RecommendReasonResponseDto> compareCategory(Product base, Product target) {
+        if (base.getCategory() != null && base.getCategory().equals(target.getCategory())) {
+            return Optional.of(new RecommendReasonResponseDto("category", "같은 카테고리의 상품이에요."));
+        }
+        return Optional.empty();
+    }
+
+    //브랜드 비교
+    private Optional<RecommendReasonResponseDto> compareBrand(Product base, Product target) {
+        if (base.getBrand() != null && base.getBrand().equals(target.getBrand())) {
+            return Optional.of(new RecommendReasonResponseDto("brand", "같은 브랜드의 상품이에요."));
+        }
+        return Optional.empty();
+    }
+
+    //가격 비교
+    private Optional<RecommendReasonResponseDto> comparePrice(Product base, Product target) {
+        long diff = Math.abs(base.getPrice() - target.getPrice());
+        if (diff < 10_000) {
+            return Optional.of(new RecommendReasonResponseDto("price", "비슷한 가격대의 상품이에요."));
+        } else if (diff > 30_000) {
+            return Optional.of(new RecommendReasonResponseDto("price", "조금 다른 가격대의 상품이에요."));
+        }
+        return Optional.empty();
+    }
+
+    //상품명 유사도 비교
+    private Optional<RecommendReasonResponseDto> compareName(Product base, Product target) {
+        if (isNameSimilar(base.getName(), target.getName())) {
+            return Optional.of(new RecommendReasonResponseDto("name", "이름이 비슷한 상품이에요."));
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public double getRecommendationScore(Long memberId, Long productId) {
+        UserActionSummary summary = getCachedUserActionSummary(memberId, productId);
+        LocalDateTime now = LocalDateTime.now();
+
+        double totalScore =
+                scoreWithDecay(summary.getClickedAt(), CLICK_WEIGHT, now)
+                        + scoreWithDecay(summary.getLikedAt(), LIKE_WEIGHT, now, summary.getLiked())
+                        + scoreWithDecay(summary.getInCartAt(), CART_WEIGHT, now, summary.getInCart())
+                        + scoreWithDecay(summary.getPurchasedAt(), PURCHASE_WEIGHT, now, summary.getPurchased());
+
+        double maxScore = CLICK_WEIGHT + LIKE_WEIGHT + CART_WEIGHT + PURCHASE_WEIGHT;
+        return (totalScore / maxScore) * 100;
+    }
+
+    private UserActionSummary getCachedUserActionSummary(Long memberId, Long productId) {
+        String cacheKey = "user:action:" + memberId + ":" + productId;
+        UserActionSummary cached = (UserActionSummary) redisTemplate.opsForValue().get(cacheKey);
+
+        if (cached != null) return cached;
+
+        UserActionSummary summary = summaryRepository.findByMemberIdAndProductId(memberId, productId)
+                .orElse(new UserActionSummary(memberId, productId, 0, false, false, false));
+
+        redisTemplate.opsForValue().set(cacheKey, summary, CACHE_TTL_MINUTES, TimeUnit.MINUTES);
+        return summary;
+    }
+
+    private double scoreWithDecay(LocalDateTime actionTime, double weight, LocalDateTime now) {
+        if (actionTime == null) return 0;
+        long days = ChronoUnit.DAYS.between(actionTime, now);
+        return weight * Math.max(MIN_DECAY, 1 - DECAY_RATE * days);
+    }
+
+    private double scoreWithDecay(LocalDateTime actionTime, double weight, LocalDateTime now, Boolean condition) {
+        if (Boolean.FALSE.equals(condition)) return 0;
+        return scoreWithDecay(actionTime, weight, now);
+    }
+
+    // 유저 행동 발생 시 호출
+    public void updateUserAction( Long productId, Integer clicked, Boolean liked, Boolean inCart, Boolean purchased) {
+        Long memberId = JwtHelper.getMemberId();
+        UserActionSummary summary = summaryRepository.findByMemberIdAndProductId(memberId, productId)
+                .orElse(UserActionSummary.builder()
+                        .memberId(memberId)
+                        .productId(productId)
+                        .clicked(0)
+                        .build());
+        // 행동 값 업데이트
+        if (clicked>0) {
+            summary.setClicked(summary.getClicked() + 1);
+            summary.setClickedAt(LocalDateTime.now());
+        }
+        if (liked != null) {
+            summary.setLiked(liked);
+            summary.setLikedAt(liked ? LocalDateTime.now() : null);
+        }
+        if (inCart != null) {
+            summary.setInCart(inCart);
+            summary.setInCartAt(inCart ? LocalDateTime.now() : null);
+        }
+        if (purchased != null) {
+            summary.setPurchased(purchased);
+            summary.setPurchasedAt(purchased ? LocalDateTime.now() : null);
+        }
+
+        summary.setLastUpdated(LocalDateTime.now());
+        summaryRepository.save(summary);
+
+        // Redis 캐시에 저장 (TTL 10분)
+        String cacheKey = "user:action:" + memberId + ":" + productId;
+        redisTemplate.opsForValue().set(cacheKey, summary, 10, TimeUnit.MINUTES);
     }
 
     private boolean isNameSimilar(String name1, String name2) {
@@ -247,85 +342,4 @@ public class RecommendServiceImpl implements RecommendService {
 //        }
 //        return false;
 //    }
-
-
-
-
-
-    @Override
-    public double getRecommendationScore(Long memberId, Long productId) {
-        // 기본 가중치 (합계 1 이하)
-        double CLICK_WEIGHT = 0.1;
-        double LIKE_WEIGHT = 0.15;
-        double CART_WEIGHT = 0.35;
-        double PURCHASE_WEIGHT = 0.5;
-
-        String cacheKey = "user:action:" + memberId + ":" + productId;
-        UserActionSummary summary = (UserActionSummary) redisTemplate.opsForValue().get(cacheKey);
-
-        if (summary == null) {
-            summary = summaryRepository.findByMemberIdAndProductId(memberId, productId)
-                    .orElse(new UserActionSummary(memberId, productId, 0, false, false, false));
-            redisTemplate.opsForValue().set(cacheKey, summary, 10, TimeUnit.MINUTES);
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-
-        // 행동별 최근성 가중치 계산
-        double clickedScore = summary.getClickedAt() != null ?
-                CLICK_WEIGHT * Math.max(0.5, 1 - 0.05 * ChronoUnit.DAYS.between(summary.getClickedAt(), now)) : 0;
-        double likedScore = Boolean.TRUE.equals(summary.getLiked()) && summary.getLikedAt() != null ?
-                LIKE_WEIGHT * Math.max(0.5, 1 - 0.05 * ChronoUnit.DAYS.between(summary.getLikedAt(), now)) : 0;
-        double cartScore = Boolean.TRUE.equals(summary.getInCart()) && summary.getInCartAt() != null ?
-                CART_WEIGHT * Math.max(0.5, 1 - 0.05 * ChronoUnit.DAYS.between(summary.getInCartAt(), now)) : 0;
-        double purchasedScore = Boolean.TRUE.equals(summary.getPurchased()) && summary.getPurchasedAt() != null ?
-                PURCHASE_WEIGHT * Math.max(0.5, 1 - 0.05 * ChronoUnit.DAYS.between(summary.getPurchasedAt(), now)) : 0;
-
-        double behaviorScore = clickedScore + likedScore + cartScore + purchasedScore;
-
-        // 임시: 같은 카테고리일 경우 유사도 0.7
-//        double similarity = 0.7;
-//        double finalScore = behaviorScore * similarity;
-
-        // 0~100 정규화
-        double maxScore = CLICK_WEIGHT + LIKE_WEIGHT + CART_WEIGHT + PURCHASE_WEIGHT;
-        return (behaviorScore / maxScore) * 100;
-    }
-
-    // 유저 행동 발생 시 호출
-    public void updateUserAction( Long productId, Integer clicked, Boolean liked, Boolean inCart, Boolean purchased) {
-        Long memberId = JwtHelper.getMemberId();
-        UserActionSummary summary = summaryRepository.findByMemberIdAndProductId(memberId, productId)
-                .orElse(UserActionSummary.builder()
-                        .memberId(memberId)
-                        .productId(productId)
-                        .clicked(0)
-                        .build());
-
-        // 행동 값 업데이트
-        if (clicked>0) {
-            summary.setClicked(summary.getClicked() + 1);
-            summary.setClickedAt(LocalDateTime.now());
-        }
-        if (liked != null) {
-            summary.setLiked(liked);
-            summary.setLikedAt(liked ? LocalDateTime.now() : null);
-        }
-        if (inCart != null) {
-            summary.setInCart(inCart);
-            summary.setInCartAt(inCart ? LocalDateTime.now() : null);
-        }
-        if (purchased != null) {
-            summary.setPurchased(purchased);
-            summary.setPurchasedAt(purchased ? LocalDateTime.now() : null);
-        }
-
-        summary.setLastUpdated(LocalDateTime.now());
-        summaryRepository.save(summary);
-
-        // Redis 캐시에 저장 (TTL 10분)
-        String cacheKey = "user:action:" + memberId + ":" + productId;
-        redisTemplate.opsForValue().set(cacheKey, summary, 10, TimeUnit.MINUTES);
-    }
-
 }

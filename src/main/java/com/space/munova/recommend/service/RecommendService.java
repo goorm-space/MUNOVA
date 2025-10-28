@@ -2,11 +2,9 @@ package com.space.munova.recommend.service;
 
 import com.space.munova.core.config.ResponseApi;
 import com.space.munova.product.application.dto.FindProductResponseDto;
-import com.space.munova.product.domain.Product;
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
 import com.space.munova.recommend.dto.RecommendationsProductResponseDto;
 import com.space.munova.recommend.dto.RecommendationsUserResponseDto;
-import com.space.munova.recommend.dto.ResponseDto;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;

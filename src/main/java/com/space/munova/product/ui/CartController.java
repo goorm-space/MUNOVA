@@ -6,7 +6,6 @@ import com.space.munova.product.application.dto.cart.DeleteCartItemRequestDto;
 import com.space.munova.product.application.dto.cart.FindCartInfoResponseDto;
 import com.space.munova.product.application.dto.cart.AddCartItemRequestDto;
 import com.space.munova.product.application.dto.cart.UpdateCartRequestDto;
-import com.space.munova.recommend.service.RecommendService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,13 +24,11 @@ import java.util.List;
 public class CartController {
 
     private final CartService cartService;
-    private final RecommendService recommendService;
 
     @PostMapping("/api/cart")
     public ResponseEntity<ResponseApi<Void>> addCartItem(@RequestBody @Valid AddCartItemRequestDto reqDto) {
 
         cartService.addCartItem(reqDto);
-        recommendService.updateUserAction(reqDto,null,null,true,null);
         return  ResponseEntity.ok().body(ResponseApi.ok());
     }
 
@@ -39,7 +36,6 @@ public class CartController {
     public ResponseEntity<ResponseApi<Void>> deleteCartItem(@RequestParam("cartId") DeleteCartItemRequestDto reqDto) {
 
         cartService.deleteByCartIds(reqDto.cartIds());
-        recommendService.updateUserAction(reqDto,null,null,false,null);
         return  ResponseEntity.ok().body(ResponseApi.ok());
     }
 

@@ -1,7 +1,6 @@
 package com.space.munova.product.application;
 
 import com.space.munova.product.application.dto.*;
-import com.space.munova.product.application.dto.cart.CartItemOptionInfoDto;
 import com.space.munova.product.application.exception.ProductException;
 import com.space.munova.product.domain.Option;
 import com.space.munova.product.domain.Product;
@@ -9,7 +8,7 @@ import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.ProductOptionMapping;
 import com.space.munova.product.domain.Repository.ProductDetailRepository;
 import com.space.munova.product.domain.enums.OptionCategory;
-import com.space.munova.product.exception.ProductDetailException;
+import com.space.munova.product.application.exception.ProductDetailException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

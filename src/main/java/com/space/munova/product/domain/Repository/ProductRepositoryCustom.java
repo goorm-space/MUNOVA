@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface ProductRepositoryCustom {
     List<FindProductResponseDto> findProductByConditions(Long categoryId, List<Long> optionIds, String keyword, Pageable pageable);
+
+    List<FindProductResponseDto> findProductBySeller(Pageable pageable, Long sellerId);
 }

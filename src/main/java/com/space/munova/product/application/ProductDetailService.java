@@ -203,6 +203,12 @@ public class ProductDetailService {
         return productDetail;
     }
 
+    public Long findProductIdByDetailId(Long detailId) {
+        return productDetailRepository
+                .findProductIdById(detailId)
+                .orElseThrow(ProductDetailException::notFoundException);
+    }
+
     @Transactional
     public void restoreProductDetailStock(Long productDetailId, int cancelQuantity) {
         ProductDetail productDetail = getProductDetailWithPessimisticLock(productDetailId);

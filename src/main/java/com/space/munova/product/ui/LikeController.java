@@ -4,6 +4,7 @@ import com.space.munova.core.config.ResponseApi;
 import com.space.munova.product.application.ProductLikeService;
 import com.space.munova.product.application.dto.FindProductResponseDto;
 import com.space.munova.product.application.dto.like.ProductLikeRequestDto;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -28,8 +29,8 @@ public class LikeController {
     }
 
 
-    @DeleteMapping("/api/like")
-    public ResponseEntity<ResponseApi<Void>> deleteProductLike(@RequestParam List<Long> productId) {
+    @DeleteMapping("/api/like/{productId}")
+    public ResponseEntity<ResponseApi<Void>> deleteProductLike(@PathVariable(name = "productId") @NotNull Long productId) {
 
         productLikeService.deleteProductLikeByProductId(productId);
         return ResponseEntity.ok().body(ResponseApi.ok());

@@ -45,11 +45,12 @@ class ProductController {
     }
 
     /// 상품 등록 페이지 조회
-    @Operation(summary = "상품 등록 페이지 조회", description = "상품의 카테고리를 바디에 담아 보내준다. (판매자만 조회 가능)")
-    @GetMapping("/product/new")
+    @Operation(summary = "상품 카테고리 조회", description = "상품의 카테고리를 바디에 담아 보내준다. 모든 사용자")
+    @GetMapping("/product/category")
     public ResponseEntity<ResponseApi<List<ProductCategoryResponseDto>>> registProductView() {
 
         List<ProductCategoryResponseDto> productCategories = productService.findProductCategories();
+
         return ResponseEntity.ok().body(ResponseApi.ok(productCategories));
     }
 

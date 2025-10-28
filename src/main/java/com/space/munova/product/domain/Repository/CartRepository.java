@@ -47,6 +47,12 @@ public interface CartRepository extends JpaRepository<Cart, Long>, CartRepositor
 
     Optional<Cart> findByIdAndMemberIdAndIsDeletedFalse(Long memberId, Long cartId);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Cart c " +
+            "SET c.isDeleted = true " +
+            "WHERE c.productDetail.id IN :productDetailIds " +
+            "AND c.member.id = :memberId")
+    void deleteByProductDetailIdsAndMemberId(List<Long> productDetailIds, Long memberId);
 
     @Query("SELECT c.productDetail.product.id FROM Cart c WHERE c.id IN :cartIds")
     List<Long> findProductIdsByCartIds(@Param("cartIds") List<Long> cartIds);

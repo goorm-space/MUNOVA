@@ -1,6 +1,12 @@
 package com.space.munova.order.service;
 
 import com.space.munova.auth.exception.AuthException;
+import com.space.munova.coupon.dto.UseCouponRequest;
+import com.space.munova.coupon.dto.UseCouponResponse;
+import com.space.munova.coupon.entity.Coupon;
+import com.space.munova.coupon.exception.CouponException;
+import com.space.munova.coupon.repository.CouponRepository;
+import com.space.munova.coupon.service.CouponService;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
@@ -35,6 +41,7 @@ public class OrderServiceImpl implements OrderService {
     private static final int PAGE_SIZE = 5;
 
     private final ProductDetailService productDetailService;
+    private final CouponService couponService;
 
     private final OrderItemRepository orderItemRepository;
     private final OrderRepository orderRepository;
@@ -42,6 +49,7 @@ public class OrderServiceImpl implements OrderService {
     private final RecommendService recommendService;
 
     private final OrderProductLogRepository orderProductLogRepository;
+    private final CouponRepository couponRepository;
 
     @Transactional
     @Override
@@ -154,21 +162,24 @@ public class OrderServiceImpl implements OrderService {
         long totalProductAmount = order.getOrderItems().stream()
                 .mapToLong(item -> item.getPriceSnapshot() * item.getQuantity())
                 .sum();
-        // Todo: 쿠폰id를 사용해서 할인액 계산하는 로직 필요
-        int discountAmount = 5000;
-        long finalAmount = totalProductAmount - discountAmount;
 
-        if (finalAmount != request.clientCalculatedAmount()) {
+        UseCouponRequest couponRequest = UseCouponRequest.of(totalProductAmount);
+        UseCouponResponse couponResponse = couponService.useCoupon(request.orderCouponId(), couponRequest);
+
+        if (couponResponse.finalPrice().longValue() != request.clientCalculatedAmount().longValue()) {
             throw OrderException.amountMismatchException(
-                    String.format("client: %d, server: %d", request.clientCalculatedAmount(), finalAmount)
+                    String.format("client: %d, server: %d", request.clientCalculatedAmount(), couponResponse.finalPrice())
             );
         }
 
+        Coupon coupon = couponRepository.findWithCouponDetailById(request.orderCouponId())
+                        .orElseThrow(CouponException::notFoundException);
+
         order.updateFinalOrder(
-                totalProductAmount,
-                discountAmount,
-                finalAmount,
-                request.orderCouponId(),
+                couponResponse.originalPrice(),
+                couponResponse.discountPrice(),
+                couponResponse.finalPrice(),
+                coupon,
                 OrderStatus.PAYMENT_PENDING
         );
 

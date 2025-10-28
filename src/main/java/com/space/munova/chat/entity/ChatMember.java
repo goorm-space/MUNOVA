@@ -33,7 +33,14 @@ public class ChatMember {
     private Product productId;
 
     @Enumerated(EnumType.STRING)
-    private ChatUserType chatMemberType;
+    private ChatUserType chatMemberType;    // 채팅방 권한 : ADMIN, MEMBER, OWNER
+
+    public ChatMember(Chat chatId, Member memberId, ChatUserType type, Product product) {
+        this.chatId = chatId;
+        this.memberId = memberId;
+        this.chatMemberType = type;
+        this.productId = product;
+    }
 
     public ChatMember(Chat chatId, Member memberId, ChatUserType type) {
         this.chatId = chatId;

@@ -1,6 +1,7 @@
 package com.space.munova.order.entity;
 
 import com.space.munova.core.entity.BaseEntity;
+import com.space.munova.coupon.entity.Coupon;
 import com.space.munova.member.entity.Member;
 import com.space.munova.order.dto.OrderStatus;
 import jakarta.persistence.*;
@@ -36,9 +37,11 @@ public class Order extends BaseEntity {
 
     private Long originPrice;
 
-    private Long couponId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coupon_id")
+    private Coupon coupon;
 
-    private Integer discountPrice;
+    private Long discountPrice;
 
     private Long totalPrice;
 
@@ -53,11 +56,11 @@ public class Order extends BaseEntity {
         this.orderItems.add(orderItem);
     }
 
-    public void updateFinalOrder(Long originPrice, int discountPrice, Long totalPrice, Long couponId, OrderStatus status) {
+    public void updateFinalOrder(Long originPrice, Long discountPrice, Long totalPrice, Coupon coupon, OrderStatus status) {
         this.originPrice = originPrice;
         this.discountPrice = discountPrice;
         this.totalPrice = totalPrice;
-        this.couponId = couponId;
+        this.coupon = coupon;
         this.status = status;
 
         if (this.orderItems != null) {

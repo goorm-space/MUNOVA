@@ -31,6 +31,7 @@ public class CartService {
     private final ProductDetailService productDetailService;
     private final ProductImageService productImageService;
     private final RecommendService recommendService;
+
     @Transactional(readOnly = false)
     public void deleteByProductDetailIds(List<Long> productDetailIds) {
         cartRepository.deleteByProductDetailIds(productDetailIds);
@@ -190,5 +191,12 @@ public class CartService {
         return carts.stream()
                 .map(Cart::getProductDetail)
                 .toList();
+    }
+
+    @Transactional
+    public void deleteByProductDetailIdsAndMemberId(List<Long> productDetailIds) {
+        Long memberId = JwtHelper.getMemberId();
+
+        cartRepository.deleteByProductDetailIdsAndMemberId(productDetailIds,memberId);
     }
 }

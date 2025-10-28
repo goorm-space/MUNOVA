@@ -44,6 +44,9 @@ public class Chat extends BaseEntity {
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatTag> chatTags = new ArrayList<>();
 
+    @OneToMany(mappedBy = "chatId", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatMember> chatMembers = new ArrayList<>();
+
     @Builder
     public Chat(@NonNull String name, ChatStatus status, ChatType type, Integer curParticipant, Integer maxParticipant) {
         this.name = name;

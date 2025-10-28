@@ -149,8 +149,11 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     // 그룹 채팅방 검색
     @Override
     @Transactional(readOnly = true)
-    public List<GroupChatInfoResponseDto> searchGroupChatRooms(String keyword, List<Long> tagIds) {
-        List<Chat> chatRoomLists = chatRepositoryCustom.findByNameAndTags(keyword, tagIds);
+    public List<GroupChatInfoResponseDto> searchGroupChatRooms(String keyword, List<Long> tagIds, Boolean isMine) {
+
+        Long memberId = isMine ? JwtHelper.getMemberId() : null;
+
+        List<Chat> chatRoomLists = chatRepositoryCustom.findByNameAndTags(keyword, tagIds, memberId);
 
         return chatRoomLists.stream()
                 .map(chat -> GroupChatInfoResponseDto.of(

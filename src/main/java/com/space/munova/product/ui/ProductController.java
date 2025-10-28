@@ -3,6 +3,7 @@ package com.space.munova.product.ui;
 import com.space.munova.core.config.ResponseApi;
 import com.space.munova.product.application.ProductService;
 import com.space.munova.product.application.dto.*;
+import com.space.munova.recommend.service.RecommendService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -24,6 +25,7 @@ import java.util.List;
 class ProductController {
 
     private final ProductService productService;
+    private final RecommendService recommendService;
 
     @GetMapping("/api/product/seller")
     public ResponseEntity<List<FindProductResponseDto>> findProductBySeller(@PageableDefault Pageable pageable) {
@@ -88,6 +90,7 @@ class ProductController {
         productService.saveProductClickLog(productId);
         /// 조회수 카운트 증가.
         productService.updateProductViewCount(productId);
+        recommendService.updateUserAction(productId, 1, null, null, null);
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
 

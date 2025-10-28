@@ -13,10 +13,10 @@ import com.space.munova.recommend.domain.UserRecommendation;
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
 import com.space.munova.recommend.dto.RecommendationsProductResponseDto;
 import com.space.munova.recommend.dto.RecommendationsUserResponseDto;
-import com.space.munova.recommend.dto.ResponseDto;
 import com.space.munova.recommend.repository.ProductRecommendationRepository;
 import com.space.munova.recommend.repository.UserActionSummaryRepository;
 import com.space.munova.recommend.repository.UserRecommendationRepository;
+import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
@@ -255,9 +255,9 @@ public class RecommendServiceImpl implements RecommendService {
     @Override
     public double getRecommendationScore(Long memberId, Long productId) {
         // 기본 가중치 (합계 1 이하)
-        double CLICK_WEIGHT = 0.05;
+        double CLICK_WEIGHT = 0.1;
         double LIKE_WEIGHT = 0.15;
-        double CART_WEIGHT = 0.3;
+        double CART_WEIGHT = 0.35;
         double PURCHASE_WEIGHT = 0.5;
 
         String cacheKey = "user:action:" + memberId + ":" + productId;
@@ -265,20 +265,20 @@ public class RecommendServiceImpl implements RecommendService {
 
         if (summary == null) {
             summary = summaryRepository.findByMemberIdAndProductId(memberId, productId)
-                    .orElse(new UserActionSummary(memberId, productId, false, false, false, false));
+                    .orElse(new UserActionSummary(memberId, productId, 0, false, false, false));
             redisTemplate.opsForValue().set(cacheKey, summary, 10, TimeUnit.MINUTES);
         }
 
         LocalDateTime now = LocalDateTime.now();
 
         // 행동별 최근성 가중치 계산
-        double clickedScore = summary.isClicked() && summary.getClickedAt() != null ?
+        double clickedScore = summary.getClickedAt() != null ?
                 CLICK_WEIGHT * Math.max(0.5, 1 - 0.05 * ChronoUnit.DAYS.between(summary.getClickedAt(), now)) : 0;
-        double likedScore = summary.isLiked() && summary.getLikedAt() != null ?
+        double likedScore = Boolean.TRUE.equals(summary.getLiked()) && summary.getLikedAt() != null ?
                 LIKE_WEIGHT * Math.max(0.5, 1 - 0.05 * ChronoUnit.DAYS.between(summary.getLikedAt(), now)) : 0;
-        double cartScore = summary.isInCart() && summary.getIncartAt() != null ?
-                CART_WEIGHT * Math.max(0.5, 1 - 0.05 * ChronoUnit.DAYS.between(summary.getIncartAt(), now)) : 0;
-        double purchasedScore = summary.isPurchased() && summary.getPurchasedAt() != null ?
+        double cartScore = Boolean.TRUE.equals(summary.getInCart()) && summary.getInCartAt() != null ?
+                CART_WEIGHT * Math.max(0.5, 1 - 0.05 * ChronoUnit.DAYS.between(summary.getInCartAt(), now)) : 0;
+        double purchasedScore = Boolean.TRUE.equals(summary.getPurchased()) && summary.getPurchasedAt() != null ?
                 PURCHASE_WEIGHT * Math.max(0.5, 1 - 0.05 * ChronoUnit.DAYS.between(summary.getPurchasedAt(), now)) : 0;
 
         double behaviorScore = clickedScore + likedScore + cartScore + purchasedScore;
@@ -293,19 +293,32 @@ public class RecommendServiceImpl implements RecommendService {
     }
 
     // 유저 행동 발생 시 호출
-    public void updateUserAction(Long memberId, Long productId, boolean clicked, boolean liked,
-                                 boolean inCart, boolean purchased) {
+    public void updateUserAction( Long productId, Integer clicked, Boolean liked, Boolean inCart, Boolean purchased) {
+        Long memberId = JwtHelper.getMemberId();
         UserActionSummary summary = summaryRepository.findByMemberIdAndProductId(memberId, productId)
                 .orElse(UserActionSummary.builder()
                         .memberId(memberId)
                         .productId(productId)
+                        .clicked(0)
                         .build());
 
         // 행동 값 업데이트
-        if (clicked) { summary.setClicked(true); summary.setClickedAt(LocalDateTime.now()); }
-        if (liked) { summary.setLiked(true); summary.setLikedAt(LocalDateTime.now()); }
-        if (inCart) { summary.setInCart(true); summary.setIncartAt(LocalDateTime.now()); }
-        if (purchased) { summary.setPurchased(true); summary.setPurchasedAt(LocalDateTime.now()); }
+        if (clicked>0) {
+            summary.setClicked(summary.getClicked() + 1);
+            summary.setClickedAt(LocalDateTime.now());
+        }
+        if (liked != null) {
+            summary.setLiked(liked);
+            summary.setLikedAt(liked ? LocalDateTime.now() : null);
+        }
+        if (inCart != null) {
+            summary.setInCart(inCart);
+            summary.setInCartAt(inCart ? LocalDateTime.now() : null);
+        }
+        if (purchased != null) {
+            summary.setPurchased(purchased);
+            summary.setPurchasedAt(purchased ? LocalDateTime.now() : null);
+        }
 
         summary.setLastUpdated(LocalDateTime.now());
         summaryRepository.save(summary);

@@ -19,9 +19,14 @@ import com.space.munova.payment.entity.Refund;
 import com.space.munova.payment.exception.PaymentException;
 import com.space.munova.payment.repository.PaymentRepository;
 import com.space.munova.payment.repository.RefundRepository;
+import com.space.munova.product.application.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +37,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final RefundRepository refundRepository;
     private final OrderRepository orderRepository;
     private final TossApiClient tossApiClient;
+    private final CartService cartService;
 
     @Transactional
     @Override
@@ -67,6 +73,12 @@ public class PaymentServiceImpl implements PaymentService {
                         .build();
 
                 paymentRepository.save(payment);
+
+                // 장바구니 삭제
+                List<Long> productDetailIds = order.getOrderItems().stream()
+                        .map(orderItem -> orderItem.getProductDetail().getId())
+                        .toList();
+                cartService.deleteByProductDetailIdsAndMemberId(productDetailIds);
             }
         } catch (JsonProcessingException e) {
             throw new RuntimeException("JSON 변환 오류 발생", e);

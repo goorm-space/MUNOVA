@@ -45,6 +45,12 @@ public interface CartRepository extends JpaRepository<Cart, Long>, CartRepositor
 
     Optional<Cart> findByIdAndMemberIdAndIsDeletedFalse(Long memberId, Long cartId);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Cart c " +
+            "SET c.isDeleted = true " +
+            "WHERE c.productDetail.id IN :productDetailIds " +
+            "AND c.member.id = :memberId")
+    void deleteByProductDetailIdsAndMemberId(List<Long> productDetailIds, Long memberId);
 
 //    @Query("SELECT new com.space.munova.product.application.dto.cart.CartItemBasicInfoDto() " +
 //            "FROM Cart c " +

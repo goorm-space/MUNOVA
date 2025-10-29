@@ -56,7 +56,7 @@ public class ChatRoomController {
 
     // 그룹 채팅방 조건 검색
     @GetMapping("/group/search")
-    public ResponseApi<List<GroupChatInfoResponseDto>> searchGroupChatRooms(
+    public ResponseApi<List<GroupChatDetailResponseDto>> searchGroupChatRooms(
             @RequestParam(required = false, name = "keyword") String keyword,
             @RequestParam(required = false, name = "tagIds") List<Long> tagIds,
             @RequestParam(defaultValue = "false", name = "isMine") Boolean isMine

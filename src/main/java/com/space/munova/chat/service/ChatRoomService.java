@@ -16,7 +16,7 @@ public interface ChatRoomService {
 
     GroupChatInfoResponseDto createGroupChatRoom(GroupChatRequestDto requestDto);
 
-    List<GroupChatInfoResponseDto> searchGroupChatRooms(String keyword, List<Long> tagId, Boolean isMine);
+    List<GroupChatDetailResponseDto> searchGroupChatRooms(String keyword, List<Long> tagId, Boolean isMine);
 
     List<ChatItemDto> getGroupChatRooms();
 

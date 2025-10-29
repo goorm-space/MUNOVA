@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -146,18 +147,35 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     // 그룹 채팅방 검색
     @Override
     @Transactional(readOnly = true)
-    public List<GroupChatInfoResponseDto> searchGroupChatRooms(String keyword, List<Long> tagIds, Boolean isMine) {
+    public List<GroupChatDetailResponseDto> searchGroupChatRooms(String keyword, List<Long> tagIds, Boolean isMine) {
 
         Long memberId = isMine ? JwtHelper.getMemberId() : null;
 
         List<Chat> chatRoomLists = chatRepositoryCustom.findByNameAndTags(keyword, tagIds, memberId);
 
         return chatRoomLists.stream()
-                .map(chat -> GroupChatInfoResponseDto.of(
-                        chat,
-                        chat.getChatTags().stream()
-                                .map(ChatTag::getCategoryType)
-                                .toList()))
+                .map(chat -> GroupChatDetailResponseDto.of(
+                        chat.getId(),
+                        chat.getName(),
+                        chat.getMaxParticipant(),
+                        chat.getCurParticipant(),
+                        chat.getStatus(),
+                        chat.getCreatedAt(),
+                        chat.getChatTags() != null
+                                ? chat.getChatTags().stream()
+                                .filter(Objects::nonNull)
+                                .map(ct -> ct.getCategoryType() != null ? ct.getCategoryType().getDescription() : null)
+                                .filter(Objects::nonNull)
+                                .toList()
+                                : List.of(), // null이면 빈 리스트
+                        chat.getChatMembers() != null
+                                ? chat.getChatMembers().stream()
+                                .filter(Objects::nonNull)
+                                .map(cm -> cm.getMemberId() != null ? MemberInfoDto.of(cm.getMemberId().getId(), cm.getName()) : null)
+                                .filter(Objects::nonNull)
+                                .toList()
+                                : List.of()
+                ))
                 .toList();
     }
 

@@ -9,10 +9,13 @@ import com.space.munova.order.exception.OrderItemException;
 import com.space.munova.order.repository.OrderItemRepository;
 import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.ProductDetailService;
+import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +25,7 @@ public class OrderItemServiceImpl implements OrderItemService {
     private final OrderItemRepository orderItemRepository;
     private final ProductDetailService productDetailService;
     private final PaymentService paymentService;
+    private final RecommendService recommendService;
 
     @Transactional
     @Override
@@ -43,6 +47,10 @@ public class OrderItemServiceImpl implements OrderItemService {
             orderItem.updateStatus(OrderStatus.REFUNDED);
         }
 
+        List<Long> singleOrderItemId= List.of(orderItemId);
+        List<Long> productDetailId=orderItemRepository.findProductDetailIdsByOrderItemIds(singleOrderItemId);
+        Long productId=productDetailService.findProductIdByDetailId(productDetailId.get(0));
+        recommendService.updateUserAction(productId,0,null,null,false);
     }
 
     /**

@@ -1,6 +1,12 @@
 package com.space.munova.order.service;
 
 import com.space.munova.auth.exception.AuthException;
+import com.space.munova.coupon.dto.UseCouponRequest;
+import com.space.munova.coupon.dto.UseCouponResponse;
+import com.space.munova.coupon.entity.Coupon;
+import com.space.munova.coupon.exception.CouponException;
+import com.space.munova.coupon.repository.CouponRepository;
+import com.space.munova.coupon.service.CouponService;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
@@ -9,10 +15,12 @@ import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.entity.OrderProductLog;
 import com.space.munova.order.exception.OrderException;
+import com.space.munova.order.repository.OrderItemRepository;
 import com.space.munova.order.repository.OrderProductLogRepository;
 import com.space.munova.order.repository.OrderRepository;
 import com.space.munova.product.application.ProductDetailService;
 import com.space.munova.product.domain.ProductDetail;
+import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,11 +41,15 @@ public class OrderServiceImpl implements OrderService {
     private static final int PAGE_SIZE = 5;
 
     private final ProductDetailService productDetailService;
+    private final CouponService couponService;
 
+    private final OrderItemRepository orderItemRepository;
     private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
+    private final RecommendService recommendService;
 
     private final OrderProductLogRepository orderProductLogRepository;
+    private final CouponRepository couponRepository;
 
     @Transactional
     @Override
@@ -63,6 +75,15 @@ public class OrderServiceImpl implements OrderService {
 
         orderRepository.save(finalOrder);
 
+        //UserActionSummary 저장 로직
+        List<Long> orderItemIds=finalOrder.getOrderItems().stream()
+                .map(OrderItem::getId)
+                .toList();
+        List<Long> productDetailIds=orderItemRepository.findProductDetailIdsByOrderItemIds(orderItemIds);
+        for(Long productDetailId:productDetailIds){
+            Long productId=productDetailService.findProductIdByDetailId(productDetailId);
+            recommendService.updateUserAction(productId,0,null,null,true);
+        }
         return finalOrder;
     }
 
@@ -141,21 +162,24 @@ public class OrderServiceImpl implements OrderService {
         long totalProductAmount = order.getOrderItems().stream()
                 .mapToLong(item -> item.getPriceSnapshot() * item.getQuantity())
                 .sum();
-        // Todo: 쿠폰id를 사용해서 할인액 계산하는 로직 필요
-        int discountAmount = 5000;
-        long finalAmount = totalProductAmount - discountAmount;
 
-        if (finalAmount != request.clientCalculatedAmount()) {
+        UseCouponRequest couponRequest = UseCouponRequest.of(totalProductAmount);
+        UseCouponResponse couponResponse = couponService.useCoupon(request.orderCouponId(), couponRequest);
+
+        if (couponResponse.finalPrice().longValue() != request.clientCalculatedAmount().longValue()) {
             throw OrderException.amountMismatchException(
-                    String.format("client: %d, server: %d", request.clientCalculatedAmount(), finalAmount)
+                    String.format("client: %d, server: %d", request.clientCalculatedAmount(), couponResponse.finalPrice())
             );
         }
 
+        Coupon coupon = couponRepository.findWithCouponDetailById(request.orderCouponId())
+                        .orElseThrow(CouponException::notFoundException);
+
         order.updateFinalOrder(
-                totalProductAmount,
-                discountAmount,
-                finalAmount,
-                request.orderCouponId(),
+                couponResponse.originalPrice(),
+                couponResponse.discountPrice(),
+                couponResponse.finalPrice(),
+                coupon,
                 OrderStatus.PAYMENT_PENDING
         );
 

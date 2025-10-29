@@ -23,7 +23,7 @@ public class ChatException extends BaseException {
     }
 
     public static ChatException invalidOperationException(String... detailMessage) {
-        return new ChatException("CHAT_04", "현재 참여 인원이 정원보다 많아 정원 변경이 불가합니다.", HttpStatus.BAD_REQUEST, detailMessage);
+        return new ChatException("CHAT_04", "현재 참여 인원이 최대 정원보다 많아 정원 변경이 불가합니다.", HttpStatus.BAD_REQUEST, detailMessage);
     }
 
     public static ChatException emptyChatNameException(String... detailMessage) {
@@ -42,6 +42,17 @@ public class ChatException extends BaseException {
         return new ChatException("CHAT_08", "이미 참여중인 채팅방입니다.", HttpStatus.BAD_REQUEST, detailMessage);
     }
 
+    public static ChatException duplicateChatNameException(String... detailMessage) {
+        return new ChatException("CHAT_09", "이미 존재하는 채팅방 이름입니다.", HttpStatus.CONFLICT, detailMessage);
+    }
+
+    public static ChatException invalidChatRoomException(String... detailMessage) {
+        return new ChatException("CHAT_10", "유효하지 않은 채팅방입니다.", HttpStatus.NOT_FOUND, detailMessage);
+    }
+
+    public static ChatException notAllowedToCreateChatWithSelf(String... detailMessage) {
+        return new ChatException("CHAT_11", "자신이 등록한 상품에는 문의할 수 없습니다.", HttpStatus.BAD_REQUEST, detailMessage);
+    }
 
 // ======================
 

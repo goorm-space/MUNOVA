@@ -1,17 +1,19 @@
 package com.space.munova.coupon.service;
 
-import com.space.munova.coupon.dto.IssueCouponRequest;
-import com.space.munova.coupon.dto.IssueCouponResponse;
-import com.space.munova.coupon.dto.UseCouponRequest;
-import com.space.munova.coupon.dto.UseCouponResponse;
+import com.space.munova.core.dto.PagingResponse;
+import com.space.munova.coupon.dto.*;
 import com.space.munova.coupon.entity.Coupon;
 import com.space.munova.coupon.entity.CouponDetail;
 import com.space.munova.coupon.exception.CouponException;
 import com.space.munova.coupon.repository.CouponDetailRepository;
 import com.space.munova.coupon.repository.CouponRedisRepository;
 import com.space.munova.coupon.repository.CouponRepository;
+import com.space.munova.coupon.repository.CouponSearchQueryDslRepository;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,18 @@ public class CouponServiceImpl implements CouponService {
     private final CouponRepository couponRepository;
     private final CouponDetailRepository couponDetailRepository;
     private final CouponRedisRepository couponRedisRepository;
+    private final CouponSearchQueryDslRepository couponSearchQueryDslRepository;
+
+    /**
+     * 쿠폰 목록 조회
+     */
+    @Override
+    public PagingResponse<SearchCouponResponse> searchCoupons(Pageable pageable, Sort sort, SearchCouponParams params) {
+        Page<Coupon> coupons = couponSearchQueryDslRepository.findByCouponParams(pageable, sort, params);
+        Page<SearchCouponResponse> couponsResponse = coupons.map(SearchCouponResponse::from);
+
+        return PagingResponse.from(couponsResponse);
+    }
 
     /**
      * 쿠폰 발급
@@ -39,6 +53,12 @@ public class CouponServiceImpl implements CouponService {
             throw CouponException.duplicateIssueException();
         }
 
+        CouponDetail couponDetail = couponDetailRepository.findById(couponDetailId)
+                .orElseThrow(CouponException::notFoundException);
+
+        // 발행일자 이전에 발급 요청시 예외
+        couponDetail.validatePublished();
+
         // 쿠폰 재고 차감
         Long couponRemain = couponRedisRepository.decreaseQuantity(couponDetailId);
         if (couponRemain == null) {
@@ -49,9 +69,6 @@ public class CouponServiceImpl implements CouponService {
             couponRedisRepository.delete(couponDetailId);
             throw CouponException.soldOutException();
         }
-
-        CouponDetail couponDetail = couponDetailRepository.findById(couponDetailId)
-                .orElseThrow(CouponException::notFoundException);
 
         // 쿠폰 발급
         Coupon coupon = Coupon.issuedCoupon(memberId, couponDetail);

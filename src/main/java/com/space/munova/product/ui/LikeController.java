@@ -4,6 +4,7 @@ import com.space.munova.core.config.ResponseApi;
 import com.space.munova.product.application.ProductLikeService;
 import com.space.munova.product.application.dto.FindProductResponseDto;
 import com.space.munova.product.application.dto.like.ProductLikeRequestDto;
+import com.space.munova.recommend.service.RecommendService;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import java.util.List;
 public class LikeController {
 
     private final ProductLikeService productLikeService;
+    private final RecommendService recommendService;
 
     @PostMapping("/api/like")
     public ResponseEntity<ResponseApi<Void>> productLike(@RequestBody ProductLikeRequestDto reqDto) {
@@ -33,6 +35,7 @@ public class LikeController {
     public ResponseEntity<ResponseApi<Void>> deleteProductLike(@PathVariable(name = "productId") @NotNull Long productId) {
 
         productLikeService.deleteProductLikeByProductId(productId);
+
         return ResponseEntity.ok().body(ResponseApi.ok());
     }
 

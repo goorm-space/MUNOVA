@@ -33,4 +33,8 @@ public class CouponException extends BaseException {
     public static CouponException alreadyUsedException(String... detailMessage) {
         return new CouponException("COUPON_06", "이미 사용한 쿠폰입니다.", HttpStatus.BAD_REQUEST, detailMessage);
     }
+
+    public static CouponException notPublishedException(String... detailMessage) {
+        return new CouponException("COUPON_07", "아직 발행되지 않은 쿠폰입니다.", HttpStatus.BAD_REQUEST, detailMessage);
+    }
 }

@@ -96,6 +96,19 @@
         }
 
 
+        public void updateProduct(String name,
+                                  String info,
+                                  Long price,
+                                  Brand brand,
+                                  Category category ) {
+
+            this.name = name;
+            this.info = info;
+            this.price = price;
+            this.brand = brand;
+            this.category = category;
+        }
+
         /// 상품 논리적 제거
         public void deleteProduct() {
             this.isDeleted = true;

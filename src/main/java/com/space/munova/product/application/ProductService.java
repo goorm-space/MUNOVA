@@ -12,6 +12,8 @@ import com.space.munova.product.domain.Repository.ProductRepository;
 import com.space.munova.product.domain.Repository.ProductSearchLogRepository;
 import com.space.munova.product.domain.enums.ProductCategory;
 import com.space.munova.security.jwt.JwtHelper;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 
@@ -51,6 +54,10 @@ public class ProductService {
     @Transactional
     public void saveProduct(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, AddProductRequestDto reqDto)  {
 
+        if(mainImgFile.isEmpty()) {
+            throw ProductException.badRequestException("메인 이미지는 필수값 입니다.");
+        }
+
         ///멤버서비스에서 member객체를가져온다.
         Long sellerId = JwtHelper.getMemberId();
 
@@ -61,6 +68,7 @@ public class ProductService {
 
         //카테고리 조회.
         Category category = categoryService.findById(reqDto.categoryId());
+
 
         // 상품생성
         try {
@@ -89,12 +97,23 @@ public class ProductService {
 
     public ProductDetailResponseDto findProductDetails(Long productId) {
 
-        ProductInfoDto productInfoDto = productRepository.findProductInfoById(productId).orElseThrow(() -> ProductException.notFoundProductException("Not found Product Information By productId"));
-        List<ProductDetailInfoDto> productDetailInfoDtoByProductId = productDetailService.findProductDetailInfoDtoByProductId(productId);
-        ProductImageDto productImageDto = productImageService.findProductImageDtoByProductId(productId);
-        ProductDetailResponseDto productDetailResponseDto = new ProductDetailResponseDto(productInfoDto, productImageDto, productDetailInfoDtoByProductId);
+        ProductDetailResponseDto productDetailResponseDto = createProductDetailResponseDto(productId);
         return productDetailResponseDto;
     }
+
+
+    public ProductDetailResponseDto findProductDetailsBySeller(Long productId) {
+        Long sellerId = JwtHelper.getMemberId();
+
+        /// 판매자가 등록한상품이 아닐경우 에러 터트림.
+        checkRegisteredProductBySeller(productId, sellerId);
+
+        ProductDetailResponseDto productDetailResponseDto = createProductDetailResponseDto(productId);
+        return productDetailResponseDto;
+    }
+
+
+
 
     @Transactional(readOnly = false)
     public void updateProductViewCount(Long productId) {
@@ -206,5 +225,63 @@ public class ProductService {
                 .toList();
     }
 
+    @Transactional(readOnly = false)
+    public void updateProductInfo(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, UpdateProductRequestDto reqDto) throws IOException {
+        Long sellerId = JwtHelper.getMemberId();
 
+        Product product = productRepository.findByIdAndMemberIdAndIsDeletedFalse(reqDto.productId(), sellerId)
+                .orElseThrow(() -> ProductException.badRequestException("등록한 상품을 찾을 수 없습니다."));
+
+
+        // 브랜드 조회.
+        Brand brand = brandService.findById(reqDto.brandId());
+
+        //카테고리 조회.
+        Category category = categoryService.findById(reqDto.categoryId());
+
+        // 상품수정
+        try {
+            product.updateProduct(reqDto.ProductName(), reqDto.info(), reqDto.price(), brand, category);
+
+            productImageService.deleteImagesByImgIds(reqDto.deletedImgIds(), reqDto.productId());
+            updateImages(mainImgFile, sideImgFile, product);
+
+            // 상품 디테일 옵션 저장.
+            productDetailService.saveProductDetailAndOption(product, reqDto.shoeOptionDtos());
+        } catch (IllegalArgumentException e) {
+            log.error(e.getMessage());
+            throw ProductException.badRequestException(e.getMessage());
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new RuntimeException();
+        }
+
+
+    }
+
+
+
+    private ProductDetailResponseDto createProductDetailResponseDto(Long productId) {
+        ProductInfoDto productInfoDto = productRepository.findProductInfoById(productId).orElseThrow(() -> ProductException.notFoundProductException("Not found Product Information By productId"));
+        List<ProductDetailInfoDto> productDetailInfoDtoByProductId = productDetailService.findProductDetailInfoDtoByProductId(productId);
+        ProductImageDto productImageDto = productImageService.findProductImageDtoByProductId(productId);
+        ProductDetailResponseDto productDetailResponseDto = new ProductDetailResponseDto(productInfoDto, productImageDto, productDetailInfoDtoByProductId);
+        return productDetailResponseDto;
+    }
+
+
+    private void checkRegisteredProductBySeller(Long productId, Long sellerId) {
+        if(!productRepository.existsByIdAndMemberIdAndIsDeletedFalse(productId, sellerId)){
+            throw ProductException.badRequestException("등록한 상품을 찾을 수 없습니다.");
+        }
+    }
+
+    private void updateImages(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, Product product) throws IOException {
+        if(mainImgFile != null) {
+            productImageService.updateMainImg(mainImgFile, product);
+        }
+        if(!sideImgFile.isEmpty()) {
+            productImageService.saveSideImg(sideImgFile, product);
+        }
+    }
 }

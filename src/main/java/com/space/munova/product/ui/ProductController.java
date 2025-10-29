@@ -6,12 +6,14 @@ import com.space.munova.product.application.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
@@ -25,6 +27,25 @@ class ProductController {
 
     private final ProductService productService;
 
+    @PatchMapping(value = "/api/product", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResponseApi<Void>> updateProduct(@RequestPart(name = "mainImgFile") MultipartFile mainImgFile,
+                                                           @RequestPart(name = "sideImgFile") List<MultipartFile> sideImgFile,
+                                                           @RequestPart(name = "updateProductInfo") @Valid UpdateProductRequestDto reqDto) throws IOException {
+
+        productService.updateProductInfo(mainImgFile, sideImgFile, reqDto);
+        return ResponseEntity.ok().body(ResponseApi.ok());
+    }
+
+
+    /// 판매자의 수정 페이지 조회
+    @GetMapping("/api/product/{productId}/edit")
+    public ResponseEntity<ResponseApi<ProductDetailResponseDto>> editProductView(@PathVariable("productId") Long productId){
+
+        ProductDetailResponseDto respDto = productService.findProductDetailsBySeller(productId);
+        return ResponseEntity.ok().body(ResponseApi.ok(respDto));
+    }
+
+    ///  판매자의 등록상품 리스트 조회
     @GetMapping("/api/product/seller")
     public ResponseEntity<List<FindProductResponseDto>> findProductBySeller(@PageableDefault Pageable pageable) {
 
@@ -35,7 +56,7 @@ class ProductController {
     /// 상품 등록 메서드
     @Operation(summary = "상품 세부사항 등록", description = "상품의 세부사항을 받아 상품을 등록한다. (판매자만 등록 가능)")
     @PostMapping(value = "/api/product", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ResponseApi<Void>> saveProduct(@RequestPart(name = "mainImgFile") MultipartFile mainImgFile,
+    public ResponseEntity<ResponseApi<Void>> saveProduct(@RequestPart(name = "mainImgFile") @Valid @NotNull MultipartFile mainImgFile,
                                                          @RequestPart(name = "sideImgFile") List<MultipartFile> sideImgFile,
                                                          @RequestPart(name = "addProductInforms") @Valid AddProductRequestDto reqDto) throws IOException {
 

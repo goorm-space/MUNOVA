@@ -25,4 +25,19 @@ public interface ProductImageRepository extends JpaRepository<ProductImage, Long
             "SET pi.isDeleted = true " +
             "WHERE pi.product.id IN :productIds")
     void deleteAllByProductIds(List<Long> productIds);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ProductImage " +
+            "SET isDeleted = true " +
+            "WHERE id IN :imgIds " +
+            "AND product.id = :productId")
+    void deleteProductImgsByImgIdsAndProductId(List<Long> imgIds, Long productId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ProductImage pi " +
+            "SET pi.originName = :originName," +
+            "    pi.savedName = :savedName  " +
+            "WHERE pi.product.id = :productId " +
+            "AND pi.imageType = :imageType ")
+    void updateProductImageByProduct(Long productId, String originName, String savedName,  ProductImageType imageType);
 }

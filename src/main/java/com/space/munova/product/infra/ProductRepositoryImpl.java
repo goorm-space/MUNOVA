@@ -59,7 +59,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 .on(option.id.eq(productOptionMapping.option.id))
                 .where(andCategory(categoryId),
                         andOption(optionIds),
-                        likeProductName(keyword),
+                        searchKeywords(keyword),
                         product.isDeleted.eq(false)
                         )
                 .distinct()

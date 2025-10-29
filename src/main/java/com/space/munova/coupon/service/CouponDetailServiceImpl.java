@@ -33,8 +33,27 @@ public class CouponDetailServiceImpl implements CouponDetailService {
      */
     @Override
     public PagingResponse<SearchEventCouponResponse> searchEventCoupon(Pageable pageable, Sort sort) {
-        Page<CouponDetail> eventCoupon = couponDetailSearchQueryDslRepository.findByEventCoupon(pageable, sort);
-        Page<SearchEventCouponResponse> eventCouponResponses = eventCoupon.map(SearchEventCouponResponse::from);
+        Long memberId = JwtHelper.getMemberId();
+
+        // 이벤트 쿠폰 목록 조회
+        Page<CouponDetailWithIssueStatus> eventCoupon
+                = couponDetailSearchQueryDslRepository.findByEventCoupon(pageable, sort, memberId);
+
+        List<Long> couponIds = eventCoupon.getContent().stream()
+                .map(CouponDetailWithIssueStatus::couponDetailId)
+                .toList();
+
+        // 남은 수량 조회 - redis
+        List<Object> remainQuantityList = couponRedisRepository.findAllByIds(couponIds);
+
+        // 매핑 후 리턴
+        Page<SearchEventCouponResponse> eventCouponResponses = eventCoupon.map(detail -> {
+            // 남은수량
+            Object getValue = remainQuantityList.get(couponIds.indexOf(detail.couponDetailId()));
+            Long remainQuantity = getValue != null ? Long.parseLong(getValue.toString()) : detail.quantity();
+
+            return SearchEventCouponResponse.from(detail, remainQuantity);
+        });
 
         return PagingResponse.from(eventCouponResponses);
     }

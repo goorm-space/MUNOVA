@@ -1,23 +1,25 @@
 package com.space.munova.coupon.dto;
 
-import com.space.munova.coupon.entity.CouponDetail;
-
 import java.time.LocalDateTime;
 
 public record SearchEventCouponResponse(
         Long couponDetailId,
         Long quantity,
+        Long remainQuantity,
         String couponName,
         DiscountPolicy discountPolicy,
+        Boolean isAlreadyIssued,
         LocalDateTime expiredAt
 ) {
-    public static SearchEventCouponResponse from(CouponDetail couponDetail) {
+    public static SearchEventCouponResponse from(CouponDetailWithIssueStatus couponDetail, Long remainQuantity) {
         return new SearchEventCouponResponse(
-                couponDetail.getId(),
-                couponDetail.getQuantity(),
-                couponDetail.getCouponName(),
-                couponDetail.getDiscountPolicy(),
-                couponDetail.getExpiredAt()
+                couponDetail.couponDetailId(),
+                couponDetail.quantity(),
+                remainQuantity,
+                couponDetail.couponName(),
+                couponDetail.discountPolicy(),
+                couponDetail.isAlreadyIssued(),
+                couponDetail.expiredAt()
         );
     }
 }

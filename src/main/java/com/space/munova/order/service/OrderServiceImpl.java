@@ -1,6 +1,7 @@
 package com.space.munova.order.service;
 
 import com.space.munova.auth.exception.AuthException;
+import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.coupon.dto.UseCouponRequest;
 import com.space.munova.coupon.dto.UseCouponResponse;
 import com.space.munova.coupon.entity.Coupon;
@@ -106,18 +107,19 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public GetOrderListResponse getOrderList(Long userId, int page) {
+    public PagingResponse<OrderSummaryDto> getOrderList(int page) {
+        Long userId = JwtHelper.getMemberId();
         Pageable pageable = PageRequest.of(
                 page,
                 PAGE_SIZE,
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<Order> orderPage = orderRepository.findAllByMember_Id(userId, pageable);
+        Page<Order> orderPage = orderRepository.findAllByMember_IdAndStatus(userId, OrderStatus.PAID, pageable);
 
         Page<OrderSummaryDto> dtoPage = orderPage.map(OrderSummaryDto::from);
 
-        return GetOrderListResponse.from(dtoPage);
+        return PagingResponse.from(dtoPage);
     }
 
     @Override
@@ -173,7 +175,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         Coupon coupon = couponRepository.findWithCouponDetailById(request.orderCouponId())
-                        .orElseThrow(CouponException::notFoundException);
+                .orElseThrow(CouponException::notFoundException);
 
         order.updateFinalOrder(
                 couponResponse.originalPrice(),

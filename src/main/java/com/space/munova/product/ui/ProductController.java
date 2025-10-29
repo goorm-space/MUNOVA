@@ -110,7 +110,7 @@ class ProductController {
         /// 상품 상세조회 시 로그
         productService.saveProductClickLog(productId);
         /// 조회수 카운트 증가.
-        productService.updateProductViewCount(productId);
+        productService.updateProductViewCountLogin(productId);
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
 

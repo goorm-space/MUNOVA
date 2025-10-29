@@ -62,6 +62,7 @@ public class AuthServiceImpl implements AuthService {
 
         return SignInGenerateToken.of(
                 member.getId(),
+                member.getUsername(),
                 generateTokens.accessToken(),
                 generateTokens.refreshToken(),
                 member.getRole()

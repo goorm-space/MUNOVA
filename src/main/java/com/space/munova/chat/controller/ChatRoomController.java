@@ -2,10 +2,7 @@ package com.space.munova.chat.controller;
 
 
 import com.space.munova.chat.dto.ChatItemDto;
-import com.space.munova.chat.dto.group.ChatInfoResponseDto;
-import com.space.munova.chat.dto.group.GroupChatInfoResponseDto;
-import com.space.munova.chat.dto.group.GroupChatRequestDto;
-import com.space.munova.chat.dto.group.GroupChatUpdateRequestDto;
+import com.space.munova.chat.dto.group.*;
 import com.space.munova.chat.dto.onetoone.OneToOneChatResponseDto;
 import com.space.munova.chat.enums.ChatUserType;
 import com.space.munova.chat.service.ChatRoomService;
@@ -110,7 +107,11 @@ public class ChatRoomController {
         return ResponseApi.ok();
     }
 
-    // 그룹채팅(Owner) 인원 강퇴
+    // 그룹채팅방 상세 조회 API
+    @GetMapping("/group/{chatId}")
+    public ResponseApi<GroupChatDetailResponseDto> getGroupChatDetail(@PathVariable Long chatId) {
+        return ResponseApi.ok(chatService.getGroupChatDetail(chatId));
+    }
 
 
 }

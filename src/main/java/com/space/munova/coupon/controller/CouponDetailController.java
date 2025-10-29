@@ -2,10 +2,7 @@ package com.space.munova.coupon.controller;
 
 import com.space.munova.core.config.ResponseApi;
 import com.space.munova.core.dto.PagingResponse;
-import com.space.munova.coupon.dto.RegisterCouponDetailRequest;
-import com.space.munova.coupon.dto.RegisterCouponDetailResponse;
-import com.space.munova.coupon.dto.SearchCouponDetailParams;
-import com.space.munova.coupon.dto.SearchCouponDetailResponse;
+import com.space.munova.coupon.dto.*;
 import com.space.munova.coupon.service.CouponDetailService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,16 +13,28 @@ import org.springframework.data.web.SortDefault;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class CouponDetailController {
 
     private final CouponDetailService couponDetailService;
 
     /**
+     * 선착순 쿠폰 조회
+     */
+    @GetMapping("/event/coupon")
+    public ResponseApi<PagingResponse<SearchEventCouponResponse>> searchEventCoupon(
+            @PageableDefault Pageable pageable,
+            @SortDefault(sort = "createdAt", direction = Sort.Direction.DESC) Sort sort
+    ) {
+        PagingResponse<SearchEventCouponResponse> eventCoupon = couponDetailService.searchEventCoupon(pageable, sort);
+        return ResponseApi.ok(eventCoupon);
+    }
+
+    /**
      * 관리자 쿠폰조회
      */
-    @GetMapping("/coupon")
+    @GetMapping("/admin/coupon")
     public ResponseApi<PagingResponse<SearchCouponDetailResponse>> searchAdminCoupon(
             @PageableDefault Pageable pageable,
             @SortDefault(sort = "createdAt", direction = Sort.Direction.DESC) Sort sort,
@@ -39,7 +48,7 @@ public class CouponDetailController {
     /**
      * 관리자 쿠폰등록
      */
-    @PostMapping("/coupon")
+    @PostMapping("/admin/coupon")
     public ResponseApi<RegisterCouponDetailResponse> registerCoupon(
             @Valid @RequestBody RegisterCouponDetailRequest registerCouponDetailRequest
     ) {

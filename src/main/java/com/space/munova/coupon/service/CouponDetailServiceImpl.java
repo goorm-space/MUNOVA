@@ -2,10 +2,7 @@ package com.space.munova.coupon.service;
 
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.core.utils.TimeHelper;
-import com.space.munova.coupon.dto.RegisterCouponDetailRequest;
-import com.space.munova.coupon.dto.RegisterCouponDetailResponse;
-import com.space.munova.coupon.dto.SearchCouponDetailParams;
-import com.space.munova.coupon.dto.SearchCouponDetailResponse;
+import com.space.munova.coupon.dto.*;
 import com.space.munova.coupon.entity.CouponDetail;
 import com.space.munova.coupon.repository.CouponDetailRepository;
 import com.space.munova.coupon.repository.CouponDetailSearchQueryDslRepository;
@@ -30,6 +27,17 @@ public class CouponDetailServiceImpl implements CouponDetailService {
     private final CouponRedisRepository couponRedisRepository;
     private final CouponDetailRepository couponDetailRepository;
     private final CouponDetailSearchQueryDslRepository couponDetailSearchQueryDslRepository;
+
+    /**
+     * 선착순 쿠폰조회
+     */
+    @Override
+    public PagingResponse<SearchEventCouponResponse> searchEventCoupon(Pageable pageable, Sort sort) {
+        Page<CouponDetail> eventCoupon = couponDetailSearchQueryDslRepository.findByEventCoupon(pageable, sort);
+        Page<SearchEventCouponResponse> eventCouponResponses = eventCoupon.map(SearchEventCouponResponse::from);
+
+        return PagingResponse.from(eventCouponResponses);
+    }
 
     /**
      * 관리자 쿠폰조회

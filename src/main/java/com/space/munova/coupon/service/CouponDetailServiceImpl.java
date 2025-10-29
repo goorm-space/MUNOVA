@@ -19,6 +19,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -36,9 +38,25 @@ public class CouponDetailServiceImpl implements CouponDetailService {
     public PagingResponse<SearchCouponDetailResponse> searchAdminCoupon(
             Pageable pageable, Sort sort, SearchCouponDetailParams searchCouponDetailParams
     ) {
+        // 쿠폰 목록 조회
         Page<CouponDetail> couponDetail
                 = couponDetailSearchQueryDslRepository.findByCouponDetailParams(pageable, sort, searchCouponDetailParams);
-        Page<SearchCouponDetailResponse> couponDetailResponses = couponDetail.map(SearchCouponDetailResponse::from);
+
+        List<Long> couponIds = couponDetail.getContent().stream()
+                .map(CouponDetail::getId)
+                .toList();
+
+        // 남은 수량 조회 - redis
+        List<Object> remainQuantityList = couponRedisRepository.findAllByIds(couponIds);
+
+        // 매핑 후 리턴
+        Page<SearchCouponDetailResponse> couponDetailResponses = couponDetail.map(detail -> {
+            // 남은수량
+            Object getValue = remainQuantityList.get(couponIds.indexOf(detail.getId()));
+            Long remainQuantity = getValue != null ? Long.parseLong(getValue.toString()) : detail.getQuantity();
+
+            return SearchCouponDetailResponse.from(detail, remainQuantity);
+        });
 
         return PagingResponse.from(couponDetailResponses);
     }

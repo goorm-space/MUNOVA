@@ -95,8 +95,10 @@ public class RecommendServiceImpl implements RecommendService {
     //비슷한 상품 4개와 추천 4개로 총 16개 추천
     @Override
     @Transactional
-    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateUserProductRecommend(Long userId, Long productId) {
-        List<UserActionSummary> summaries= summaryRepository.findByMemberId(userId);
+    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateUserProductRecommend( Long productId) {
+        Long memberId = JwtHelper.getMemberId();
+
+        List<UserActionSummary> summaries= summaryRepository.findByMemberId(memberId);
         if (summaries.isEmpty()) {
             return ResponseEntity.ok(ResponseApi.ok(Collections.emptyList()));
         }
@@ -104,7 +106,7 @@ public class RecommendServiceImpl implements RecommendService {
         List<Long> topProductIds = summaries.stream()
                 .collect(Collectors.toMap(
                         UserActionSummary::getProductId,
-                        s -> getRecommendationScore(userId, s.getProductId())
+                        s -> getRecommendationScore(memberId, s.getProductId())
                 ))
                 .entrySet().stream()
                 .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
@@ -118,9 +120,9 @@ public class RecommendServiceImpl implements RecommendService {
                 .toList();
         for (Product rec : recommendations) {
             UserRecommendation ur = UserRecommendation.builder()
-                    .member(memberRepository.getReferenceById(userId))
+                    .member(memberRepository.getReferenceById(memberId))
                     .product(rec)
-                    .score(getRecommendationScore(userId, rec.getId()))
+                    .score(getRecommendationScore(memberId, rec.getId()))
                     .build();
             userRecommendRepository.save(ur);
         }

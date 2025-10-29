@@ -1,5 +1,7 @@
 package com.space.munova.product.infra;
 
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -108,6 +110,19 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
     }
 
 
+    private Predicate searchKeywords(String keyword) {
+        if (keyword == null || keyword.isEmpty()) {
+            return null;
+        }
+
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.or(likeProductName(keyword));   // 상품명
+        builder.or(likeCategoryName(keyword));  // 카테고리 타입(Enum)
+        builder.or(likeOptionName(keyword));    // 옵션명 (서브쿼리)
+
+        return builder;
+    }
+
 
 
     private BooleanExpression andCategory(Long categoryId) {
@@ -133,4 +148,21 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         }
         return product.name.like("%"+keyword+"%");
     }
+
+
+    private BooleanExpression likeOptionName(String keyword){
+        if(keyword == null || keyword.isEmpty()) {
+            return null;
+        }
+        return option.optionName.like("%"+keyword+"%");
+    }
+
+    private BooleanExpression likeCategoryName(String keyword){
+        if(keyword == null || keyword.isEmpty()) {
+            return null;
+        }
+        return category.categoryName.stringValue().like("%"+keyword+"%");
+    }
+
+
 }

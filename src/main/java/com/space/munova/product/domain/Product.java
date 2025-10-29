@@ -96,6 +96,22 @@
         }
 
 
+        public void updateProduct(String name,
+                                  String info,
+                                  Long price,
+                                  Brand brand,
+                                  Category category ) {
+
+            if(price < 0) {
+                throw new IllegalArgumentException("가격은 0보다 작을수 없습니다.");
+            }
+            this.name = name;
+            this.info = info;
+            this.price = price;
+            this.brand = brand;
+            this.category = category;
+        }
+
         /// 상품 논리적 제거
         public void deleteProduct() {
             this.isDeleted = true;

@@ -8,8 +8,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api")
 @RequiredArgsConstructor
-public class RecommendCommonController {
+public class RecommendController {
 
     private final RecommendService recommendService;
 
@@ -25,12 +26,12 @@ public class RecommendCommonController {
         return "Similar product recommendation updated successfully";
     }
 
-    @GetMapping("/api/admin/recommend/user/{userId}/product/{productId}/based_on")
+    @GetMapping("/admin/recommend/user/{userId}/product/{productId}/based_on")
     public List<ResponseDto> getRecommendationReason(@PathVariable Long userId, @PathVariable Long productId) {
         return recommendService.getRecommendationReason(userId, productId);
     }
 
-    @GetMapping("/api/admin/recommend/user/{userId}/product/{productId}/score")
+    @GetMapping("/admin/recommend/user/{userId}/product/{productId}/score")
     public double getRecommendationScore(@PathVariable Long userId, @PathVariable Long productId) {
         return recommendService.getRecommendationScore(userId, productId);
     }

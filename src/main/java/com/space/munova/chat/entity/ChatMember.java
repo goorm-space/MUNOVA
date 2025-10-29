@@ -35,16 +35,20 @@ public class ChatMember {
     @Enumerated(EnumType.STRING)
     private ChatUserType chatMemberType;    // 채팅방 권한 : ADMIN, MEMBER, OWNER
 
-    public ChatMember(Chat chatId, Member memberId, ChatUserType type, Product product) {
+    private String name;
+
+    public ChatMember(Chat chatId, Member memberId, ChatUserType type, Product product, String name) {
         this.chatId = chatId;
         this.memberId = memberId;
         this.chatMemberType = type;
         this.productId = product;
+        this.name = name;
     }
 
-    public ChatMember(Chat chatId, Member memberId, ChatUserType type) {
+    public ChatMember(Chat chatId, Member memberId, ChatUserType type, String name) {
         this.chatId = chatId;
         this.memberId = memberId;
         this.chatMemberType = type;
+        this.name = name;
     }
 }

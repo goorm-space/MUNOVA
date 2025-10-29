@@ -1,10 +1,7 @@
 package com.space.munova.chat.service;
 
 import com.space.munova.chat.dto.ChatItemDto;
-import com.space.munova.chat.dto.group.ChatInfoResponseDto;
-import com.space.munova.chat.dto.group.GroupChatInfoResponseDto;
-import com.space.munova.chat.dto.group.GroupChatRequestDto;
-import com.space.munova.chat.dto.group.GroupChatUpdateRequestDto;
+import com.space.munova.chat.dto.group.*;
 import com.space.munova.chat.dto.onetoone.OneToOneChatResponseDto;
 import com.space.munova.chat.enums.ChatUserType;
 
@@ -19,7 +16,7 @@ public interface ChatRoomService {
 
     GroupChatInfoResponseDto createGroupChatRoom(GroupChatRequestDto requestDto);
 
-    List<GroupChatInfoResponseDto> searchGroupChatRooms(String keyword, List<Long> tagId, Boolean isMine);
+    List<GroupChatDetailResponseDto> searchGroupChatRooms(String keyword, List<Long> tagId, Boolean isMine);
 
     List<ChatItemDto> getGroupChatRooms();
 
@@ -34,4 +31,6 @@ public interface ChatRoomService {
     void joinGroupChat(Long chatId);
 
     void closeGroupChat(Long chatId);
+
+    GroupChatDetailResponseDto getGroupChatDetail(Long chatId);
 }

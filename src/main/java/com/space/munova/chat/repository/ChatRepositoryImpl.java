@@ -7,12 +7,14 @@ import com.space.munova.chat.entity.Chat;
 import com.space.munova.chat.entity.QChat;
 import com.space.munova.chat.entity.QChatMember;
 import com.space.munova.chat.entity.QChatTag;
+import com.space.munova.chat.enums.ChatType;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Repository
@@ -41,9 +43,31 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         }
 
         return query
-                .where(keywordLike(keyword))
+                .where(
+                        keywordLike(keyword),
+                        chat.type.eq(ChatType.GROUP)
+                )
                 .distinct()
                 .fetch();
+    }
+
+    @Override
+    public Optional<Chat> findGroupChatDetailById(Long chatId) {
+        QChat chat = QChat.chat;
+        QChatMember chatMember = QChatMember.chatMember;
+        QChatTag chatTag = QChatTag.chatTag;
+
+        Chat result = queryFactory
+                .selectFrom(chat)
+                .leftJoin(chat.chatMembers, chatMember).fetchJoin()
+                .leftJoin(chat.chatTags, chatTag).fetchJoin()
+                .where(
+                        chat.id.eq(chatId),
+                        chat.type.eq(ChatType.GROUP)
+                )
+                .fetchOne();
+
+        return Optional.ofNullable(result);
     }
 
     private BooleanExpression tagsIn(List<Long> tagIds) {

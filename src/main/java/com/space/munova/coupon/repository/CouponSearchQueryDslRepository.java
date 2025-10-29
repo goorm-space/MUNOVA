@@ -20,6 +20,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -33,13 +34,14 @@ public class CouponSearchQueryDslRepository {
     // 쿠폰 검색
     public Page<Coupon> findByCouponParams(Pageable pageable, Sort sort, SearchCouponParams params) {
         // 카운트 쿼리
-        long totalSize = queryFactory
+        Long totalSize = queryFactory
                 .select(coupon.count())
                 .from(coupon)
                 .innerJoin(coupon.couponDetail, couponDetail)
                 .where(statusEq(params.status()), memberIdEq())
-                .fetch()
-                .size();
+                .fetchOne();
+
+        totalSize = Optional.ofNullable(totalSize).orElse(0L);
 
         // 조회 쿼리
         List<Coupon> coupons = queryFactory

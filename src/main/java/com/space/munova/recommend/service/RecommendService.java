@@ -2,11 +2,9 @@ package com.space.munova.recommend.service;
 
 import com.space.munova.core.config.ResponseApi;
 import com.space.munova.product.application.dto.FindProductResponseDto;
-import com.space.munova.product.domain.Product;
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
 import com.space.munova.recommend.dto.RecommendationsProductResponseDto;
 import com.space.munova.recommend.dto.RecommendationsUserResponseDto;
-import com.space.munova.recommend.dto.ResponseDto;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -22,6 +20,5 @@ public interface RecommendService {
 
     List<RecommendReasonResponseDto> getRecommendationReason(Long userId, Long productId);
     double getRecommendationScore(Long userId, Long productId);
-    void updateUserAction(Long userId, Long productId, boolean clicked, boolean liked,
-                          boolean inCart, boolean purchased);
+    void updateUserAction( Long productId, Integer clicked, Boolean liked, Boolean inCart, Boolean purchased);
 }

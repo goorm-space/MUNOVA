@@ -3,7 +3,6 @@ package com.space.munova.recommend.controller;
 import com.space.munova.core.config.ResponseApi;
 import com.space.munova.product.application.dto.FindProductResponseDto;
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
-import com.space.munova.recommend.dto.ResponseDto;
 import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -1,6 +1,7 @@
 package com.space.munova.order.service;
 
 import com.space.munova.auth.exception.AuthException;
+import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.coupon.dto.UseCouponRequest;
 import com.space.munova.coupon.dto.UseCouponResponse;
 import com.space.munova.coupon.entity.Coupon;
@@ -15,10 +16,12 @@ import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.entity.OrderProductLog;
 import com.space.munova.order.exception.OrderException;
+import com.space.munova.order.repository.OrderItemRepository;
 import com.space.munova.order.repository.OrderProductLogRepository;
 import com.space.munova.order.repository.OrderRepository;
 import com.space.munova.product.application.ProductDetailService;
 import com.space.munova.product.domain.ProductDetail;
+import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -41,8 +44,10 @@ public class OrderServiceImpl implements OrderService {
     private final ProductDetailService productDetailService;
     private final CouponService couponService;
 
+    private final OrderItemRepository orderItemRepository;
     private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
+    private final RecommendService recommendService;
 
     private final OrderProductLogRepository orderProductLogRepository;
     private final CouponRepository couponRepository;
@@ -71,6 +76,15 @@ public class OrderServiceImpl implements OrderService {
 
         orderRepository.save(finalOrder);
 
+        //UserActionSummary 저장 로직
+        List<Long> orderItemIds=finalOrder.getOrderItems().stream()
+                .map(OrderItem::getId)
+                .toList();
+        List<Long> productDetailIds=orderItemRepository.findProductDetailIdsByOrderItemIds(orderItemIds);
+        for(Long productDetailId:productDetailIds){
+            Long productId=productDetailService.findProductIdByDetailId(productDetailId);
+            recommendService.updateUserAction(productId,0,null,null,true);
+        }
         return finalOrder;
     }
 
@@ -93,18 +107,19 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public GetOrderListResponse getOrderList(Long userId, int page) {
+    public PagingResponse<OrderSummaryDto> getOrderList(int page) {
+        Long userId = JwtHelper.getMemberId();
         Pageable pageable = PageRequest.of(
                 page,
                 PAGE_SIZE,
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<Order> orderPage = orderRepository.findAllByMember_Id(userId, pageable);
+        Page<Order> orderPage = orderRepository.findAllByMember_IdAndStatus(userId, OrderStatus.PAID, pageable);
 
         Page<OrderSummaryDto> dtoPage = orderPage.map(OrderSummaryDto::from);
 
-        return GetOrderListResponse.from(dtoPage);
+        return PagingResponse.from(dtoPage);
     }
 
     @Override
@@ -160,7 +175,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         Coupon coupon = couponRepository.findWithCouponDetailById(request.orderCouponId())
-                        .orElseThrow(CouponException::notFoundException);
+                .orElseThrow(CouponException::notFoundException);
 
         order.updateFinalOrder(
                 couponResponse.originalPrice(),

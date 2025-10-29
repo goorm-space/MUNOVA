@@ -42,7 +42,11 @@ public class AuthController {
         jwtHelper.saveRefreshTokenToCookie(response, signInGenerateToken.refreshToken());
 
         SignInResponse signInResponse = SignInResponse.of(
-                signInGenerateToken.memberId(), signInGenerateToken.accessToken(), signInGenerateToken.refreshToken()
+                signInGenerateToken.memberId(),
+                signInGenerateToken.username(),
+                signInGenerateToken.accessToken(),
+                signInGenerateToken.refreshToken(),
+                signInGenerateToken.role()
         );
         return ResponseApi.ok(signInResponse);
     }

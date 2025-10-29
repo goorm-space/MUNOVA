@@ -8,8 +8,5 @@ import java.util.List;
 
 public interface ProductRecommendationRepository extends JpaRepository<ProductRecommendation, Long> {
     List<ProductRecommendation> findBySourceProductId(Long sourceProductId);
-
-    List<ProductRecommendation> findByTargetProductId(Long sourceProductId);
-
     void deleteBySourceProduct(Product product);
 }

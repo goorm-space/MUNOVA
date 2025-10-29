@@ -40,4 +40,14 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
             "WHERE p.id = :productId " +
             "AND p.likeCount > 0")
     int minusLikeCountInProductIds(Long productId);
+
+
+
+    boolean existsByIdAndMemberIdAndIsDeletedFalse(Long productId , Long sellerId);
+
+    @Query("SELECT p FROM Product p " +
+            "WHERE p.isDeleted = false " +
+            "AND p.id = :productId " +
+            "AND p.member.id = :sellerId ")
+    Optional<Product> findByIdAndMemberIdAndIsDeletedFalse(Long productId, Long sellerId);
 }

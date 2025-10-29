@@ -8,6 +8,7 @@ import com.space.munova.product.application.exception.CartException;
 import com.space.munova.product.domain.Cart;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.Repository.CartRepository;
+import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ public class CartService {
     private final MemberRepository memberRepository;
     private final ProductDetailService productDetailService;
     private final ProductImageService productImageService;
+    private final RecommendService recommendService;
 
     @Transactional(readOnly = false)
     public void deleteByProductDetailIds(List<Long> productDetailIds) {
@@ -51,6 +53,9 @@ public class CartService {
         /// 멤버의 장바구니에 담긴상품일경우 업데이트
         /// 담기지 않은 상품일경우 저장.
         upsertCart(reqDto, memberId, productDetail, member);
+
+        Long productId=productDetailService.findProductIdByDetailId(reqDto.productDetailId());
+        recommendService.updateUserAction(productId,0,null,true,null);
     }
 
 
@@ -60,7 +65,16 @@ public class CartService {
     public void deleteByCartIds(List<Long> cartIds) {
 
         Long memberId = JwtHelper.getMemberId();
+        upsertUserAction(cartIds);
         cartRepository.deleteByCartIdsAndMemberId(cartIds,memberId);
+
+    }
+
+    private void upsertUserAction(List<Long> cartIds) {
+        List<Long> productIdsByCartIds = cartRepository.findProductIdsByCartIds(cartIds);
+        for(Long productId:productIdsByCartIds){
+            recommendService.updateUserAction(productId,0,null,false,null);
+        }
     }
 
 
@@ -170,5 +184,19 @@ public class CartService {
         }catch (Exception e){
            throw CartException.badRequestCartException(e.getMessage());
         }
+    }
+
+    public List<ProductDetail> findProductIdsByCartIds(List<Long> cartIds) {
+        List<Cart> carts = cartRepository.findAllById(cartIds);
+        return carts.stream()
+                .map(Cart::getProductDetail)
+                .toList();
+    }
+
+    @Transactional
+    public void deleteByProductDetailIdsAndMemberId(List<Long> productDetailIds) {
+        Long memberId = JwtHelper.getMemberId();
+
+        cartRepository.deleteByProductDetailIdsAndMemberId(productDetailIds,memberId);
     }
 }

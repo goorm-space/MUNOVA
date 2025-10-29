@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Repository
@@ -32,6 +34,18 @@ public class CouponRedisRepository {
         String key = COUPON_STOCK_PREFIX + couponDetailId;
         Object amount = redisTemplate.opsForValue().get(key);
         return amount != null ? Long.parseLong(amount.toString()) : null;
+    }
+
+    public List<Object> findAllByIds(List<Long> couponDetailIds) {
+        if (couponDetailIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<String> keys = couponDetailIds.stream()
+                .map(id -> COUPON_STOCK_PREFIX + id)
+                .toList();
+
+        return redisTemplate.opsForValue().multiGet(keys);
     }
 
     public void delete(Long memberId) {

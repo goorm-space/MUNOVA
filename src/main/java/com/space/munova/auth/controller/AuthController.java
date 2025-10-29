@@ -43,6 +43,7 @@ public class AuthController {
 
         SignInResponse signInResponse = SignInResponse.of(
                 signInGenerateToken.memberId(),
+                signInGenerateToken.username(),
                 signInGenerateToken.accessToken(),
                 signInGenerateToken.refreshToken(),
                 signInGenerateToken.role()

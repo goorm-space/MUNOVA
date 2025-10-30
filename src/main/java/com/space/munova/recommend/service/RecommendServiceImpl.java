@@ -64,7 +64,7 @@ public class RecommendServiceImpl implements RecommendService {
 
         Page<RecommendationsUserResponseDto> dtoPage=recommendations.map(rec->
                 RecommendationsUserResponseDto.builder()
-                        .memberId(memberId)
+                        .memberId(rec.getMember().getId())
                         .productId(rec.getProduct().getId())
                         .score(rec.getScore())
                         .createdAt(rec.getCreatedAt())

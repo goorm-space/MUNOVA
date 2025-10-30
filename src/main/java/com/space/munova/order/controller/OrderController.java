@@ -33,6 +33,7 @@ public class OrderController {
     @GetMapping
     public ResponseApi<PagingResponse<OrderSummaryDto>> getOrders(@RequestParam(value = "page", defaultValue = "0") int page) {
         PagingResponse<OrderSummaryDto> response = orderService.getOrderList(page);
+        System.out.print(response.content());
 
         return ResponseApi.ok(response);
     }

@@ -40,6 +40,10 @@ dependencies {
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0'
 
+    implementation "io.awspring.cloud:spring-cloud-aws-starter:3.4.0"
+    implementation "com.amazonaws:aws-java-sdk-s3:1.12.792"
+
+
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
     annotationProcessor 'org.projectlombok:lombok'

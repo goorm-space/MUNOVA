@@ -6,10 +6,13 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.space.munova.product.application.dto.FindProductResponseDto;
+import com.space.munova.product.domain.QProduct;
 import com.space.munova.product.domain.Repository.ProductRepositoryCustom;
 import com.space.munova.product.domain.enums.ProductImageType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.CollectionUtils;
@@ -30,7 +33,26 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<FindProductResponseDto> findProductByConditions(Long categoryId, List<Long> optionIds, String keyword, Pageable pageable) {
+    public Page<FindProductResponseDto> findProductByConditions(Long categoryId, List<Long> optionIds, String keyword, Pageable pageable) {
+
+        Long total = queryFactory
+                .select(product.id.countDistinct())
+                .from(product)
+                .leftJoin(category)
+                .on(category.id.eq(product.category.id))
+                .leftJoin(productDetail)
+                .on(product.id.eq(productDetail.product.id))
+                .leftJoin(productOptionMapping)
+                .on(productDetail.id.eq(productOptionMapping.productDetail.id))
+                .leftJoin(option)
+                .on(option.id.eq(productOptionMapping.option.id))
+                .where(andCategory(categoryId),
+                        andOption(optionIds),
+                        searchKeywords(keyword),
+                        product.isDeleted.eq(false)
+                )
+                .fetchOne();
+
 
         List<FindProductResponseDto> findProductByConditions = queryFactory
                 .select(Projections.constructor(FindProductResponseDto.class,
@@ -68,12 +90,13 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 .offset(pageable.getOffset())
                 .fetch();
 
-        return findProductByConditions;
+        return new PageImpl<>(findProductByConditions, pageable, total != null ? total : 0L);
     }
 
     @Override
-    public List<FindProductResponseDto> findProductBySeller(Pageable pageable, Long sellerId) {
-        return queryFactory
+    public Page<FindProductResponseDto> findProductBySeller(Pageable pageable, Long sellerId) {
+
+        List<FindProductResponseDto> content = queryFactory
                 .select(Projections.constructor(FindProductResponseDto.class,
                         product.id.as("productId"),
                         productImage.savedName.as("mainImgSrc"),
@@ -107,6 +130,15 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 .offset(pageable.getOffset())
                 .fetch();
 
+
+        Long total = queryFactory
+                .select(product.count())
+                .from(product)
+                .where(product.member.id.eq(sellerId)
+                        .and(product.isDeleted.eq(false)))
+                .fetchOne();
+
+        return new PageImpl<>(content, pageable, total != null ? total : 0L);
     }
 
 

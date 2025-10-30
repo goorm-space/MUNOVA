@@ -49,7 +49,7 @@ pipeline {
         ENV_MERGE_TO    = "${mergeTo}"
         ENV_PR_HTML_LINK= "${prHtmlLink}"
 
-        WEBHOOK_DISCORD_URL = credentials("MUNOVA-discord-Hook")
+        WEBHOOK_DISCORD_URL = credentials("MUNOVA-dico-Hook")
         SECRET_FILE         = credentials('MUNOVA_APPLICATION_PROPERTIES')
     }
 

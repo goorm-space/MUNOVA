@@ -3,6 +3,7 @@ package com.space.munova.chat.repository;
 import com.space.munova.chat.dto.ChatItemDto;
 import com.space.munova.chat.entity.Chat;
 import com.space.munova.chat.enums.ChatType;
+import com.space.munova.chat.enums.ChatUserType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,7 +32,6 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
 
     boolean existsByName(String name);
 
-
     @Query("SELECT new com.space.munova.chat.dto.ChatItemDto" +
             "(c.id, c.name, c.lastMessageContent, c.lastMessageTime) " +
             "FROM Chat c " +
@@ -39,4 +39,16 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
             "AND c.type = com.space.munova.chat.enums.ChatType.GROUP " +
             "ORDER BY c.lastMessageTime DESC")
     List<ChatItemDto> findAllGroupChats();
+
+
+    @Query("SELECT c " +
+            "FROM ChatMember cm " +
+            "JOIN cm.chatId c " +
+            "WHERE cm.memberId.id = :memberId " +
+            "AND cm.chatMemberType = :chatUserType " +
+            "AND c.type = :chatType")
+    List<Chat> findByMemberIdAndChatUserType(
+            @Param("memberId") Long memberId,
+            @Param("chatType") ChatType chatType,
+            @Param("chatUserType") ChatUserType chatUserType);
 }

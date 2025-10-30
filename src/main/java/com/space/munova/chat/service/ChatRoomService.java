@@ -18,6 +18,8 @@ public interface ChatRoomService {
 
     List<GroupChatDetailResponseDto> searchGroupChatRooms(String keyword, List<Long> tagId, Boolean isMine);
 
+    List<GroupChatDetailResponseDto> getMyGroupChatRooms();
+
     List<ChatItemDto> getGroupChatRooms();
 
     List<ChatItemDto> getAllGroupChatRooms();
@@ -31,6 +33,8 @@ public interface ChatRoomService {
     void joinGroupChat(Long chatId);
 
     void closeGroupChat(Long chatId);
+
+    void openGroupChat(Long chatId);
 
     GroupChatDetailResponseDto getGroupChatDetail(Long chatId);
 }

@@ -15,7 +15,7 @@ public interface RecommendService {
 
     List<RecommendationsProductResponseDto> getRecommendationsByProductId(Long productId);
 
-    ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateUserProductRecommend(Long userId, Long productId);
+    ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateUserProductRecommend(Long productId);
     ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateSimilarProductRecommend(Long productId);
 
     List<RecommendReasonResponseDto> getRecommendationReason(Long userId, Long productId);

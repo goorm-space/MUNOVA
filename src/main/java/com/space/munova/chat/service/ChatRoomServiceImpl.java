@@ -1,10 +1,7 @@
 package com.space.munova.chat.service;
 
 import com.space.munova.chat.dto.ChatItemDto;
-import com.space.munova.chat.dto.group.ChatInfoResponseDto;
-import com.space.munova.chat.dto.group.GroupChatInfoResponseDto;
-import com.space.munova.chat.dto.group.GroupChatRequestDto;
-import com.space.munova.chat.dto.group.GroupChatUpdateRequestDto;
+import com.space.munova.chat.dto.group.*;
 import com.space.munova.chat.dto.onetoone.OneToOneChatResponseDto;
 import com.space.munova.chat.entity.Chat;
 import com.space.munova.chat.entity.ChatMember;
@@ -33,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -92,8 +90,8 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                 .build());
 
         // 채팅방 참가자(판매자) 등록
-        chatMemberRepository.save(new ChatMember(chat, seller, ChatUserType.OWNER, product));
-        chatMemberRepository.save(new ChatMember(chat, buyer, ChatUserType.MEMBER, product));
+        chatMemberRepository.save(new ChatMember(chat, seller, ChatUserType.OWNER, product, seller.getUsername()));
+        chatMemberRepository.save(new ChatMember(chat, buyer, ChatUserType.MEMBER, product, buyer.getUsername()));
 
         return OneToOneChatResponseDto.of(chat, buyerId, seller.getId());
     }
@@ -140,7 +138,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
             chatTagRepository.save(chatTag);
         }
 
-        chatMemberRepository.save(new ChatMember(chat, member, ChatUserType.OWNER));
+        chatMemberRepository.save(new ChatMember(chat, member, ChatUserType.OWNER, member.getUsername()));
         List<ProductCategory> list = categoryList.stream().map(Category::getCategoryType).toList();
 
         return GroupChatInfoResponseDto.of(chat, list);
@@ -149,18 +147,35 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     // 그룹 채팅방 검색
     @Override
     @Transactional(readOnly = true)
-    public List<GroupChatInfoResponseDto> searchGroupChatRooms(String keyword, List<Long> tagIds, Boolean isMine) {
+    public List<GroupChatDetailResponseDto> searchGroupChatRooms(String keyword, List<Long> tagIds, Boolean isMine) {
 
         Long memberId = isMine ? JwtHelper.getMemberId() : null;
 
         List<Chat> chatRoomLists = chatRepositoryCustom.findByNameAndTags(keyword, tagIds, memberId);
 
         return chatRoomLists.stream()
-                .map(chat -> GroupChatInfoResponseDto.of(
-                        chat,
-                        chat.getChatTags().stream()
-                                .map(ChatTag::getCategoryType)
-                                .toList()))
+                .map(chat -> GroupChatDetailResponseDto.of(
+                        chat.getId(),
+                        chat.getName(),
+                        chat.getMaxParticipant(),
+                        chat.getCurParticipant(),
+                        chat.getStatus(),
+                        chat.getCreatedAt(),
+                        chat.getChatTags() != null
+                                ? chat.getChatTags().stream()
+                                .filter(Objects::nonNull)
+                                .map(ct -> ct.getCategoryType() != null ? ct.getCategoryType().getDescription() : null)
+                                .filter(Objects::nonNull)
+                                .toList()
+                                : List.of(), // null이면 빈 리스트
+                        chat.getChatMembers() != null
+                                ? chat.getChatMembers().stream()
+                                .filter(Objects::nonNull)
+                                .map(cm -> cm.getMemberId() != null ? MemberInfoDto.of(cm.getMemberId().getId(), cm.getName()) : null)
+                                .filter(Objects::nonNull)
+                                .toList()
+                                : List.of()
+                ))
                 .toList();
     }
 
@@ -260,7 +275,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> MemberException.notFoundException("memberId=" + memberId));
 
-        chatMemberRepository.save(new ChatMember(chat, member, ChatUserType.MEMBER));
+        chatMemberRepository.save(new ChatMember(chat, member, ChatUserType.MEMBER, member.getUsername()));
     }
 
     // OWNER가 채팅방 CLOSED로 전환
@@ -277,6 +292,33 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         chatMember.getChatId().updateChatStatusClosed(ChatStatus.CLOSED);
     }
 
+    // Service
+    @Override
+    public GroupChatDetailResponseDto getGroupChatDetail(Long chatId) {
+        Chat chat = chatRepository.findByIdAndType(chatId, ChatType.GROUP)
+                .orElseThrow(() -> ChatException.cannotFindChatException("chatId=" + chatId));
+
+        List<String> productCategoryList = chat.getChatTags().stream()
+                .map(ChatTag::getCategoryType)   // ProductCategory
+                .filter(pc -> pc != null)
+                .map(ProductCategory::getDescription)
+                .toList();
+
+        List<MemberInfoDto> memberList = chat.getChatMembers().stream()
+                .map(cm -> MemberInfoDto.of(cm.getMemberId().getId(), cm.getName()))
+                .toList();
+
+        return new GroupChatDetailResponseDto(
+                chat.getId(),
+                chat.getName(),
+                chat.getMaxParticipant(),
+                chat.getCurParticipant(),
+                chat.getStatus(),
+                chat.getCreatedAt(),
+                productCategoryList,
+                memberList
+        );
+    }
 
     private String generateChatRoomName(String productName, String userName) {
         return "[" + productName + "] 문의 - " + userName + "님";

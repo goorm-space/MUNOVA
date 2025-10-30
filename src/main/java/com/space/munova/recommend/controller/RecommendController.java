@@ -16,9 +16,9 @@ public class RecommendController {
 
     private final RecommendService recommendService;
 
-    @PutMapping("/recommend/{userId}/{productId}")
-    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateMemberProductRecommend(@PathVariable Long userId, @PathVariable Long productId) {
-        return recommendService.updateUserProductRecommend(userId, productId);
+    @PutMapping("/api/recommend/user/{productId}")
+    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateMemberProductRecommend(@PathVariable Long productId) {
+        return recommendService.updateUserProductRecommend(productId);
     }
 
     @PutMapping("/recommend/{productId}")

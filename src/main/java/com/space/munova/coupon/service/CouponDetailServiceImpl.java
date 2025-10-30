@@ -2,10 +2,7 @@ package com.space.munova.coupon.service;
 
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.core.utils.TimeHelper;
-import com.space.munova.coupon.dto.RegisterCouponDetailRequest;
-import com.space.munova.coupon.dto.RegisterCouponDetailResponse;
-import com.space.munova.coupon.dto.SearchCouponDetailParams;
-import com.space.munova.coupon.dto.SearchCouponDetailResponse;
+import com.space.munova.coupon.dto.*;
 import com.space.munova.coupon.entity.CouponDetail;
 import com.space.munova.coupon.repository.CouponDetailRepository;
 import com.space.munova.coupon.repository.CouponDetailSearchQueryDslRepository;
@@ -30,6 +27,36 @@ public class CouponDetailServiceImpl implements CouponDetailService {
     private final CouponRedisRepository couponRedisRepository;
     private final CouponDetailRepository couponDetailRepository;
     private final CouponDetailSearchQueryDslRepository couponDetailSearchQueryDslRepository;
+
+    /**
+     * 선착순 쿠폰조회
+     */
+    @Override
+    public PagingResponse<SearchEventCouponResponse> searchEventCoupon(Pageable pageable, Sort sort) {
+        Long memberId = JwtHelper.getMemberId();
+
+        // 이벤트 쿠폰 목록 조회
+        Page<CouponDetailWithIssueStatus> eventCoupon
+                = couponDetailSearchQueryDslRepository.findByEventCoupon(pageable, sort, memberId);
+
+        List<Long> couponIds = eventCoupon.getContent().stream()
+                .map(CouponDetailWithIssueStatus::couponDetailId)
+                .toList();
+
+        // 남은 수량 조회 - redis
+        List<Object> remainQuantityList = couponRedisRepository.findAllByIds(couponIds);
+
+        // 매핑 후 리턴
+        Page<SearchEventCouponResponse> eventCouponResponses = eventCoupon.map(detail -> {
+            // 남은수량
+            Object getValue = remainQuantityList.get(couponIds.indexOf(detail.couponDetailId()));
+            Long remainQuantity = getValue != null ? Long.parseLong(getValue.toString()) : detail.quantity();
+
+            return SearchEventCouponResponse.from(detail, remainQuantity);
+        });
+
+        return PagingResponse.from(eventCouponResponses);
+    }
 
     /**
      * 관리자 쿠폰조회

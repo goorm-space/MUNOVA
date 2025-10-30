@@ -14,11 +14,17 @@ public record GroupChatInfoResponseDto(
         Integer currentParticipant,
         ChatStatus status,
         LocalDateTime createdAt,
-        List<ProductCategory> productCategoryList
+        List<String> productCategoryList
 ) {
     public static GroupChatInfoResponseDto of(Chat chat, List<ProductCategory> productCategory) {
+        List<String> descriptions = (productCategory == null ? List.<ProductCategory>of() : productCategory)
+                .stream()
+                .filter(c -> c != null) // null 제거
+                .map(ProductCategory::getDescription)
+                .toList();
+        
         return new GroupChatInfoResponseDto(
-                chat.getId(), chat.getName(), chat.getMaxParticipant(), chat.getCurParticipant(), chat.getStatus(), chat.getCreatedAt(), productCategory
+                chat.getId(), chat.getName(), chat.getMaxParticipant(), chat.getCurParticipant(), chat.getStatus(), chat.getCreatedAt(), descriptions
         );
     }
 }

@@ -122,7 +122,12 @@ public class ProductService {
     @Transactional(readOnly = false)
     public void updateProductViewCount(Long productId) {
         productRepository.updateProductViewCount(productId);
-      //  recommendService.updateUserAction(productId, 1, null, null, null);
+
+    }
+    @Transactional(readOnly = false)
+    public void updateProductViewCountLogin(Long productId) {
+        productRepository.updateProductViewCount(productId);
+        recommendService.updateUserAction(productId, 1, null, null, null);
     }
 
     @Transactional(readOnly = false)

@@ -23,4 +23,7 @@ public interface ProductLikeRepository extends JpaRepository<ProductLike, Long>,
             "AND pl.isDeleted = false")
     int deleteAllByProductIdsAndMemberId(Long productId, Long memberId);
 
+    boolean existsByProductIdAndMemberId(Long productId, Long memberId);
+
+    ProductLike findLikeProductByProductIdAndMemberId(Long productId, Long memberId);
 }

@@ -165,25 +165,35 @@ public class OrderServiceImpl implements OrderService {
                 .mapToLong(item -> item.getPriceSnapshot() * item.getQuantity())
                 .sum();
 
-        UseCouponRequest couponRequest = UseCouponRequest.of(totalProductAmount);
-        UseCouponResponse couponResponse = couponService.useCoupon(request.orderCouponId(), couponRequest);
+        if (request.orderCouponId() != null) {
+            UseCouponRequest couponRequest = UseCouponRequest.of(totalProductAmount);
+            UseCouponResponse couponResponse = couponService.useCoupon(request.orderCouponId(), couponRequest);
 
-        if (couponResponse.finalPrice().longValue() != request.clientCalculatedAmount().longValue()) {
-            throw OrderException.amountMismatchException(
-                    String.format("client: %d, server: %d", request.clientCalculatedAmount(), couponResponse.finalPrice())
+            if (couponResponse.finalPrice().longValue() != request.clientCalculatedAmount().longValue()) {
+                throw OrderException.amountMismatchException(
+                        String.format("client: %d, server: %d", request.clientCalculatedAmount(), couponResponse.finalPrice())
+                );
+            }
+
+            Coupon coupon = couponRepository.findWithCouponDetailById(request.orderCouponId())
+                    .orElseThrow(CouponException::notFoundException);
+
+            order.updateFinalOrder(
+                    couponResponse.originalPrice(),
+                    couponResponse.discountPrice(),
+                    couponResponse.finalPrice(),
+                    coupon,
+                    OrderStatus.PAYMENT_PENDING
+            );
+        } else {
+            order.updateFinalOrder(
+                    totalProductAmount,
+                    0L,
+                    totalProductAmount,
+                    null,
+                    OrderStatus.PAYMENT_PENDING
             );
         }
-
-        Coupon coupon = couponRepository.findWithCouponDetailById(request.orderCouponId())
-                .orElseThrow(CouponException::notFoundException);
-
-        order.updateFinalOrder(
-                couponResponse.originalPrice(),
-                couponResponse.discountPrice(),
-                couponResponse.finalPrice(),
-                coupon,
-                OrderStatus.PAYMENT_PENDING
-        );
 
         return order;
     }

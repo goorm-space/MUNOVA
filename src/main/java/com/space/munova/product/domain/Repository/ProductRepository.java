@@ -12,10 +12,12 @@ import java.util.Optional;
 public interface ProductRepository extends JpaRepository<Product, Long>, ProductRepositoryCustom {
     List<Product> findTop4ByCategory_IdAndIdNotOrderByIdAsc(Long categoryId, Long excludeId);
 
-    @Query("SELECT new com.space.munova.product.application.dto.ProductInfoDto(p.id, b.brandName, p.name, p.info, p.price) " +
+    @Query("SELECT new com.space.munova.product.application.dto.ProductInfoDto(p.id, c.id, b.brandName, p.name, p.info, p.price) " +
             "FROM Product p " +
             "LEFT JOIN Brand b " +
             "ON p.brand.id = b.id " +
+            "LEFT JOIN Category c " +
+            "ON c.id = p.category.id " +
             "WHERE p.id = :productId " +
             "AND p.isDeleted = false")
     Optional<ProductInfoDto> findProductInfoById(Long productId);

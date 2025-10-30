@@ -225,6 +225,7 @@ public class ProductService {
         Product product = productRepository.findByIdAndMemberIdAndIsDeletedFalse(reqDto.productId(), sellerId)
                 .orElseThrow(() -> ProductException.badRequestException("등록한 상품을 찾을 수 없습니다."));
 
+
         // 상품수정
         try {
             product.updateProduct(reqDto.ProductName(), reqDto.info(), reqDto.price());
@@ -263,7 +264,6 @@ public class ProductService {
             if(!deleteDetailIds.isEmpty()) {
                 productDetailService.deleteProductDetailByIds(deleteDetailIds);
             }
-
 
             // 상품 디테일 옵션 저장.
         //    productDetailService.saveProductDetailAndOption(product, reqDto.shoeOptionDtos());

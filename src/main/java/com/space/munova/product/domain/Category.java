@@ -31,6 +31,8 @@ public class Category extends BaseEntity {
     @Convert(converter = ProductCategoryConverter.class)
     private ProductCategory categoryType;
 
+    private String categoryName;
+
     private Integer level;
 
 }

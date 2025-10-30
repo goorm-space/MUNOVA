@@ -7,6 +7,8 @@ import com.space.munova.product.application.dto.FindProductResponseDto;
 import com.space.munova.product.domain.Repository.ProductLikeRepositoryCustom;
 import com.space.munova.product.domain.enums.ProductImageType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import java.util.List;
@@ -22,9 +24,17 @@ public class ProductLikeRepositoryImpl implements ProductLikeRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
     @Override
-    public List<FindProductResponseDto> findLikeProductByMemberId(Pageable pageable, Long memberId) {
+    public Page<FindProductResponseDto> findLikeProductByMemberId(Pageable pageable, Long memberId) {
 
-        return queryFactory
+        Long count = queryFactory
+                .select(productLike.count())
+                .from(productLike)
+                .where(product.isDeleted.eq(false)
+                        .and(productLike.member.id.eq(memberId)))
+                .fetchOne();
+
+
+        List<FindProductResponseDto> dtos = queryFactory
                 .select(Projections.constructor(FindProductResponseDto.class,
                         product.id.as("productId"),
                         productImage.savedName.as("mainImgSrc"),
@@ -34,7 +44,7 @@ public class ProductLikeRepositoryImpl implements ProductLikeRepositoryCustom {
                         product.likeCount.as("likeCount"),
                         product.salesCount.as("salesCount"),
                         productLike.createdAt.as("createAt")
-                        ))
+                ))
                 .from(productLike)
                 .join(product)
                 .on(productLike.product.id.eq(product.id))
@@ -52,5 +62,7 @@ public class ProductLikeRepositoryImpl implements ProductLikeRepositoryCustom {
                 .limit(pageable.getPageSize())
                 .offset(pageable.getOffset())
                 .fetch();
+
+        return new PageImpl<>(dtos, pageable, count != null ? count : 0L);
     }
 }

@@ -1,6 +1,7 @@
 package com.space.munova.product.application;
 
 
+import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
@@ -17,6 +18,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +43,7 @@ public class ProductService {
     private final BrandService brandService;
     private final CategoryService categoryService;
     private final MemberRepository memberRepository;
+    private final ProductOptionService productOptionService;
     //private final ProductLikeService productLikeService;  -> 이후 카프카로 이벤트를 쏴주어야함.
     private final ProductSearchLogRepository productSearchLogRepository;
     private final RecommendService recommendService;
@@ -119,6 +122,11 @@ public class ProductService {
     @Transactional(readOnly = false)
     public void updateProductViewCount(Long productId) {
         productRepository.updateProductViewCount(productId);
+
+    }
+    @Transactional(readOnly = false)
+    public void updateProductViewCountLogin(Long productId) {
+        productRepository.updateProductViewCount(productId);
         recommendService.updateUserAction(productId, 1, null, null, null);
     }
 
@@ -158,20 +166,10 @@ public class ProductService {
     }
 
 
-    public List<FindProductResponseDto> findProductsWithOptionalLogging(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
-        List<FindProductResponseDto> productByConditions = productRepository.findProductByConditions(categoryId,optionIds, keyword, pageable);
-        return productByConditions.stream()
-                .map(dto -> new FindProductResponseDto(
-                        dto.productId(),
-                        productImageService.getImgPath(dto.mainImgSrc()), ///  이미지 풀 패스로 변환.
-                        dto.brandName(),
-                        dto.productName(),
-                        dto.price(),
-                        dto.likeCount(),
-                        dto.salesCount(),
-                        dto.createAt())
-                )
-                .toList();
+    public PagingResponse<FindProductResponseDto> findProductsWithOptionalLogging(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
+        Page<FindProductResponseDto> retVal = productRepository.findProductByConditions(categoryId,optionIds, keyword, pageable);
+
+        return PagingResponse.from(retVal);
     }
 
     @Transactional
@@ -209,22 +207,12 @@ public class ProductService {
     }
 
 
-    public List<FindProductResponseDto> findProductBySeller(Pageable pageable) {
+    public PagingResponse<FindProductResponseDto> findProductBySeller(Pageable pageable) {
         Long memberId = JwtHelper.getMemberId();
 
-        return productRepository.findProductBySeller(pageable, memberId)
-                .stream()
-                .map(dto -> new FindProductResponseDto(
-                        dto.productId(),
-                        productImageService.getImgPath(dto.mainImgSrc()),
-                        dto.brandName(),
-                        dto.productName(),
-                        dto.price(),
-                        dto.likeCount(),
-                        dto.salesCount(),
-                        dto.createAt()
-                ))
-                .toList();
+        Page<FindProductResponseDto> retVal = productRepository.findProductBySeller(pageable, memberId);
+
+        return PagingResponse.from(retVal);
     }
 
     @Transactional(readOnly = false)
@@ -261,7 +249,9 @@ public class ProductService {
 
     }
 
-
+    public List<ProductOptionResponseDto> findOptions() {
+        return productOptionService.findOptions();
+    }
 
     private ProductDetailResponseDto createProductDetailResponseDto(Long productId) {
         ProductInfoDto productInfoDto = productRepository.findProductInfoById(productId).orElseThrow(() -> ProductException.notFoundProductException("Not found Product Information By productId"));
@@ -286,4 +276,6 @@ public class ProductService {
             productImageService.saveSideImg(sideImgFile, product);
         }
     }
+
+
 }

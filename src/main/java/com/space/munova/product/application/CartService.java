@@ -1,5 +1,6 @@
 package com.space.munova.product.application;
 
+import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
@@ -12,6 +13,8 @@ import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -109,9 +112,9 @@ public class CartService {
         }
     }
 
-    public List<FindCartInfoResponseDto> findCartItemByMember(Pageable pageable) {
+    public PagingResponse<FindCartInfoResponseDto> findCartItemByMember(Pageable pageable) {
         Long memberId = JwtHelper.getMemberId();
-        List<ProductInfoForCartDto> productInfoForCartDtos =
+        Page<ProductInfoForCartDto> productInfoForCartDtos =
                 cartRepository.findCartItemInfoByMemberId(memberId, pageable);
 
         // detailId로 그룹핑
@@ -124,9 +127,14 @@ public class CartService {
                         ));
 
         // 맵들을 순회하면서 기본정보와 옵션리스트를 가진 FindCartInfoResponseDto리스트를 만들어 반환.
-        return groupedByDetail.values().stream()
+        List<FindCartInfoResponseDto> val = groupedByDetail.values().stream()
                 .map(this::convertToResponseDto)
                 .collect(Collectors.toList());
+
+        Page<FindCartInfoResponseDto> retVal =
+                new PageImpl<>(val, productInfoForCartDtos.getPageable(), productInfoForCartDtos.getTotalElements());
+
+        return PagingResponse.from(retVal);
     }
 
     /// 기존에 가져온 상품정보는 옵션을 포함한 정보들이다.
@@ -145,7 +153,7 @@ public class CartService {
                 first.productPrice(),
                 first.productQuantity(),
                 first.cartItemQuantity(),
-                productImageService.getImgPath(first.mainImgSrc()),
+                first.mainImgSrc(),
                 first.brandName()
         );
 

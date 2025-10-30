@@ -7,6 +7,8 @@ import com.space.munova.product.domain.*;
 import com.space.munova.product.domain.Repository.CartRepositoryCustom;
 import com.space.munova.product.domain.enums.ProductImageType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
@@ -28,9 +30,16 @@ public class CartRepositoryImpl implements CartRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<ProductInfoForCartDto> findCartItemInfoByMemberId(Long memberId, Pageable pageable) {
+    public Page<ProductInfoForCartDto> findCartItemInfoByMemberId(Long memberId, Pageable pageable) {
 
-        return queryFactory
+        Long count = queryFactory
+                .select(cart.count())
+                .from(cart)
+                .where(cart.member.id.eq(memberId)
+                        .and(cart.isDeleted.eq(false)))
+                .fetchOne();
+
+        List<ProductInfoForCartDto> val = queryFactory
                 .select(Projections.constructor(ProductInfoForCartDto.class,
                         product.id.as("productId"),
                         cart.id.as("cartId"),
@@ -44,7 +53,7 @@ public class CartRepositoryImpl implements CartRepositoryCustom {
                         option.id.as("optionId"),
                         option.optionType.as("optionType"),
                         option.optionName.as("optionName")
-                        ))
+                ))
                 .from(cart)
                 .leftJoin(productDetail)
                 .on(cart.productDetail.id.eq(productDetail.id))
@@ -65,6 +74,8 @@ public class CartRepositoryImpl implements CartRepositoryCustom {
                 .limit(pageable.getPageSize())
                 .offset(pageable.getOffset())
                 .fetch();
+
+        return new PageImpl<>(val, pageable, count != null ? count : 0L);
     }
 
 

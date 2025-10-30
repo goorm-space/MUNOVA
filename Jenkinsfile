@@ -181,7 +181,7 @@ pipeline {
             }
         }
 
-//         stage('Package for CodeDecccploy') {
+//         stage('Package for CodeDeploy') {
 //             steps {
 //                 sh """
 //                     mkdir -p deploy

@@ -1,6 +1,7 @@
 package com.space.munova.product.ui;
 
 import com.space.munova.core.config.ResponseApi;
+import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.product.application.ProductLikeService;
 import com.space.munova.product.application.dto.FindProductResponseDto;
 import com.space.munova.product.application.dto.like.ProductLikeRequestDto;
@@ -40,9 +41,9 @@ public class LikeController {
     }
 
     @GetMapping("/api/like")
-    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> findProductLike(@PageableDefault Pageable pageable) {
-        List<FindProductResponseDto> respDtos = productLikeService.findLikeProducts(pageable);
-        return ResponseEntity.ok().body(ResponseApi.ok(respDtos));
+    public ResponseEntity<ResponseApi<PagingResponse<FindProductResponseDto>>> findProductLike(@PageableDefault Pageable pageable) {
+        PagingResponse<FindProductResponseDto> likeProducts = productLikeService.findLikeProducts(pageable);
+        return ResponseEntity.ok().body(ResponseApi.ok(likeProducts));
     }
 
 }

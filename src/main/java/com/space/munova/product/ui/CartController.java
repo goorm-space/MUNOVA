@@ -1,6 +1,7 @@
 package com.space.munova.product.ui;
 
 import com.space.munova.core.config.ResponseApi;
+import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.product.application.CartService;
 import com.space.munova.product.application.dto.cart.DeleteCartItemRequestDto;
 import com.space.munova.product.application.dto.cart.FindCartInfoResponseDto;
@@ -40,9 +41,9 @@ public class CartController {
     }
 
     @GetMapping("/api/cart")
-    public ResponseEntity<ResponseApi<List<FindCartInfoResponseDto>>> findCartItem(@PageableDefault Pageable pageable) {
+    public ResponseEntity<ResponseApi<PagingResponse<FindCartInfoResponseDto>>> findCartItem(@PageableDefault Pageable pageable) {
 
-        List<FindCartInfoResponseDto> cartItemByMember = cartService.findCartItemByMember(pageable);
+        PagingResponse<FindCartInfoResponseDto> cartItemByMember = cartService.findCartItemByMember(pageable);
         return ResponseEntity.ok().body(ResponseApi.ok(cartItemByMember));
     }
 

@@ -1,14 +1,12 @@
 package com.space.munova.order.controller;
 
 import com.space.munova.core.config.ResponseApi;
+import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.order.dto.*;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.service.OrderService;
 import com.space.munova.payment.entity.Payment;
 import com.space.munova.payment.service.PaymentService;
-import com.space.munova.product.application.ProductDetailService;
-import com.space.munova.recommend.service.RecommendService;
-import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,10 +31,8 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseApi<?> getOrders(@RequestParam(value = "page", defaultValue = "0") int page) {
-        Long userId = JwtHelper.getMemberId();
-
-        GetOrderListResponse response = orderService.getOrderList(userId, page);
+    public ResponseApi<PagingResponse<OrderSummaryDto>> getOrders(@RequestParam(value = "page", defaultValue = "0") int page) {
+        PagingResponse<OrderSummaryDto> response = orderService.getOrderList(page);
 
         return ResponseApi.ok(response);
     }

@@ -1,5 +1,6 @@
 package com.space.munova.product.application;
 
+import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
@@ -12,6 +13,7 @@ import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,21 +67,11 @@ public class ProductLikeService {
         upsertUserAction(productId,true);
     }
 
-    public List<FindProductResponseDto> findLikeProducts(Pageable pageable) {
+    public PagingResponse<FindProductResponseDto> findLikeProducts(Pageable pageable) {
         Long memberId = JwtHelper.getMemberId();
 
-        List<FindProductResponseDto> likeProductList = productLikeRepository.findLikeProductByMemberId(pageable, memberId);
-        return likeProductList.stream()
-                .map(dto -> new FindProductResponseDto(
-                        dto.productId(),
-                        productImageService.getImgPath(dto.mainImgSrc()),
-                        dto.brandName(),
-                        dto.productName(),
-                        dto.price(),
-                        dto.likeCount(),
-                        dto.salesCount(),
-                        dto.createAt()
-                )).toList();
+        Page<FindProductResponseDto> likeProductList = productLikeRepository.findLikeProductByMemberId(pageable, memberId);
+        return PagingResponse.from(likeProductList);
     }
 
     private void upsertUserAction(Long productId, Boolean liked){

@@ -8,6 +8,7 @@ import com.space.munova.product.application.dto.*;
 import com.space.munova.recommend.service.RecommendService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -32,8 +33,8 @@ class ProductController {
     private final RecommendService recommendService;
 
     @PatchMapping(value = "/api/seller/product", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ResponseApi<Void>> updateProduct(@RequestPart(name = "mainImgFile") MultipartFile mainImgFile,
-                                                           @RequestPart(name = "sideImgFile") List<MultipartFile> sideImgFile,
+    public ResponseEntity<ResponseApi<Void>> updateProduct(@RequestPart(name = "mainImgFile", required = false) MultipartFile mainImgFile,
+                                                           @RequestPart(name = "sideImgFile", required = false) List<MultipartFile> sideImgFile,
                                                            @RequestPart(name = "updateProductInfo") @Valid UpdateProductRequestDto reqDto) throws IOException {
 
         productService.updateProductInfo(mainImgFile, sideImgFile, reqDto);

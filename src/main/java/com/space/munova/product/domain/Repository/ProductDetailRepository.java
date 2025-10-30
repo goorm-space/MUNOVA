@@ -42,4 +42,10 @@ public interface ProductDetailRepository extends JpaRepository<ProductDetail, Lo
 
     @Query("SELECT pd.product.id FROM ProductDetail pd WHERE pd.id = :id")
     Optional<Long> findProductIdById(Long id);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ProductDetail pd " +
+            "SET pd.quantity = :quantity " +
+            "WHERE pd.id = :detailId")
+    void updateQuantity(Long detailId, int quantity);
 }

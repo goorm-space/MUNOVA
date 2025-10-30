@@ -234,4 +234,15 @@ public class ProductDetailService {
                 ProductOptionMapping.createDefaultProductOptionMapping(sizeOption, savedProductDetail);
         productOptionMappingService.saveProductOptionMapping(sizeOptionMapping);
     }
+
+    public void updateQuantity(List<UpdateQuantityDto> updateQuantityDtos) {
+
+        for(UpdateQuantityDto updateQuantityDto : updateQuantityDtos) {
+            productDetailRepository.updateQuantity(updateQuantityDto.detailId(), updateQuantityDto.quantity());
+        }
+    }
+
+    public void deleteProductDetailByIds(List<Long> deleteDetailIds) {
+        productDetailRepository.deleteProductDetailByIds(deleteDetailIds);
+    }
 }

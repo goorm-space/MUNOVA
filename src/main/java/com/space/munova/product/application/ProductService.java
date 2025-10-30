@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -220,23 +221,52 @@ public class ProductService {
     public void updateProductInfo(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, UpdateProductRequestDto reqDto) throws IOException {
         Long sellerId = JwtHelper.getMemberId();
 
+
         Product product = productRepository.findByIdAndMemberIdAndIsDeletedFalse(reqDto.productId(), sellerId)
                 .orElseThrow(() -> ProductException.badRequestException("등록한 상품을 찾을 수 없습니다."));
 
-
-
-        //카테고리 조회.
-        Category category = categoryService.findById(reqDto.categoryId());
-
         // 상품수정
         try {
-            product.updateProduct(reqDto.ProductName(), reqDto.info(), reqDto.price(), category);
+            product.updateProduct(reqDto.ProductName(), reqDto.info(), reqDto.price());
 
-            productImageService.deleteImagesByImgIds(reqDto.deletedImgIds(), reqDto.productId());
-            updateImages(mainImgFile, sideImgFile, product);
+            //productImageService.deleteImagesByImgIds(reqDto.deletedImgIds(), reqDto.productId());
+
+            /// 이미지 수정
+            updateImages(mainImgFile, sideImgFile, reqDto, product);
+
+            /// 상품 상세 업데이트
+            List<ShoeOptionDto> addShoeOptionDtos = reqDto.addShoeOptionDto() == null ? new ArrayList<>() :  reqDto.addShoeOptionDto().shoeOptionDtos();
+            List<UpdateQuantityDto> updateQuantityDtos = reqDto.updateQuantityDto() == null ?  new ArrayList<>() :  reqDto.updateQuantityDto();
+            List<Long> deleteDetailIds = reqDto.deleteProductDetailDto() == null ? new ArrayList<>() :  reqDto.deleteProductDetailDto().detailId();
+
+            /// 삭제아이템과 업데이트아이템이 겹칠경우 업데이트아이템에서 삭제된아이템제거
+            if(!updateQuantityDtos.isEmpty() && !deleteDetailIds.isEmpty()) {
+                for (UpdateQuantityDto dto : updateQuantityDtos) {
+                    for (Long deleteDetailId : deleteDetailIds) {
+                        if(dto.detailId().equals(deleteDetailId)) {
+                            updateQuantityDtos.remove(dto);
+                        }
+                    }
+                }
+
+
+            }
+
+            if(!addShoeOptionDtos.isEmpty()) {
+                productDetailService.saveProductDetailAndOption(product, reqDto.addShoeOptionDto().shoeOptionDtos());
+            }
+
+            if(!updateQuantityDtos.isEmpty()) {
+                productDetailService.updateQuantity(updateQuantityDtos);
+            }
+
+            if(!deleteDetailIds.isEmpty()) {
+                productDetailService.deleteProductDetailByIds(deleteDetailIds);
+            }
+
 
             // 상품 디테일 옵션 저장.
-            productDetailService.saveProductDetailAndOption(product, reqDto.shoeOptionDtos());
+        //    productDetailService.saveProductDetailAndOption(product, reqDto.shoeOptionDtos());
         } catch (IllegalArgumentException e) {
             log.error(e.getMessage());
             throw ProductException.badRequestException(e.getMessage());
@@ -247,6 +277,10 @@ public class ProductService {
 
 
     }
+
+
+
+
 
     public List<ProductOptionResponseDto> findOptions() {
         return productOptionService.findOptions();
@@ -289,4 +323,21 @@ public class ProductService {
                 findProductCategories()
         );
     }
+
+    private void updateImages(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, UpdateProductRequestDto reqDto, Product product) throws IOException {
+        /// 메인이미지가 넘어왔을경우 메인이미지 업데이트
+        if(mainImgFile != null &&  !mainImgFile.isEmpty())  {
+            productImageService.updateMainImg(mainImgFile, product);
+        }
+
+        /// 삭제된 사이드 이미지 갯수가 1개이상일경우 업데이트
+        if(sideImgFile != null &&  !sideImgFile.isEmpty())  {
+            productImageService.saveSideImg(sideImgFile, product);
+        }
+
+        productImageService.deleteImagesByImgIds(reqDto.deletedImgIds(), product.getId());
+    }
+
+
+
 }

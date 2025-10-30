@@ -12,7 +12,7 @@ public record UpdateProductRequestDto (Long productId,
                                       @NotNull Long price,
                                       @NotNull String info,
                                       AddShoeOptionDto addShoeOptionDto,
-                                       UpdateQuantityDto updateQuantityDto,
+                                       List<UpdateQuantityDto> updateQuantityDto,
                                        DeleteProductDetailDto deleteProductDetailDto
 ){
 

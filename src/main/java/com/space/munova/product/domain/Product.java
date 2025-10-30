@@ -98,8 +98,7 @@
 
         public void updateProduct(String name,
                                   String info,
-                                  Long price,
-                                  Category category ) {
+                                  Long price) {
 
             if(price < 0) {
                 throw new IllegalArgumentException("가격은 0보다 작을수 없습니다.");
@@ -107,7 +106,6 @@
             this.name = name;
             this.info = info;
             this.price = price;
-            this.category = category;
         }
 
         /// 상품 논리적 제거

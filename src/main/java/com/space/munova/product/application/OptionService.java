@@ -1,5 +1,6 @@
 package com.space.munova.product.application;
 
+import com.space.munova.product.application.exception.ProductException;
 import com.space.munova.product.domain.Option;
 import com.space.munova.product.domain.ProductOptionMapping;
 import com.space.munova.product.domain.Repository.OptionRepository;
@@ -26,5 +27,10 @@ public class OptionService {
 
     public Option saveOption(Option option) {
        return OptionRepository.save(option);
+    }
+
+    public Option findById(Long colorId) {
+        return OptionRepository.findById(colorId)
+                .orElseThrow(() -> ProductException.badRequestException("color not found"));
     }
 }

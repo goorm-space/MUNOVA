@@ -99,7 +99,6 @@
         public void updateProduct(String name,
                                   String info,
                                   Long price,
-                                  Brand brand,
                                   Category category ) {
 
             if(price < 0) {
@@ -108,7 +107,6 @@
             this.name = name;
             this.info = info;
             this.price = price;
-            this.brand = brand;
             this.category = category;
         }
 

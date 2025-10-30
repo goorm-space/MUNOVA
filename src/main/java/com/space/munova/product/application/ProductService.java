@@ -85,8 +85,7 @@ public class ProductService {
             Product savedProduct = productRepository.save(product);
 
             // 이미지 저장.
-            productImageService.saveMainImg(mainImgFile, savedProduct);
-            productImageService.saveSideImg(sideImgFile, savedProduct);
+            saveImages(mainImgFile, sideImgFile, savedProduct);
 
             // 상품 디테일 옵션 저장.
             productDetailService.saveProductDetailAndOption(savedProduct, reqDto.shoeOptionDtos());
@@ -98,6 +97,8 @@ public class ProductService {
             throw new RuntimeException();
         }
     }
+
+
 
     public ProductDetailResponseDto findProductDetails(Long productId) {
 
@@ -223,15 +224,13 @@ public class ProductService {
                 .orElseThrow(() -> ProductException.badRequestException("등록한 상품을 찾을 수 없습니다."));
 
 
-        // 브랜드 조회.
-        Brand brand = brandService.findById(reqDto.brandId());
 
         //카테고리 조회.
         Category category = categoryService.findById(reqDto.categoryId());
 
         // 상품수정
         try {
-            product.updateProduct(reqDto.ProductName(), reqDto.info(), reqDto.price(), brand, category);
+            product.updateProduct(reqDto.ProductName(), reqDto.info(), reqDto.price(), category);
 
             productImageService.deleteImagesByImgIds(reqDto.deletedImgIds(), reqDto.productId());
             updateImages(mainImgFile, sideImgFile, product);
@@ -278,4 +277,16 @@ public class ProductService {
     }
 
 
+    private void saveImages(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, Product savedProduct) throws IOException {
+        productImageService.saveMainImg(mainImgFile, savedProduct);
+        productImageService.saveSideImg(sideImgFile, savedProduct);
+    }
+
+
+    public CreateProductConditionsResponseDto findCreateProductConditions() {
+        return new CreateProductConditionsResponseDto(
+                findOptions(),
+                findProductCategories()
+        );
+    }
 }

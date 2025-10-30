@@ -49,6 +49,14 @@ class ProductController {
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
 
+    @GetMapping("/api/seller/product/create")
+    public ResponseEntity<ResponseApi<CreateProductConditionsResponseDto>> createProductView(){
+
+        CreateProductConditionsResponseDto respDto =  productService.findCreateProductConditions();
+
+        return ResponseEntity.ok().body(ResponseApi.ok(respDto));
+    }
+
 
 
     ///  판매자의 등록상품 리스트 조회

@@ -36,7 +36,8 @@ public class ProductDetailService {
 
         ///  사이즈 색상별 옵션 프로덕트옵션매핑, 상품디테일 생성 메서드
         for (ShoeOptionDto dto : dtos) {
-
+            Long colorId = dto.colorId();
+            Long sizeId = dto.sizeId();
             String color = dto.color();
             String size = dto.size();
             int quantity = dto.quantity();
@@ -45,11 +46,15 @@ public class ProductDetailService {
             ProductDetail productDetail = ProductDetail.createDefaultProductDetail(product, quantity);
             ProductDetail savedProductDetail = saveProductDetail(productDetail);
 
-            /// 옵션생성
-            saveOption(OptionCategory.COLOR, color, savedProductDetail);
-            saveOption(OptionCategory.SIZE, size, savedProductDetail);
+            Option colorOption = optionService.findById(colorId);
+            Option sizeOption = optionService.findById(sizeId);
+
+            createOptionMapping(colorOption, savedProductDetail, sizeOption);
+
         }
     }
+
+
 
     /// 옵션 및 상품옵션매핑 데이터 생성로직
     /// 옵션이 없을경우 옵션 만들고 옵션저장후 매핑 테이블 저장
@@ -216,4 +221,17 @@ public class ProductDetailService {
         productDetail.restoreStock(cancelQuantity);
     }
 
+
+
+    private void createOptionMapping(Option colorOption, ProductDetail savedProductDetail, Option sizeOption) {
+        ///  칼라옵션매핑 생성
+        ProductOptionMapping colorOptionMapping =
+                ProductOptionMapping.createDefaultProductOptionMapping(colorOption, savedProductDetail);
+        productOptionMappingService.saveProductOptionMapping(colorOptionMapping);
+
+        ///  사이즈옵션매핑 생성
+        ProductOptionMapping sizeOptionMapping =
+                ProductOptionMapping.createDefaultProductOptionMapping(sizeOption, savedProductDetail);
+        productOptionMappingService.saveProductOptionMapping(sizeOptionMapping);
+    }
 }

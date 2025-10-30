@@ -15,7 +15,7 @@ import java.sql.SQLException;
  * p6sy 로그 formatting
  * 운영에선 사용 X
  */
-@Profile({"develop", "test"})
+@Profile({"local", "develop", "test"})
 @Component
 public class P6SpyFormatter extends JdbcEventListener implements MessageFormattingStrategy {
 

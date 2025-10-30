@@ -10,7 +10,8 @@ public record AddProductRequestDto (@NotNull String ProductName,
                                     @NotNull String info,
                                     @NotNull Long categoryId,
                                     @NotNull Long brandId,
-                                    @NotNull List<ShoeOptionDto> shoeOptionDtos
+                                    AddShoeOptionDto shoeOptionDto,
+                                    List<ShoeOptionDto> shoeOptionDtos
                                     ){
 
 }

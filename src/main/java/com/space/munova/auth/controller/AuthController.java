@@ -2,7 +2,9 @@ package com.space.munova.auth.controller;
 
 import com.space.munova.auth.dto.*;
 import com.space.munova.auth.service.AuthService;
+import com.space.munova.auth.service.TokenService;
 import com.space.munova.core.config.ResponseApi;
+import com.space.munova.security.jwt.JwtHelper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,8 @@ import static com.space.munova.security.jwt.JwtHelper.REFRESH_TOKEN_COOKIE_KEY;
 public class AuthController {
 
     private final AuthService authService;
+    private final TokenService tokenService;
+    private final JwtHelper jwtHelper;
 
     /**
      * 회원가입
@@ -33,8 +37,18 @@ public class AuthController {
      */
     @PostMapping("/auth/signin")
     public ResponseApi<SignInResponse> signIn(@Valid @RequestBody SignInRequest signInRequest, HttpServletResponse response) {
-        SignInResponse signIn = authService.signIn(signInRequest, response);
-        return ResponseApi.ok(signIn);
+        SignInGenerateToken signInGenerateToken = authService.signIn(signInRequest);
+        // refreshToken 쿠키 저장
+        jwtHelper.saveRefreshTokenToCookie(response, signInGenerateToken.refreshToken());
+
+        SignInResponse signInResponse = SignInResponse.of(
+                signInGenerateToken.memberId(),
+                signInGenerateToken.username(),
+                signInGenerateToken.accessToken(),
+                signInGenerateToken.refreshToken(),
+                signInGenerateToken.role()
+        );
+        return ResponseApi.ok(signInResponse);
     }
 
     /**
@@ -42,7 +56,9 @@ public class AuthController {
      */
     @PostMapping("/api/auth/signout")
     public ResponseApi<Void> signOut(HttpServletResponse response) {
-        authService.signOut(response);
+        authService.signOut();
+        // 쿠키에서 refreshToken 삭제
+        jwtHelper.deleteRefreshTokenFromCookie(response);
         return ResponseApi.ok();
     }
 
@@ -54,7 +70,12 @@ public class AuthController {
             @CookieValue(value = REFRESH_TOKEN_COOKIE_KEY, required = false) String refreshToken,
             HttpServletResponse response
     ) {
-        TokenReissueResponse tokenReissueResponse = authService.reissueToken(refreshToken, response);
+        GenerateTokens generateTokens = tokenService.reissueToken(refreshToken);
+        // refreshToken 쿠키 저장
+        jwtHelper.saveRefreshTokenToCookie(response, generateTokens.refreshToken());
+
+        TokenReissueResponse tokenReissueResponse =
+                TokenReissueResponse.of(generateTokens.accessToken());
         return ResponseApi.ok(tokenReissueResponse);
     }
 }

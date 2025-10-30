@@ -33,6 +33,8 @@ public class BaseExceptionHandler {
         String finalMessage = detailMessage != null ? message + " " + detailMessage : message;
         ResponseApi<Object> body = ResponseApi.nok(statusCode, code, finalMessage);
 
+        log.error("{}: {}", statusCode, finalMessage);
+
         return ResponseEntity.status(statusCode).body(body);
     }
 
@@ -43,6 +45,8 @@ public class BaseExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ResponseApi<Object> handleAuthenticationException(AuthenticationException ex) {
+        log.error("{}: {}", HttpStatus.UNAUTHORIZED, ex.getMessage());
+
         return ResponseApi.nok(HttpStatus.UNAUTHORIZED, "AUTH_FAILED", ex.getMessage());
     }
 
@@ -58,6 +62,8 @@ public class BaseExceptionHandler {
                 .stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .collect(Collectors.joining(", "));
+
+        log.error("{}: {}", HttpStatus.BAD_REQUEST, errorMessage);
 
         return ResponseApi.nok(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", errorMessage);
     }

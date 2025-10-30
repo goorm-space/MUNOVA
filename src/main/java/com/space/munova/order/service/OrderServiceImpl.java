@@ -1,15 +1,28 @@
 package com.space.munova.order.service;
 
+import com.space.munova.auth.exception.AuthException;
+import com.space.munova.core.dto.PagingResponse;
+import com.space.munova.coupon.dto.UseCouponRequest;
+import com.space.munova.coupon.dto.UseCouponResponse;
+import com.space.munova.coupon.entity.Coupon;
+import com.space.munova.coupon.exception.CouponException;
+import com.space.munova.coupon.repository.CouponRepository;
+import com.space.munova.coupon.service.CouponService;
 import com.space.munova.member.entity.Member;
+import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.order.dto.*;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
+import com.space.munova.order.entity.OrderProductLog;
+import com.space.munova.order.exception.OrderException;
 import com.space.munova.order.repository.OrderItemRepository;
+import com.space.munova.order.repository.OrderProductLogRepository;
 import com.space.munova.order.repository.OrderRepository;
+import com.space.munova.product.application.ProductDetailService;
 import com.space.munova.product.domain.ProductDetail;
-import com.space.munova.product.domain.Repository.ProductDetailRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.space.munova.recommend.service.RecommendService;
+import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,97 +41,150 @@ public class OrderServiceImpl implements OrderService {
 
     private static final int PAGE_SIZE = 5;
 
-    private final OrderRepository orderRepository;
+    private final ProductDetailService productDetailService;
+    private final CouponService couponService;
+
     private final OrderItemRepository orderItemRepository;
+    private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
-    private final ProductDetailRepository productDetailRepository;
+    private final RecommendService recommendService;
+
+    private final OrderProductLogRepository orderProductLogRepository;
+    private final CouponRepository couponRepository;
 
     @Transactional
     @Override
-    public Order createOrder(Long userId, CreateOrderRequest request) {
-
+    public Order createOrder(CreateOrderRequest request) {
+        Long userId = JwtHelper.getMemberId();
         Member member = memberRepository.findById(userId)
-                .orElseThrow(EntityNotFoundException::new);
+                .orElseThrow(MemberException::notFoundException);
 
-        // 1. 주문 헤더 생성 및 초기화
+        // 초기 주문 생성
         Order order = Order.builder()
                 .member(member)
                 .orderNum(Order.generateOrderNum())
                 .userRequest(request.userRequest())
-                .status(OrderStatus.PAYMENT_PENDING)
+                .status(OrderStatus.CREATED)
                 .build();
 
-        // 2. 주문 상세 항목 (order Items) 처리
-        List<OrderItem> orderItems = createOrderItems(request.orderItems(), order);
+        // --- 1. 재고 감소
+        List<OrderItem> orderItems = deductStockAndCreateOrderItems(request.orderItems(), order);
+        orderItems.forEach(order::addOrderItem);
 
-        // Todo: 3. 쿠폰 적용 및 금액 계산
-        long originPrice = orderItems.stream()
-                .mapToLong(item -> item.getPrice() * item.getQuantity())
-                .sum();
-        int discountPrice = 0;
-        Long totalPrice = originPrice - discountPrice;
-        order.setPrices(originPrice, discountPrice, totalPrice);
+        // --- 2. 쿠폰 적용
+        Order finalOrder = applyCouponAndOrder(order, request);
 
-        // Todo: 4. 재고 감소
+        orderRepository.save(finalOrder);
 
-        // 5. 주문 저장
-        orderRepository.save(order);
-        orderItemRepository.saveAll(orderItems);
-
-        // Todo: 6. 장바구니 처리
-        return order;
+        //UserActionSummary 저장 로직
+        List<Long> orderItemIds=finalOrder.getOrderItems().stream()
+                .map(OrderItem::getId)
+                .toList();
+        List<Long> productDetailIds=orderItemRepository.findProductDetailIdsByOrderItemIds(orderItemIds);
+        for(Long productDetailId:productDetailIds){
+            Long productId=productDetailService.findProductIdByDetailId(productDetailId);
+            recommendService.updateUserAction(productId,0,null,null,true);
+        }
+        return finalOrder;
     }
-//    private final CouponRepository couponRepository;
-//    private final CartRepository cartRepository;
+
+    @Transactional(readOnly = false)
+    @Override
+    public void saveOrderLog(Order order){
+        Long memberId = order.getMember().getId();
+        for(OrderItem item : order.getOrderItems()) {
+            Long productId=item.getProductDetail().getProduct().getId();
+            Integer quantity=item.getQuantity();
+            OrderProductLog log=OrderProductLog.builder()
+                    .memberId(memberId)
+                    .productId(productId)
+                    .quantity(quantity)
+                    .price(item.getPriceSnapshot())
+                    .orderStatus(item.getStatus())
+                    .build();
+            orderProductLogRepository.save(log);
+        }
+    }
 
     @Override
-    public GetOrderListResponse getOrderList(int page) {
+    public PagingResponse<OrderSummaryDto> getOrderList(int page) {
+        Long userId = JwtHelper.getMemberId();
         Pageable pageable = PageRequest.of(
                 page,
                 PAGE_SIZE,
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<Order> orderPage = orderRepository.findAll(pageable);
+        Page<Order> orderPage = orderRepository.findAllByMember_IdAndStatus(userId, OrderStatus.PAID, pageable);
 
         Page<OrderSummaryDto> dtoPage = orderPage.map(OrderSummaryDto::from);
 
-        return GetOrderListResponse.from(dtoPage);
+        return PagingResponse.from(dtoPage);
     }
 
     @Override
-    public GetOrderDetailResponse getOrderDetail(Long orderId) {
+    public Order getOrderDetail(Long orderId) {
+        Long userId = JwtHelper.getMemberId();
 
         Order order = orderRepository.findOrderDetailsById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 orderId: " + orderId));
+                .orElseThrow(OrderException::notFoundException);
 
-        return GetOrderDetailResponse.from(order);
+        if (!userId.equals(order.getMember().getId())) {
+            throw AuthException.unauthorizedException(
+                    "접근 시도한 userId:", userId.toString(),
+                    "orderId:", orderId.toString()
+            );
+        }
+        return order;
     }
 
-    private List<OrderItem> createOrderItems(List<OrderItemRequest> itemRequests, Order order) {
+    private List<OrderItem> deductStockAndCreateOrderItems(List<OrderItemRequest> itemRequests, Order order) {
         List<OrderItem> orderItems = new ArrayList<>();
 
         for (OrderItemRequest itemReq : itemRequests) {
-            ProductDetail detail = productDetailRepository.findById(itemReq.productId())
-                    .orElseThrow(() -> new EntityNotFoundException("ProductDetail not found with Id: " + itemReq.productId()));
-
-            // Todo: 1. 재고 확인 로직 작성 -> 결제 단계에서 확인하는지 여부??
-//            detail.decreaseQuantity(itemReq.quantity());
-//            productDetailRepository.save(detail);
+            ProductDetail detail = productDetailService.deductStock(itemReq.productDetailId(), itemReq.quantity());
 
             // 2. Orderitem 엔티티 생성
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .productDetail(detail)
-                    .productName(detail.getProduct().getName())
-                    .price(detail.getProduct().getPrice())
+                    .nameSnapshot(detail.getProduct().getName())
+                    .priceSnapshot(detail.getProduct().getPrice())
                     .quantity(itemReq.quantity())
-                    .status(OrderStatus.PAYMENT_PENDING)
+                    .status(OrderStatus.CREATED)
                     .build();
 
             orderItems.add(orderItem);
         }
 
         return orderItems;
+    }
+
+    private Order applyCouponAndOrder(Order order, CreateOrderRequest request) {
+        long totalProductAmount = order.getOrderItems().stream()
+                .mapToLong(item -> item.getPriceSnapshot() * item.getQuantity())
+                .sum();
+
+        UseCouponRequest couponRequest = UseCouponRequest.of(totalProductAmount);
+        UseCouponResponse couponResponse = couponService.useCoupon(request.orderCouponId(), couponRequest);
+
+        if (couponResponse.finalPrice().longValue() != request.clientCalculatedAmount().longValue()) {
+            throw OrderException.amountMismatchException(
+                    String.format("client: %d, server: %d", request.clientCalculatedAmount(), couponResponse.finalPrice())
+            );
+        }
+
+        Coupon coupon = couponRepository.findWithCouponDetailById(request.orderCouponId())
+                .orElseThrow(CouponException::notFoundException);
+
+        order.updateFinalOrder(
+                couponResponse.originalPrice(),
+                couponResponse.discountPrice(),
+                couponResponse.finalPrice(),
+                coupon,
+                OrderStatus.PAYMENT_PENDING
+        );
+
+        return order;
     }
 }

@@ -1,7 +1,9 @@
 package com.space.munova.auth.service;
 
-import com.space.munova.auth.dto.*;
-import jakarta.servlet.http.HttpServletResponse;
+import com.space.munova.auth.dto.SignInGenerateToken;
+import com.space.munova.auth.dto.SignInRequest;
+import com.space.munova.auth.dto.SignupRequest;
+import com.space.munova.auth.dto.SignupResponse;
 
 public interface AuthService {
 
@@ -9,12 +11,9 @@ public interface AuthService {
     SignupResponse signup(SignupRequest signupRequest);
 
     // 로그인
-    SignInResponse signIn(SignInRequest signInRequest, HttpServletResponse response);
+    SignInGenerateToken signIn(SignInRequest signInRequest);
 
     // 로그아웃
-    void signOut(HttpServletResponse response);
-
-    // 토큰 재발급
-    TokenReissueResponse reissueToken(String refreshToken, HttpServletResponse response);
+    void signOut();
 
 }

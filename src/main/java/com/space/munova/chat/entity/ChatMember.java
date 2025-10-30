@@ -32,11 +32,23 @@ public class ChatMember {
     @JoinColumn(name = "product_id")
     private Product productId;
 
-    private ChatUserType type;
+    @Enumerated(EnumType.STRING)
+    private ChatUserType chatMemberType;    // 채팅방 권한 : ADMIN, MEMBER, OWNER
 
-    public ChatMember(Chat chatId, Member memberId, ChatUserType type) {
+    private String name;
+
+    public ChatMember(Chat chatId, Member memberId, ChatUserType type, Product product, String name) {
         this.chatId = chatId;
         this.memberId = memberId;
-        this.type = type;
+        this.chatMemberType = type;
+        this.productId = product;
+        this.name = name;
+    }
+
+    public ChatMember(Chat chatId, Member memberId, ChatUserType type, String name) {
+        this.chatId = chatId;
+        this.memberId = memberId;
+        this.chatMemberType = type;
+        this.name = name;
     }
 }

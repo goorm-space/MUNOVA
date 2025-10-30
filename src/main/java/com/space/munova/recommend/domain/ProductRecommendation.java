@@ -28,9 +28,6 @@ public class ProductRecommendation {
     @JoinColumn(name = "target_product_id", nullable = false)
     private Product targetProduct;
 
-    @Column(nullable = false)
-    private int score;
-
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

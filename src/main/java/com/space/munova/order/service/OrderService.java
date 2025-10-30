@@ -1,14 +1,13 @@
 package com.space.munova.order.service;
 
-import com.space.munova.order.dto.CreateOrderRequest;
-import com.space.munova.order.dto.CreateOrderResponse;
-import com.space.munova.order.dto.GetOrderDetailResponse;
-import com.space.munova.order.dto.GetOrderListResponse;
+import com.space.munova.core.dto.PagingResponse;
+import com.space.munova.order.dto.*;
 import com.space.munova.order.entity.Order;
 
 public interface OrderService {
 
-    Order createOrder(Long userId, CreateOrderRequest request);
-    GetOrderListResponse getOrderList(int page);
-    GetOrderDetailResponse getOrderDetail(Long orderId);
+    Order createOrder(CreateOrderRequest request);
+    PagingResponse<OrderSummaryDto> getOrderList(int page);
+    Order getOrderDetail(Long orderId);
+    void saveOrderLog(Order order);
 }

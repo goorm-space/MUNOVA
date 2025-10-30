@@ -20,6 +20,8 @@ public class FileStore {
     @Value("${file.dir}")
     private String fileDir;
 
+    @Value("${file.web.path.prefix}")
+    private String fileWebPathPrefix;
 
     // 파일이름을 통해 최종적으로 파일경로 가져옴
     public String getFullPath(String fileName) {
@@ -62,7 +64,9 @@ public class FileStore {
         // transferTo -> 실제 파일을 디스크에 저장
         multipartFile.transferTo(new File(getFullPath(storeFileName)));
 
-        return new UploadFile(originalFilename, storeFileName);
+        storeFileName = fileWebPathPrefix + storeFileName;
+
+        return new UploadFile(storeFileName, originalFilename);
     }
 
     // 서버에 저장할 파일명 생성 메서드

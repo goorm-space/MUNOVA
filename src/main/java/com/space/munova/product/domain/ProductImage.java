@@ -4,8 +4,7 @@ package com.space.munova.product.domain;
 
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.product.domain.enums.ProductImageType;
-import com.space.munova.product.infra.ProductCategoryConverter;
-import com.space.munova.product.infra.ProductImageTypeConverter;
+import com.space.munova.product.infra.converter.ProductImageTypeConverter;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;

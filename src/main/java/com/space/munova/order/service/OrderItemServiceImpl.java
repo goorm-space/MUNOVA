@@ -1,58 +1,100 @@
 package com.space.munova.order.service;
 
+import com.space.munova.auth.exception.AuthException;
+import com.space.munova.order.dto.CancelOrderItemRequest;
+import com.space.munova.order.dto.CancelType;
 import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.order.entity.OrderItem;
+import com.space.munova.order.exception.OrderItemException;
 import com.space.munova.order.repository.OrderItemRepository;
-import com.space.munova.product.domain.ProductDetail;
-import jakarta.persistence.EntityNotFoundException;
+import com.space.munova.payment.service.PaymentService;
+import com.space.munova.product.application.ProductDetailService;
+import com.space.munova.recommend.service.RecommendService;
+import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class OrderItemServiceImpl implements OrderItemService {
 
     private final OrderItemRepository orderItemRepository;
+    private final ProductDetailService productDetailService;
+    private final PaymentService paymentService;
+    private final RecommendService recommendService;
 
+    @Transactional
     @Override
-    public void updateStatusAndCancel(Long orderItemId) {
+    public void cancelOrderItem(Long orderItemId, CancelOrderItemRequest request) {
         OrderItem orderItem = orderItemRepository.findById(orderItemId)
-                .orElseThrow(() -> new EntityNotFoundException("OrderItem not found"));
+                .orElseThrow(OrderItemException::notFoundException);
 
-        validateCancellation(orderItem.getStatus());
+        Long userId = JwtHelper.getMemberId();
 
-        // Todo: 결제 취소 로직
+        validateCancellation(userId, orderItem, request.cancelType());
 
-        restoreStock(orderItem);
+        paymentService.cancelPaymentAndSaveRefund(orderItem, orderItem.getOrder().getId(), request);
 
-        orderItem.updateStatus(OrderStatus.CANCELED);
+        restoreProductDetailStock(orderItem);
+
+        if (request.cancelType().equals(CancelType.ORDER_CANCEL)) {
+            orderItem.updateStatus(OrderStatus.CANCELED);
+        } else if (request.cancelType().equals(CancelType.RETURN_REFUND)) {
+            orderItem.updateStatus(OrderStatus.REFUNDED);
+        }
+
+        List<Long> singleOrderItemId= List.of(orderItemId);
+        List<Long> productDetailId=orderItemRepository.findProductDetailIdsByOrderItemIds(singleOrderItemId);
+        Long productId=productDetailService.findProductIdByDetailId(productDetailId.get(0));
+        recommendService.updateUserAction(productId,0,null,null,false);
     }
 
     /**
      * 취소 가능 여부 유효성 검사
      */
-    private void validateCancellation(OrderStatus status) {
-        if (status != OrderStatus.PAID) {
-            throw new IllegalArgumentException("주문을 취소할 수 없습니다. 현재 상태: " + status.getDescription());
+    private void validateCancellation(Long userId, OrderItem orderItem, CancelType type) {
+        if (!userId.equals(orderItem.getOrder().getMember().getId())) {
+            throw AuthException.unauthorizedException(
+                    "접근 시도한 userId:", userId.toString(),
+                    "orderItemId:", orderItem.getId().toString()
+            );
+        }
+
+        OrderStatus currentStatus = orderItem.getStatus();
+        switch (type) {
+            case ORDER_CANCEL:
+                if (currentStatus != OrderStatus.PAID) {
+                    throw OrderItemException.cancellationNotAllowedException(
+                            String.format("주문 취소는 'PAID' 상태에서만 가능합니다. 현재 상태: %s", currentStatus)
+                    );
+                }
+                break;
+
+            case RETURN_REFUND:
+                if (currentStatus != OrderStatus.SHIPPING && currentStatus != OrderStatus.DELIVERED) {
+                    throw OrderItemException.cancellationNotAllowedException(
+                            String.format("반품은 'SHIPPING' 또는 'DELIVERED' 상태에서만 가능합니다. 현재 상태: %s", currentStatus)
+                    );
+                }
+                break;
+
+            default:
+                throw OrderItemException.cancellationNotAllowedException("정의되지 않은 취소 유형입니다.");
         }
     }
 
     /**
      * OrderItem에 해당하는 상품 재고 복구
      */
-    private void restoreStock(OrderItem orderItem) {
-        ProductDetail productDetail = orderItem.getProductDetail();
-        Integer cancelQuantity = orderItem.getQuantity();
+    private void restoreProductDetailStock(OrderItem orderItem) {
+        Long productDetailId = orderItem.getProductDetail().getId();
+        int cancelQuantity = orderItem.getQuantity();
 
-        if (productDetail == null) {
-            throw new EntityNotFoundException("Product detail not found");
-        }
+        productDetailService.restoreProductDetailStock(productDetailId, cancelQuantity);
 
-        int currentStock = productDetail.getQuantity() != null ? productDetail.getQuantity() : 0;
-        int newStock = currentStock + cancelQuantity;
-        System.out.println(currentStock + "에서 " + newStock + "으로 재고 증가 완료");
-//        productDetail.setQuantity(currentStock + cancelQuantity);
     }
 }

@@ -1,5 +1,6 @@
 package com.space.munova.order.repository;
 
+import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.order.entity.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,5 +20,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "WHERE o.id = :orderId")
     Optional<Order> findOrderDetailsById(@Param("orderId") Long orderId);
 
-    Page<Order> findAll(Pageable pageable);
+    Page<Order> findAllByMember_IdAndStatus(Long memberId, OrderStatus status, Pageable pageable);
+
+    Order findByOrderNum(String orderNum);
 }

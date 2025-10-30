@@ -42,7 +42,7 @@ pipeline {
         AWS_ACCESS_KEY = credentials('aws_access_credential')
         AWS_SECRET_KEY = credentials('aws_access_credential')
 
-        // Git PR 정보
+        // Git PR 정   보
         ENV_PR_TITLE    = "${prTitle}"
         ENV_PR_NUMBER   = "${prNumber}"
         ENV_MERGE_FROM  = "${mergeFrom}"

@@ -8,6 +8,9 @@
     import lombok.*;
     import org.hibernate.annotations.ColumnDefault;
 
+    import java.util.ArrayList;
+    import java.util.List;
+
     @Builder
     @Entity
     @Table(name = "product")
@@ -51,6 +54,14 @@
 
         @ColumnDefault("0")
         private boolean isDeleted;
+
+        @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        private List<ProductImage> productImages = new ArrayList<>();
+
+        @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        private List<ProductDetail> productDetails = new ArrayList<>();
 
         public static Product createDefaultProduct(String name,
                                                    String info,

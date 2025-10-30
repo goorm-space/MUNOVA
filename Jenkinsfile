@@ -83,6 +83,7 @@ pipeline {
 
         stage('Docker Build') {
             steps {
+                sh 'docker -v'
                 sh "docker build --no-cache -t ${IMAGE_NAME}:${TAG} ."
             }
         }

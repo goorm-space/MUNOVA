@@ -1,6 +1,7 @@
 package com.space.munova.recommend.service;
 
 import com.space.munova.core.config.ResponseApi;
+import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.application.dto.FindProductResponseDto;
 import com.space.munova.product.domain.Product;
@@ -18,6 +19,8 @@ import com.space.munova.recommend.repository.UserActionSummaryRepository;
 import com.space.munova.recommend.repository.UserRecommendationRepository;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -50,46 +53,47 @@ public class RecommendServiceImpl implements RecommendService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
-    public List<RecommendationsUserResponseDto> getRecommendationsByMemberId(Long memberId) {
-        List<UserRecommendation> recommendations;
+    public PagingResponse<RecommendationsUserResponseDto> getRecommendationsByMemberId(Long memberId, Pageable pageable) {
+        Page<UserRecommendation> recommendations;
         if(memberId==null){
-            recommendations = userRecommendRepository.findAll();
+            recommendations = userRecommendRepository.findAll(pageable);
         }
         else{
-            recommendations=userRecommendRepository.findByMemberId(memberId);
+            recommendations=userRecommendRepository.findByMemberId(memberId,pageable);
         }
-        //Dto변환
-        List<RecommendationsUserResponseDto> responseList = new ArrayList<>();
-        for(UserRecommendation rec : recommendations){
-            responseList.add(RecommendationsUserResponseDto.builder()
-                    .memberId(rec.getMember().getId())
-                    .productId(rec.getProduct().getId())
-                    .score(rec.getScore())
-                    .createdAt(rec.getCreatedAt())
-                    .build());
-        }
-        return responseList;
+
+        Page<RecommendationsUserResponseDto> dtoPage=recommendations.map(rec->
+                RecommendationsUserResponseDto.builder()
+                        .memberId(memberId)
+                        .productId(rec.getProduct().getId())
+                        .score(rec.getScore())
+                        .createdAt(rec.getCreatedAt())
+                        .build());
+        return PagingResponse.from(dtoPage);
     }
 
     @Override
-    public List<RecommendationsProductResponseDto> getRecommendationsByProductId(Long productId) {
-        List<ProductRecommendation> recommendations;
-        if(productId==null){
-            recommendations=productRecommendRepository.findAll();
+    public PagingResponse<RecommendationsProductResponseDto> getRecommendationsByProductId(Long productId, Pageable pageable) {
+        Page<ProductRecommendation> recommendations;
+
+        // 1️⃣ 조건에 따라 페이징 조회
+        if (productId == null) {
+            recommendations = productRecommendRepository.findAll(pageable);
+        } else {
+            recommendations = productRecommendRepository.findBySourceProductId(productId, pageable);
         }
-        else{
-            recommendations=productRecommendRepository.findBySourceProductId(productId);
-        }
-        //Dto변환
-        List<RecommendationsProductResponseDto> responseList = new ArrayList<>();
-        for(ProductRecommendation rec : recommendations){
-            responseList.add(RecommendationsProductResponseDto.builder()
-                    .sourceProductId(rec.getSourceProduct().getId())
-                    .targetProductId(rec.getTargetProduct().getId())
-                    .createdAt(rec.getCreatedAt())
-                    .build());
-        }
-        return responseList;
+
+        // 2️⃣ Page.map() 사용해서 DTO로 변환 (페이징 정보 그대로 유지됨)
+        Page<RecommendationsProductResponseDto> dtoPage = recommendations.map(rec ->
+                RecommendationsProductResponseDto.builder()
+                        .sourceProductId(rec.getSourceProduct().getId())
+                        .targetProductId(rec.getTargetProduct().getId())
+                        .createdAt(rec.getCreatedAt())
+                        .build()
+        );
+
+        // 3️⃣ PagingResponse로 변환 후 반환
+        return PagingResponse.from(dtoPage);
     }
 
     //비슷한 상품 4개와 추천 4개로 총 16개 추천

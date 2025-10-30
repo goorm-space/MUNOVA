@@ -1,8 +1,13 @@
 package com.space.munova.recommend.controller;
 
+import com.space.munova.core.config.ResponseApi;
+import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.recommend.dto.RecommendationsProductResponseDto;
 import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,12 +21,15 @@ public class RecommendationProductController {
 
     //전체 상품 기반 추천 로그
     @GetMapping()
-    public List<RecommendationsProductResponseDto> getAllProductRecommendations() {
-        return recommendService.getRecommendationsByProductId(null);
+    public ResponseEntity<ResponseApi<PagingResponse<RecommendationsProductResponseDto>>> getAllProductRecommendations(@PageableDefault(size = 10, sort="CreatedAt") Pageable pageable) {
+        PagingResponse<RecommendationsProductResponseDto> recommendations = recommendService.getRecommendationsByProductId(null, pageable);
+
+        return ResponseEntity.ok().body(ResponseApi.ok(recommendations));
     }
     //{productId}의 상품 기반 추천 로그
     @GetMapping("/{productId}")
-    public List<RecommendationsProductResponseDto> getProductRecommendations(@PathVariable Long productId) {
-        return recommendService.getRecommendationsByProductId(productId);
+    public ResponseEntity<ResponseApi<PagingResponse<RecommendationsProductResponseDto>>> getProductRecommendations(@PathVariable Long productId,@PageableDefault(size = 10, sort="CreatedAt") Pageable pageable) {
+        PagingResponse<RecommendationsProductResponseDto> recommendations = recommendService.getRecommendationsByProductId(productId, pageable);
+        return ResponseEntity.ok().body(ResponseApi.ok(recommendations));
     }
 }

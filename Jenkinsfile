@@ -97,41 +97,34 @@ pipeline {
              }
         }
 
-        stage('Upload to S3') {
-            steps {
-                script {
-                    def awsCreds = withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws_access_credential',
-                        accessKeyVariable: 'AWS_ACCESS_KEY',
-                        secretKeyVariable: 'AWS_SECRET_KEY'
-                    ]]) {
-                        [accessKey: env.AWS_ACCESS_KEY, secretKey: env.AWS_SECRET_KEY]
-                    }
+       stage('Upload to S3') {
+           steps {
+               withCredentials([[
+                   $class: 'AmazonWebServicesCredentialsBinding',
+                   credentialsId: 'aws_access_credential',
+                   accessKeyVariable: 'AWS_ACCESS_KEY',
+                   secretKeyVariable: 'AWS_SECRET_KEY'
+               ]]) {
+                   script {
+                       echo "=== Start Upload Stage ==="
 
-                    def s3 = software.amazon.awssdk.services.s3.S3Client.builder()
-                        .region(software.amazon.awssdk.regions.Region.AP_NORTHEAST_2)
-                        .credentialsProvider(
-                            software.amazon.awssdk.auth.credentials.StaticCredentialsProvider.create(
-                                software.amazon.awssdk.auth.credentials.AwsBasicCredentials.create(
-                                    awsCreds.accessKey, awsCreds.secretKey
-                                )
-                            )
-                        )
-                        .build()
+                       def filePath = "${env.WORKSPACE}/${env.ZIP_NAME}"
+                       if (!fileExists(filePath)) {
+                           error "File not found: ${filePath}"
+                       }
 
-                    s3.putObject(
-                        software.amazon.awssdk.services.s3.model.PutObjectRequest.builder()
-                            .bucket(env.S3_BUCKET)
-                            .key(env.ZIP_NAME)
-                            .build(),
-                        java.nio.file.Paths.get("${env.WORKSPACE}/${env.ZIP_NAME}")
-                    )
+                       echo "AWS_ACCESS_KEY is set: ${env.AWS_ACCESS_KEY ? 'YES' : 'NO'}"
+                       echo "AWS_SECRET_KEY is set: ${env.AWS_SECRET_KEY ? 'YES' : 'NO'}"
 
-                    echo "✅ S3 업로드 완료: ${env.S3_BUCKET}/${env.ZIP_NAME}"
-                }
-            }
-        }
+                       sh """
+                           echo "Uploading ${filePath} to S3..."
+                           aws s3 cp ${filePath} s3://${env.S3_BUCKET}/${env.ZIP_NAME} --region ap-northeast-2
+                       """
+                       echo "✅ S3 업로드 완료: ${env.S3_BUCKET}/${env.ZIP_NAME}"
+                   }
+               }
+           }
+       }
     }
 
     post {

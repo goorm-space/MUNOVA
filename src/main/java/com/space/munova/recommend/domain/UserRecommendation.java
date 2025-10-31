@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 @Builder
 public class UserRecommendation {
     @Id
+    @Column(name="user_recommendations_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 

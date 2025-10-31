@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 public class UserActionSummary {
 
     @Id
+    @Column(name="user_action_summary_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 

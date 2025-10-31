@@ -16,6 +16,12 @@ public interface ProductLikeRepository extends JpaRepository<ProductLike, Long>,
     void deleteAllByProductIds(List<Long> productIds);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Product p " +
+            "SET p.likeCount = p.likeCount - 1 " +
+            "WHERE p.id = :productId")
+    void minusLikeCount(Long productId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE ProductLike pl " +
             "SET pl.isDeleted = true " +
             "WHERE pl.product.id = :productId " +
@@ -23,7 +29,7 @@ public interface ProductLikeRepository extends JpaRepository<ProductLike, Long>,
             "AND pl.isDeleted = false")
     int deleteAllByProductIdsAndMemberId(Long productId, Long memberId);
 
-    boolean existsByProductIdAndMemberId(Long productId, Long memberId);
+    boolean existsByProductIdAndMemberIdAndIsDeletedFalse(Long productId, Long memberId);
 
     ProductLike findLikeProductByProductIdAndMemberId(Long productId, Long memberId);
 }

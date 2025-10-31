@@ -93,7 +93,6 @@ pipeline {
              steps{
                 sh """
                     docker save -o ${DOCKER_TAR} ${IMAGE_NAME}:${TAG}
-                    zip ${ZIP_NAME} ${DOCKER_TAR}
                 """
              }
         }
@@ -113,10 +112,10 @@ pipeline {
                        echo "AWS_SECRET_KEY is set: ${env.AWS_SECRET_KEY ? 'YES' : 'NO'}"
 
                        sh """
-                           echo "Uploading ${env.ZIP_NAME} to S3..."
-                           aws s3 cp ${env.ZIP_NAME} s3://${env.S3_BUCKET}/${env.ZIP_NAME} --region ap-northeast-2
+                           echo "Uploading ${env.DOCKER_TAR} to S3..."
+                           aws s3 cp ${env.DOCKER_TAR} s3://${env.S3_BUCKET}/${env.DOCKER_TAR} --region ap-northeast-2
                        """
-                       echo "✅ S3 업로드 완료: ${env.S3_BUCKET}/${env.ZIP_NAME}"
+                       echo "✅ S3 업로드 완료: ${env.S3_BUCKET}/${env.DOCKER_TAR}"
                    }
                }
            }

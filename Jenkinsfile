@@ -76,26 +76,27 @@ pipeline {
             }
         }
 
-//         stage('Build Jar') {
-//             steps {
-//                 sh './gradlew clean build'
-//             }
-//         }
-//
-//           stage('Docker Build') {
-//             steps {
-//                 sh "docker -v"
-//                 sh "docker build --no-cache -t ${IMAGE_NAME}:${TAG} ."
-//             }
-//         }
-//
-//         stage('Save & Zip Docker Image') {
-//              steps{
-//                 sh """
-//                     docker save -o ${DOCKER_TAR} ${IMAGE_NAME}:${TAG}
-//                 """
-//              }
-//         }
+        stage('Build Jar') {
+            steps {
+                sh './gradlew clean build'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh "docker -v"
+                sh "docker build --no-cache -t ${IMAGE_NAME}:${TAG} ."
+            }
+        }
+
+        stage('Save & Zip Docker Image') {
+             steps{
+                sh """
+                    docker save -o ${DOCKER_TAR} ${IMAGE_NAME}:${TAG}
+                    zip ${ZIP_NAME} ${DOCKER_TAR}
+                """
+             }
+        }
 
        stage('Upload to S3') {
            steps {

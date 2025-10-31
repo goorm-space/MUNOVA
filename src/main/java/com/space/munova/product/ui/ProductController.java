@@ -72,7 +72,7 @@ class ProductController {
     @Operation(summary = "상품 세부사항 등록", description = "상품의 세부사항을 받아 상품을 등록한다. (판매자만 등록 가능)")
     @PostMapping(value = "/api/seller/product", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<Void>> saveProduct(@RequestPart(name = "mainImgFile") @Valid @NotNull MultipartFile mainImgFile,
-                                                         @RequestPart(name = "sideImgFile") List<MultipartFile> sideImgFile,
+                                                         @RequestPart(name = "sideImgFile", required = false) List<MultipartFile> sideImgFile,
                                                          @RequestPart(name = "addProductInforms") @Valid AddProductRequestDto reqDto) throws IOException {
 
 

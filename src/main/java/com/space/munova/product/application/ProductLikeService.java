@@ -73,6 +73,7 @@ public class ProductLikeService {
             productLikeRepository.save(productLike);
             /// 상품 좋아요수 증가.
             product.plusLike();
+            upsertUserAction(productId,true);
         }
 
 

@@ -75,6 +75,7 @@ public class ProductImageService {
 
         List<String> imgUrls = productImageRepository.findImgUrlsByIdsAndProductId(imgIds, productId);
 
+        log.info(imgUrls.get(0));
         s3Service.deleteFiles(imgUrls);
 
         productImageRepository.deleteProductImgsByImgIdsAndProductId(imgIds, productId);

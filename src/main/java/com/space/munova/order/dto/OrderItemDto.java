@@ -35,8 +35,7 @@ public record OrderItemDto(
                 orderItem.getQuantity(),
                 orderItem.getPriceSnapshot(),
                 orderItem.getStatus(),
-"https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcREdixMliFliUNy1jx3BOcvILQ-NYjVbkF63dVbnTFLybgPvHMHqSaUP5M7ur6G--T5KngDwZVTZt3w4DcFUeb-crAWVWic2h92FAIlg8DHvuOLTvOrKaEQdzH_cwlqpG3nqoU20VE&usqp=CAc"
-//                orderItem.getProductDetail().getProduct().getProductImages().getFirst().getOriginName()
+                orderItem.getProductDetail().getProduct().getProductImages().getFirst().getImgUrl()
         );
     }
 }

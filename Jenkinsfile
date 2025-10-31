@@ -126,10 +126,10 @@ pipeline {
        stage('Deploy to EC2') {
            steps {
                withCredentials([file(credentialsId: 'munova-ec2-access-pem', variable: 'PEM_FILE')]) {
-                   sh '''
+                   sh """
                        echo "🚀 Deploying to EC2..."
-                       ssh -i $PEM_FILE -o StrictHostKeyChecking=no ubuntu@16.184.61.147 'bash -s' < /home/ubuntu/deploy/deploy.sh ${BUILD_NUMBER}
-                   '''
+                       ssh -o StrictHostKeyChecking=no ubuntu@16.184.61.147 '/home/ubuntu/deploy/deploy.sh ${BUILD_NUMBER}'
+                   """
                }
            }
        }

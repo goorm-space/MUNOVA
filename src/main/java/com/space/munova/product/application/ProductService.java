@@ -59,10 +59,6 @@ public class ProductService {
     @Transactional
     public void saveProduct(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, AddProductRequestDto reqDto)  {
 
-        if(mainImgFile.isEmpty()) {
-            throw ProductException.badRequestException("메인 이미지는 필수값 입니다.");
-        }
-
         ///멤버서비스에서 member객체를가져온다.
         Long sellerId = JwtHelper.getMemberId();
 

@@ -53,7 +53,7 @@ public interface ProductImageRepository extends JpaRepository<ProductImage, Long
     Optional<ProductImage> findMainImgByProductId(Long productId,  ProductImageType imageType);
 
     @Query("SELECT pi.imgUrl FROM ProductImage pi " +
-            "WHERE pi.id IN : imgIds " +
+            "WHERE pi.id IN :imgIds " +
             "AND pi.product.id = :productId " +
             "AND pi.isDeleted = false")
     List<String> findImgUrlsByIdsAndProductId(List<Long> imgIds, Long productId);

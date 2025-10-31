@@ -124,6 +124,7 @@ pipeline {
            }
        }
 
+
        stage('Deploy to EC2') {
            steps {
                withCredentials([file(credentialsId: 'munova-ec2-access-pem', variable: 'PEM_FILE')]) {

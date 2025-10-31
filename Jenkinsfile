@@ -125,11 +125,13 @@ pipeline {
 
        stage('Deploy to EC2') {
            steps {
-               sshagent(['munova-ec2-access-pem']) {  // Jenkins Credential ID
-                   sh """
-                       echo "🚀 Deploying to EC2..."
-                       ssh -o StrictHostKeyChecking=no ubuntu@16.184.61.147 'bash -s' < /path/to/deploy/deploy.sh ${BUILD_NUMBER}
-                   """
+               script {
+                   sshagent(['munova-ec2-access-pem']) {
+                       sh """
+                           echo "🚀 Deploying to EC2..."
+                           ssh -o StrictHostKeyChecking=no ubuntu@16.184.61.147 'bash -s' < /path/to/deploy/deploy.sh ${BUILD_NUMBER}
+                       """
+                   }
                }
            }
        }

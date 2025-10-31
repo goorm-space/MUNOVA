@@ -129,8 +129,8 @@ pipeline {
                     sh """
                         #!/bin/bash
                         echo "🔑 Testing SSH connection..."
-                        chmod 600 $PEM_FILE
-                        ssh -i $PEM_FILE -o StrictHostKeyChecking=no ubuntu@16.184.61.147 "echo '✅ SSH connection successful!'"
+                        chmod 600 ${PEM_FILE}
+                        ssh -i ${PEM_FILE} -o StrictHostKeyChecking=no ubuntu@16.184.61.147 "echo '✅ SSH connection successful!'"
                     """
 //                    sh """
 //                        echo "🚀 Deploying to EC2..."

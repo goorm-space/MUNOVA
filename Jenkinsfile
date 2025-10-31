@@ -99,15 +99,36 @@ pipeline {
 
         stage('Upload to S3') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                      credentialsId: 'aws_access_credential',
-                      accessKeyVariable: 'AWS_ACCESS_KEY',
-                      secretKeyVariable: 'AWS_SECRET_KEY'
-                ]]) {
-                    sh '''
-                        aws s3 cp ${ZIP_NAME} s3://${S3_BUCKET}/
-                    '''
+                script {
+                    def awsCreds = withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'aws_access_credential',
+                        accessKeyVariable: 'AWS_ACCESS_KEY',
+                        secretKeyVariable: 'AWS_SECRET_KEY'
+                    ]]) {
+                        [accessKey: env.AWS_ACCESS_KEY, secretKey: env.AWS_SECRET_KEY]
+                    }
+
+                    def s3 = software.amazon.awssdk.services.s3.S3Client.builder()
+                        .region(software.amazon.awssdk.regions.Region.AP_NORTHEAST_2)
+                        .credentialsProvider(
+                            software.amazon.awssdk.auth.credentials.StaticCredentialsProvider.create(
+                                software.amazon.awssdk.auth.credentials.AwsBasicCredentials.create(
+                                    awsCreds.accessKey, awsCreds.secretKey
+                                )
+                            )
+                        )
+                        .build()
+
+                    s3.putObject(
+                        software.amazon.awssdk.services.s3.model.PutObjectRequest.builder()
+                            .bucket(env.S3_BUCKET)
+                            .key(env.ZIP_NAME)
+                            .build(),
+                        java.nio.file.Paths.get("${env.WORKSPACE}/${env.ZIP_NAME}")
+                    )
+
+                    echo "✅ S3 업로드 완료: ${env.S3_BUCKET}/${env.ZIP_NAME}"
                 }
             }
         }

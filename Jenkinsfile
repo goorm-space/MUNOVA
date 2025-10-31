@@ -112,8 +112,8 @@ pipeline {
                        echo "AWS_SECRET_KEY is set: ${env.AWS_SECRET_KEY ? 'YES' : 'NO'}"
 
                        sh """
-                           echo "Uploading ${filePath} to S3..."
-                           aws s3 cp ${filePath} s3://${env.S3_BUCKET}/${env.ZIP_NAME} --region ap-northeast-2
+                           echo "Uploading ${env.ZIP_NAME} to S3..."
+                           aws s3 cp ${env.ZIP_NAME} s3://${env.S3_BUCKET}/${env.ZIP_NAME} --region ap-northeast-2
                        """
                        echo "✅ S3 업로드 완료: ${env.S3_BUCKET}/${env.ZIP_NAME}"
                    }

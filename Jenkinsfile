@@ -129,6 +129,7 @@ pipeline {
                    sh(script: '''
                        echo "🔑 Testing SSH connection..."
                        ssh -i "$PEM_FILE" -o StrictHostKeyChecking=no ubuntu@16.184.61.147 "echo Connected"
+                       ssh -i $PEM_FILE -o StrictHostKeyChecking=no ubuntu@16.184.61.147 'bash -s' < /home/ubuntu/deploy/deploy.sh ${BUILD_NUMBER}
                    ''')
                }
            }

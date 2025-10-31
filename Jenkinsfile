@@ -128,7 +128,7 @@ pipeline {
                withCredentials([file(credentialsId: 'munova-ec2-access-pem', variable: 'PEM_FILE')]) {
                    sh """
                        echo "🚀 Deploying to EC2..."
-                       ssh -o StrictHostKeyChecking=no ubuntu@16.184.61.147 '/home/ubuntu/deploy/deploy.sh ${BUILD_NUMBER}'
+                       ssh -i $PEM_FILE -o StrictHostKeyChecking=no ubuntu@16.184.61.147 '/home/ubuntu/deploy/deploy.sh ${BUILD_NUMBER}'
                    """
                }
            }

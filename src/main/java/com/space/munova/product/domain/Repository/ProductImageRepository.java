@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ProductImageRepository extends JpaRepository<ProductImage, Long>  {
 
@@ -15,6 +16,10 @@ public interface ProductImageRepository extends JpaRepository<ProductImage, Long
             "AND pi.isDeleted = false")
     List<ProductImage> findByProductId(Long productId);
 
+    @Query("SELECT pi FROM ProductImage pi " +
+            "WHERE pi.product.id IN :productIds " +
+            "AND pi.isDeleted = false")
+    List<ProductImage> findByProductIds(List<Long> productIds);
 
     /**
      * clearAutomatically = true: 쿼리 실행 후 1차 캐시를 자동으로 비워 데이터 불일치를 방지합니다.
@@ -35,9 +40,21 @@ public interface ProductImageRepository extends JpaRepository<ProductImage, Long
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE ProductImage pi " +
-            "SET pi.originName = :originName," +
-            "    pi.savedName = :savedName  " +
+            "SET pi.imgUrl = :imgUrl " +
             "WHERE pi.product.id = :productId " +
             "AND pi.imageType = :imageType ")
-    void updateProductImageByProduct(Long productId, String originName, String savedName,  ProductImageType imageType);
+    void updateProductImageByProduct(Long productId, String imgUrl, ProductImageType imageType);
+
+
+    @Query("SELECT pi FROM ProductImage pi " +
+            "WHERE pi.isDeleted = false " +
+            "AND pi.imageType = :ImageType " +
+            "AND pi.product.id = :productId")
+    Optional<ProductImage> findMainImgByProductId(Long productId,  ProductImageType imageType);
+
+    @Query("SELECT pi.imgUrl FROM ProductImage pi " +
+            "WHERE pi.id IN : imgIds " +
+            "AND pi.product.id = :productId " +
+            "AND pi.isDeleted = false")
+    List<String> findImgUrlsByIdsAndProductId(List<Long> imgIds, Long productId);
 }

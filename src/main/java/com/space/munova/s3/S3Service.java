@@ -2,6 +2,8 @@ package com.space.munova.s3;
 
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -51,8 +56,31 @@ public class S3Service {
         return String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, amazonS3.getRegionName(), fileName);
     }
 
+
+    // 여러 파일 업로드
+    public List<String> uploadFiles(List<MultipartFile> files) throws IOException {
+
+
+        if (files == null || files.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<String> uploadedUrls = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+
+            if (file != null && !file.isEmpty()) {
+
+                String url = uploadFile(file);
+                uploadedUrls.add(url);
+            }
+        }
+
+        return uploadedUrls;
+    }
+
     // 파일 삭제
-    public void deleteFiles(String fileUrl) {
+    public void deleteFile(String fileUrl) {
 
         String filename = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
         log.info(filename);
@@ -61,5 +89,29 @@ public class S3Service {
             throw S3Exception.fileNotFoundException("filename : ", filename);
         }
         amazonS3.deleteObject(bucket, filename);
+    }
+
+
+    // 여러파일 삭제
+    public void deleteFiles(List<String> fileUrls) {
+
+        // 전체 URL 목록을 파일 이름 목록으로 변환
+        List<DeleteObjectsRequest.KeyVersion> keys = new ArrayList<>();
+        for (String fileUrl : fileUrls) {
+            String filename = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+            keys.add(new DeleteObjectsRequest.KeyVersion(filename));
+        }
+
+        // 삭제할 파일 목록이 없으면 아무것도 하지 않음
+        if (keys.isEmpty()) {
+            return;
+        }
+
+        // 배치 삭제 요청 객체 생성
+        DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucket)
+                .withKeys(keys);
+
+        // 삭제를 요청 호출 1회
+        DeleteObjectsResult result = amazonS3.deleteObjects(deleteObjectsRequest);
     }
 }

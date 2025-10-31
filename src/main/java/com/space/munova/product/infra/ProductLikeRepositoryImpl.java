@@ -37,7 +37,7 @@ public class ProductLikeRepositoryImpl implements ProductLikeRepositoryCustom {
         List<FindProductResponseDto> dtos = queryFactory
                 .select(Projections.constructor(FindProductResponseDto.class,
                         product.id.as("productId"),
-                        productImage.savedName.as("mainImgSrc"),
+                        productImage.imgUrl.as("mainImgSrc"),
                         brand.brandName.as("brandName"),
                         product.name.as("productName"),
                         product.price.as("price"),

@@ -58,13 +58,25 @@ public class ProductLikeService {
         Member member = memberRepository.findById(memberId).orElseThrow(MemberException::invalidMemberException);
         Product product = productService.findByIdAndIsDeletedFalse(productId);
 
-        /// 사용자 좋아요 리스트 추가
-        ProductLike productLike = ProductLike.createDefaultProductLike(product, member);
-        productLikeRepository.save(productLike);
+        boolean isLiked = productLikeRepository.existsByProductIdAndMemberId(productId, memberId);
 
-        /// 상품 좋아요수 증가.
-        product.plusLike();
-        upsertUserAction(productId,true);
+        /// 좋아요 한 상풍인데 또 좋아요 눌렀을 경우 disLike
+        if(isLiked) {
+            ///  사용자 좋아요 리스트 제거
+            productLikeRepository.deleteAllByProductIdsAndMemberId(productId, memberId);
+            /// 좋아요 감소
+            product.minusLike();
+            upsertUserAction(productId,false);
+        } else {
+            /// 사용자 좋아요 리스트 추가
+            ProductLike productLike = ProductLike.createDefaultProductLike(product, member);
+            productLikeRepository.save(productLike);
+            /// 상품 좋아요수 증가.
+            product.plusLike();
+        }
+
+
+
     }
 
     public PagingResponse<FindProductResponseDto> findLikeProducts(Pageable pageable) {

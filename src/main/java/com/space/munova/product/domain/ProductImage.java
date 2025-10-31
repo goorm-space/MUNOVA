@@ -25,9 +25,7 @@ public class ProductImage extends BaseEntity {
     @Convert(converter = ProductImageTypeConverter.class)
     private ProductImageType imageType;
 
-    private String originName;
-
-    private String savedName;
+    private String imgUrl;
 
     @ColumnDefault("0")
     private boolean isDeleted;
@@ -38,14 +36,20 @@ public class ProductImage extends BaseEntity {
 
 
     public static ProductImage createDefaultProductImage(ProductImageType imageType,
-                                                  String originName,
-                                                  String savedName,
+                                                  String imgUrl,
                                                   Product product) {
         return ProductImage.builder()
                 .imageType(imageType)
-                .originName(originName)
-                .savedName(savedName)
+                .imgUrl(imgUrl)
                 .product(product)
                 .build();
+    }
+
+    public void deleteImage() {
+        this.isDeleted = true;
+    }
+
+    public void updateProductImage(String imagUrl) {
+        this.imgUrl = imgUrl;
     }
 }

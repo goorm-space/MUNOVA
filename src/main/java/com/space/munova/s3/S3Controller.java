@@ -35,7 +35,7 @@ public class S3Controller {
     @PostMapping("/delete")
     public ResponseApi<String> delete(@RequestParam String filename) {
         try {
-            s3Service.deleteFiles(filename);
+            s3Service.deleteFile(filename);
             return ResponseApi.ok("파일 삭제에 성공했습니다.");
         } catch (S3Exception e) {
             return ResponseApi.nok(e.getStatusCode(), e.getCode(), e.getMessage());

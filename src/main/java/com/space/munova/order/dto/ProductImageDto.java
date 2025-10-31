@@ -10,7 +10,7 @@ public record ProductImageDto(
     public static ProductImageDto from(ProductImage productImage) {
         return new ProductImageDto(
                 productImage.getId(),
-                productImage.getSavedName(),
+                productImage.getImgUrl(),
                 productImage.getImageType().name()
         );
     }

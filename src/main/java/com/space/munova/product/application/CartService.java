@@ -68,7 +68,7 @@ public class CartService {
     public void deleteByCartIds(List<Long> cartIds) {
 
         Long memberId = JwtHelper.getMemberId();
-        upsertUserAction(cartIds);
+    //    upsertUserAction(cartIds);
         cartRepository.deleteByCartIdsAndMemberId(cartIds,memberId);
 
     }

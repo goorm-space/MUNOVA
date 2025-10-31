@@ -47,7 +47,7 @@ public class ProductLikeService {
        if(rowCount == 0) {
            throw LikeException.badRequestException("취소한 상품을 찾을 수 없습니다.");
        }
-      // upsertUserAction(productId,false);
+       upsertUserAction(productId,false);
     }
 
     @Transactional(readOnly = false)
@@ -66,7 +66,7 @@ public class ProductLikeService {
             productLikeRepository.deleteAllByProductIdsAndMemberId(productId, memberId);
             /// 좋아요 감소
             productLikeRepository.minusLikeCount(productId);
-           // upsertUserAction(productId,false);
+            upsertUserAction(productId,false);
         } else {
             /// 사용자 좋아요 리스트 추가
             ProductLike productLike = ProductLike.createDefaultProductLike(product, member);

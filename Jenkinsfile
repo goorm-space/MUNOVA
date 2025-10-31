@@ -43,7 +43,7 @@ pipeline {
         AWS_SECRET_KEY = credentials('aws_access_credential')
 
         // EC2 크레덴셜
-        EC2_ACCESS_PEM = credentials('munova-ec2-access-pem');
+        EC2_ACCESS_PEM = credentials('munova-ec2-access-pem')
 
         // Git PR 정보
         ENV_PR_TITLE    = "${prTitle}"
@@ -126,9 +126,15 @@ pipeline {
        stage('Deploy to EC2') {
            steps {
                withCredentials([file(credentialsId: 'munova-ec2-access-pem', variable: 'PEM_FILE')]) {
-                   sh """
-                       echo "🚀 Deploying to EC2..."
-//                        ssh -i $PEM_FILE -o StrictHostKeyChecking=no ubuntu@16.184.61.147 "bash /deploy/deploy.sh ${BUILD_NUMBER}"                   """
+                    sh """
+                           echo "🔑 Testing SSH connection..."
+                           chmod 600 $PEM_FILE
+                           ssh -i $PEM_FILE -o StrictHostKeyChecking=no ubuntu@16.184.61.147 "echo '✅ SSH connection successful!'"
+                       """
+//                    sh """
+//                        echo "🚀 Deploying to EC2..."
+//                        ssh -i $PEM_FILE -o StrictHostKeyChecking=no ubuntu@16.184.61.147 "bash /deploy/deploy.sh ${BUILD_NUMBER}"
+//                    """
                }
            }
        }

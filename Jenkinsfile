@@ -57,18 +57,18 @@ pipeline {
     }
 
     stages {
-        stage('Clean Workspace') {
-            steps {
-                deleteDir() // workspace 안의 모든 파일 삭제
-            }
-        }
-
-
         stage('Checkout') {
             steps {
-                git branch: 'deploy',
-                    url: 'https://github.com/goorm-space/MUNOVA.git',
-                    credentialsId: 'MUNOVA-Access-Token'
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: 'deploy']],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [[$class: 'CleanBeforeCheckout']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/goorm-space/MUNOVA.git',
+                        credentialsId: 'MUNOVA-Access-Token'
+                    ]]
+                ])
             }
         }
 

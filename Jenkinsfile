@@ -94,7 +94,7 @@ pipeline {
                     docker save -o ${DOCKER_TAR} ${IMAGE_NAME}:${TAG}
                     zip -r ${ZIP_NAME} ${DOCKER_TAR}
                 """
-            }
+
         }
 
         stage('Upload to S3') {
@@ -118,10 +118,10 @@ pipeline {
                 def prInfo = prHtmlLink != "null" ? "<${env.ENV_PR_HTML_LINK} | PR #${env.ENV_PR_NUMBER}>" : "PR 없음"
 
                 def finalMsg = """빌드가 성공했습니다! ✅
-PR 제목: ${env.ENV_PR_TITLE}
-커밋 바로가기: ${commitUrl}
-${fromTo}
-PR 링크: ${prInfo}"""
+                                PR 제목: ${env.ENV_PR_TITLE}
+                                커밋 바로가기: ${commitUrl}
+                                ${fromTo}
+                                PR 링크: ${prInfo}"""
 
                 discordSend(
                     webhookURL: env.WEBHOOK_DISCORD_URL,

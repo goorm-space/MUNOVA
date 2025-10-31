@@ -108,11 +108,6 @@ pipeline {
                    script {
                        echo "=== Start Upload Stage ==="
 
-                       def filePath = "${env.WORKSPACE}/${env.ZIP_NAME}"
-                       if (!fileExists(filePath)) {
-                           error "File not found: ${filePath}"
-                       }
-
                        echo "AWS_ACCESS_KEY is set: ${env.AWS_ACCESS_KEY ? 'YES' : 'NO'}"
                        echo "AWS_SECRET_KEY is set: ${env.AWS_SECRET_KEY ? 'YES' : 'NO'}"
 

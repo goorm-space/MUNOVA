@@ -7,21 +7,21 @@ pipeline {
 
     triggers {
         GenericTrigger(
-            genericVariables: [
-                [key: 'repository', value: '$.repository.name', defaultValue: 'null'],
-                [key: 'repositoryLink', value: '$.repository.html_url', defaultValue: 'null'],
-                [key: 'action', value: '$.action', defaultValue: 'null'],
-//                 [key: 'prIsMerged', value: '$.pull_request.merged', defaultValue: 'false'],
-//                 [key: 'prNumber', value: '$.pull_request.number', defaultValue: '0'],
-//                 [key: 'prHtmlLink', value: '$.pull_request.html_url', defaultValue: 'null'],
-//                 [key: 'prTitle', value: '$.pull_request.title', defaultValue: 'null'],
-//                 [key: 'prRequester', value: '$.pull_request.user.login', defaultValue: 'null'],
-//                 [key: 'mergeTo', value: '$.pull_request.base.ref', defaultValue: 'null'],
-//                 [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
-            ],
-            tokenCredentialId: 'MUNOVA-jenkins-Hook',
-            regexpFilterText: '$ref',
-            regexpFilterExpression: '^refs/head/deploy$'
+//             genericVariables: [
+//                 [key: 'repository', value: '$.repository.name', defaultValue: 'null'],
+//                 [key: 'repositoryLink', value: '$.repository.html_url', defaultValue: 'null'],
+//                 [key: 'action', value: '$.action', defaultValue: 'null'],
+// //                 [key: 'prIsMerged', value: '$.pull_request.merged', defaultValue: 'false'],
+// //                 [key: 'prNumber', value: '$.pull_request.number', defaultValue: '0'],
+// //                 [key: 'prHtmlLink', value: '$.pull_request.html_url', defaultValue: 'null'],
+// //                 [key: 'prTitle', value: '$.pull_request.title', defaultValue: 'null'],
+// //                 [key: 'prRequester', value: '$.pull_request.user.login', defaultValue: 'null'],
+// //                 [key: 'mergeTo', value: '$.pull_request.base.ref', defaultValue: 'null'],
+// //                 [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
+//             ],
+//             tokenCredentialId: 'MUNOVA-jenkins-Hook',
+//             regexpFilterText: '$ref',
+//             regexpFilterExpression: '^refs/head/deploy$'
         )
     }
 

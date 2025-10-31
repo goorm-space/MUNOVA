@@ -67,6 +67,7 @@ pipeline {
             }
         }
 
+
         stage('Prepare application.properties') {
             steps {
                 withCredentials([file(credentialsId: 'MUNOVA_APPLICATION_PROPERTIES', variable: 'SECRET_FILE')]) {

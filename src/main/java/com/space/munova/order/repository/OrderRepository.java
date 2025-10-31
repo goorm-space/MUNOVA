@@ -24,7 +24,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Page<Order> findAllByMember_IdAndStatus(Long memberId, OrderStatus status, Pageable pageable);
 
-    @Query("SELECT DISTINCT o FROM Order o WHERE o.id IN :orderIds")
+    @Query("SELECT DISTINCT o FROM Order o WHERE o.id IN :orderIds ORDER BY o.createdAt DESC")
     @EntityGraph(attributePaths = {
             "orderItems.productDetail.product.brand", // Brand (ToOne)
             "orderItems.productDetail.product.productImages", // ProductImages (ToMany)

@@ -121,6 +121,7 @@ pipeline {
                        echo "✅ S3 업로드 완료: ${env.S3_BUCKET}/${env.DOCKER_TAR}"
                    }
                }
+           }
        }
 
        stage('Deploy to EC2') {

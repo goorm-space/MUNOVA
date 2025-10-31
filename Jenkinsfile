@@ -57,6 +57,11 @@ pipeline {
     }
 
     stages {
+        stage('Clean Workspace') {
+            steps {
+                deleteDir() // workspace 안의 모든 파일 삭제
+            }
+        }
 
 
         stage('Checkout') {

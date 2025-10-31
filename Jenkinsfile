@@ -90,11 +90,12 @@ pipeline {
         }
 
         stage('Save & Zip Docker Image') {
+             steps{
                 sh """
                     docker save -o ${DOCKER_TAR} ${IMAGE_NAME}:${TAG}
                     zip -r ${ZIP_NAME} ${DOCKER_TAR}
                 """
-
+             }
         }
 
         stage('Upload to S3') {

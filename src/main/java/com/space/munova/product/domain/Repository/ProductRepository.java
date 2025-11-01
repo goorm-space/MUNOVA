@@ -9,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -76,4 +78,25 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
             "AND p.id = :productId " +
             "AND p.member.id = :sellerId ")
     Optional<Product> findByIdAndMemberIdAndIsDeletedFalse(Long productId, Long sellerId);
+
+    @Query("""
+    SELECT new com.space.munova.product.application.dto.FindProductResponseDto(
+        p.id,
+        pi.imgUrl,
+        b.brandName,
+        p.name,
+        p.price,
+        p.likeCount,
+        p.salesCount,
+        p.createdAt
+    )
+    FROM Product p
+    LEFT JOIN p.brand b
+    LEFT JOIN ProductImage pi 
+        ON pi.product.id = p.id 
+        AND pi.imageType = com.space.munova.product.domain.enums.ProductImageType.MAIN
+    WHERE p.id = :productId
+      AND p.isDeleted = false
+""")
+    FindProductResponseDto findProductSummaryById(@Param("productId") Long productId);
 }

@@ -112,19 +112,16 @@ public class RecommendServiceImpl implements RecommendService {
         }
         // 점수 계산
         List<Long> topProductIds = summaries.stream()
-                .collect(Collectors.toMap(
-                        UserActionSummary::getProductId,
-                        s -> getRecommendationScore(memberId, s.getProductId())
+                .sorted(Comparator.comparingDouble(
+                        s -> -getRecommendationScore(s.getMemberId(), s.getProductId())
                 ))
-                .entrySet().stream()
-                .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
-                .limit(4)
-                .map(Map.Entry::getKey)
+                .limit(8)
+                .map(UserActionSummary::getProductId)
                 .toList();
         // 유사 상품 조회
         List<FindProductResponseDto> recommendations = topProductIds.stream()
-                .map(id -> findSimilarProductsByCategory(id, 4))
-                .flatMap(List::stream)
+                .map(productRepository::findProductSummaryById)
+                .filter(Objects::nonNull)
                 .toList();
 
         recommendations.forEach(r->{

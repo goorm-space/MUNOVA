@@ -4,12 +4,14 @@ import com.space.munova.core.config.ResponseApi;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.application.dto.FindProductResponseDto;
+import com.space.munova.product.domain.Category;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.Repository.ProductRepository;
 import com.space.munova.product.domain.enums.ProductCategory;
 import com.space.munova.recommend.domain.ProductRecommendation;
 import com.space.munova.recommend.domain.UserActionSummary;
 import com.space.munova.recommend.domain.UserRecommendation;
+import com.space.munova.recommend.dto.RecommendProductResponseDto;
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
 import com.space.munova.recommend.dto.RecommendationsProductResponseDto;
 import com.space.munova.recommend.dto.RecommendationsUserResponseDto;
@@ -20,6 +22,7 @@ import com.space.munova.recommend.repository.UserRecommendationRepository;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
@@ -102,6 +105,7 @@ public class RecommendServiceImpl implements RecommendService {
     public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateUserProductRecommend( Long productId) {
         Long memberId = JwtHelper.getMemberId();
 
+        userRecommendRepository.deleteByMemberId(memberId);
         List<UserActionSummary> summaries= summaryRepository.findByMemberId(memberId);
         if (summaries.isEmpty()) {
             return ResponseEntity.ok(ResponseApi.ok(Collections.emptyList()));
@@ -118,73 +122,65 @@ public class RecommendServiceImpl implements RecommendService {
                 .map(Map.Entry::getKey)
                 .toList();
         // 유사 상품 조회
-        List<Product> recommendations = topProductIds.stream()
+        List<FindProductResponseDto> recommendations = topProductIds.stream()
                 .map(id -> findSimilarProductsByCategory(id, 4))
                 .flatMap(List::stream)
                 .toList();
-        for (Product rec : recommendations) {
-            UserRecommendation ur = UserRecommendation.builder()
+
+        recommendations.forEach(r->{
+            UserRecommendation ur=UserRecommendation.builder()
                     .member(memberRepository.getReferenceById(memberId))
-                    .product(rec)
-                    .score(getRecommendationScore(memberId, rec.getId()))
+                    .product(Product.builder().id(r.productId()).build())
+                    .score(getRecommendationScore(memberId,r.productId()))
                     .build();
             userRecommendRepository.save(ur);
-        }
-        return ResponseEntity.ok(ResponseApi.ok(toFindProductResponseDtoList(recommendations)));
+        });
+
+        return ResponseEntity.ok(ResponseApi.ok(recommendations));
     }
 
     @Override
     @Transactional
     public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateSimilarProductRecommend(Long productId) {
-        // 1. 상품 조회
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> RecommendException.productNotFound("id=" + productId));
 
         productRecommendRepository.deleteBySourceProduct(product);
 
-        List<Product> recommendations = findSimilarProductsByCategory(productId, 4);
+        List<FindProductResponseDto> recommendations = findSimilarProductsByCategory(productId, 4);
 
         if (recommendations.isEmpty()) {
             return ResponseEntity.ok(ResponseApi.ok(Collections.emptyList()));
         }
 
-        // 3. 추천 기록 저장
-        for (Product rec : recommendations) {
+        recommendations.forEach(r->{
             ProductRecommendation pr = ProductRecommendation.builder()
                     .sourceProduct(product)
-                    .targetProduct(rec)
+                    .targetProduct(Product.builder().id(r.productId()).build())
                     .build();
             productRecommendRepository.save(pr);
-        }
-        return ResponseEntity.ok(ResponseApi.ok(toFindProductResponseDtoList(recommendations)));
+        });
+
+        return ResponseEntity.ok(ResponseApi.ok(recommendations));
     }
 
-    private List<Product> findSimilarProductsByCategory(Long productId, int limit) {
+    private List<FindProductResponseDto> findSimilarProductsByCategory(Long productId, int limit) {
         Product base = productRepository.findById(productId)
                 .orElseThrow(() -> RecommendException.productNotFound("id=" + productId));
 
-        if (base.getCategory() == null) {
+        Category category = base.getCategory();
+        if (category == null) {
             throw RecommendException.categoryNotFound("productId=" + productId);
         }
+        Long refCategoryId = (category.getRefCategory() != null)
+                ? category.getRefCategory().getId()
+                : category.getId();
 
-        return productRepository.findTop4ByCategory_IdAndIdNotOrderByIdAsc(
-                base.getCategory().getId(), base.getId()
+        return productRepository.findSimilarProductsByCategory(
+                refCategoryId,
+                base.getId(),
+                PageRequest.of(0, limit)
         );
-    }
-
-    private List<FindProductResponseDto> toFindProductResponseDtoList(List<Product> products) {
-        return products.stream()
-                .map(p -> new FindProductResponseDto(
-                        p.getId(),
-                        null, // mainImgSrc 없으면 null
-                        p.getBrand() != null ? p.getBrand().getBrandName() : null,
-                        p.getName(),
-                        p.getPrice(),
-                        p.getLikeCount(),
-                        p.getSalesCount(),
-                        p.getCreatedAt()
-                ))
-                .toList();
     }
 
     @Override

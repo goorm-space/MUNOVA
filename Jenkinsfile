@@ -20,7 +20,7 @@ pipeline {
                 [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
             ],
             tokenCredentialId: 'MUNOVA-jenkins-Hook',
-            regexpFilterText: '$.action',
+            regexpFilterText: '${action}',
             regexpFilterExpression: '^closed$'
         )
     }

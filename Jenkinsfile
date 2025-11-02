@@ -162,8 +162,7 @@ pipeline {
 //                }
 //            }
 //        }
-    }
-}
+
 
     post {
         success {
@@ -215,3 +214,4 @@ pipeline {
             }
         }
     }
+}

@@ -72,7 +72,7 @@ pipeline {
             }
         }
 
-//         stage('Check Webhook Payload') {
+//          stage('Check Webhook Payload') {
 //                 steps {
 //                     echo "===== 🔍 Webhook Payload Debug Info ====="
 // //                     echo "Action: ${params.action}"

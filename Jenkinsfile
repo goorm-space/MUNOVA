@@ -75,7 +75,7 @@ pipeline {
         stage('Check Webhook Payload') {
                 steps {
                     echo "===== 🔍 Webhook Payload Debug Info ====="
-                    echo "Action: ${action}"
+//                     echo "Action: ${params.action}"
                     echo "Repository: ${repository}"
                     echo "Repository Link: ${repositoryLink}"
                     echo "PR Merged?: ${prIsMerged}"

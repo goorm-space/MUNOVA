@@ -13,6 +13,6 @@ public interface OrderService {
     Order createOrder(CreateOrderRequest request);
     Page<OrderSummaryDto> getOrdersByMember(Long memberId, OrderStatus orderStatus, Pageable pageable);
     PagingResponse<OrderSummaryDto> getOrderList(int page);
-    Order getOrderDetail(Long orderId);
+    GetOrderDetailResponse getOrderDetail(Long orderId);
     void saveOrderLog(Order order);
 }

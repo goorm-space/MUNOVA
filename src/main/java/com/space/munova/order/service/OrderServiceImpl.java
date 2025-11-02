@@ -19,6 +19,8 @@ import com.space.munova.order.exception.OrderException;
 import com.space.munova.order.repository.OrderItemRepository;
 import com.space.munova.order.repository.OrderProductLogRepository;
 import com.space.munova.order.repository.OrderRepository;
+import com.space.munova.payment.entity.Payment;
+import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.ProductDetailService;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.recommend.service.RecommendService;
@@ -49,6 +51,7 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderProductLogRepository orderProductLogRepository;
     private final CouponRepository couponRepository;
+    private final PaymentService paymentService;
 
     @Transactional
     @Override
@@ -139,7 +142,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Order getOrderDetail(Long orderId) {
+    public GetOrderDetailResponse getOrderDetail(Long orderId) {
         Long userId = JwtHelper.getMemberId();
 
         Order order = orderRepository.findOrderDetailsById(orderId)
@@ -151,7 +154,10 @@ public class OrderServiceImpl implements OrderService {
                     "orderId:", orderId.toString()
             );
         }
-        return order;
+
+        Payment payment = paymentService.getPaymentByOrderId(orderId);
+
+        return GetOrderDetailResponse.from(order, payment);
     }
 
     private List<OrderItem> deductStockAndCreateOrderItems(List<OrderItemRequest> itemRequests, Order order) {

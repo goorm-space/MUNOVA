@@ -85,7 +85,7 @@ public interface ChatMemberRepository extends CrudRepository<ChatMember, Long> {
             "JOIN cm.chatId c " +
             "WHERE cm.chatId.id = :chatId " +
             "AND cm.memberId.id = :memberId " +
-            "AND c.status = :chatStatus " +
+            "AND (:chatStatus IS NULL OR c.status = :chatStatus) " +
             "AND c.type = :chatType " +
             "AND cm.chatMemberType = :chatUserType")
     Optional<ChatMember> findChatMember(

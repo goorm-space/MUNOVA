@@ -11,17 +11,17 @@ pipeline {
                 [key: 'action', value: '$.action', defaultValue: 'none'],
                 [key: 'repository', value: '$.repository.full_name', defaultValue: 'null'],
                 [key: 'repositoryLink', value: '$.repository.html_url', defaultValue: 'null'],
-                [key: 'prIsMerged', value: '$.pull_request.merged', defaultValue: 'false'],
-                [key: 'prNumber', value: '$.pull_request.number', defaultValue: '0'],
-                [key: 'prHtmlLink', value: '$.pull_request.html_url', defaultValue: 'null'],
-                [key: 'prTitle', value: '$.pull_request.title', defaultValue: 'null'],
-                [key: 'prRequester', value: '$.pull_request.user.login', defaultValue: 'null'],
-                [key: 'mergeTo', value: '$.pull_request.base.ref', defaultValue: 'null'],
-                [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
+//                 [key: 'prIsMerged', value: '$.pull_request.merged', defaultValue: 'false'],
+//                 [key: 'prNumber', value: '$.pull_request.number', defaultValue: '0'],
+//                 [key: 'prHtmlLink', value: '$.pull_request.html_url', defaultValue: 'null'],
+//                 [key: 'prTitle', value: '$.pull_request.title', defaultValue: 'null'],
+//                 [key: 'prRequester', value: '$.pull_request.user.login', defaultValue: 'null'],
+//                 [key: 'mergeTo', value: '$.pull_request.base.ref', defaultValue: 'null'],
+//                 [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
             ],
             tokenCredentialId: 'MUNOVA-jenkins-Hook',
-            regexpFilterText: '${action}',
-            regexpFilterExpression: '^closed$'
+//             regexpFilterText: '${action}',
+//             regexpFilterExpression: '^closed$'
         )
     }
 
@@ -72,22 +72,22 @@ pipeline {
             }
         }
 
-        stage('Check Webhook Payload') {
-                steps {
-                    echo "===== 🔍 Webhook Payload Debug Info ====="
-//                     echo "Action: ${params.action}"
-                    echo "Repository: ${repository}"
-                    echo "Repository Link: ${repositoryLink}"
-                    echo "PR Merged?: ${prIsMerged}"
-                    echo "PR Number: ${prNumber}"
-                    echo "PR Title: ${prTitle}"
-                    echo "PR Requester: ${prRequester}"
-                    echo "PR Link: ${prHtmlLink}"
-                    echo "Merge From: ${mergeFrom}"
-                    echo "Merge To: ${mergeTo}"
-                    echo "========================================"
-                }
-        }
+//         stage('Check Webhook Payload') {
+//                 steps {
+//                     echo "===== 🔍 Webhook Payload Debug Info ====="
+// //                     echo "Action: ${params.action}"
+//                     echo "Repository: ${repository}"
+//                     echo "Repository Link: ${repositoryLink}"
+//                     echo "PR Merged?: ${prIsMerged}"
+//                     echo "PR Number: ${prNumber}"
+//                     echo "PR Title: ${prTitle}"
+//                     echo "PR Requester: ${prRequester}"
+//                     echo "PR Link: ${prHtmlLink}"
+//                     echo "Merge From: ${mergeFrom}"
+//                     echo "Merge To: ${mergeTo}"
+//                     echo "========================================"
+//                 }
+//         }
 
 
         stage('Prepare application.properties') {
@@ -161,54 +161,54 @@ pipeline {
        }
     }
 
-    post {
-        success {
-            script {
-                def gitUrl = sh(script: "git config --get remote.origin.url", returnStdout: true).trim()
-                def commitHash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
-                def commitUrl = gitUrl.replace('.git','') + "/commit/" + commitHash
-                def fromTo = "Merge From: ${env.ENV_MERGE_FROM} ➡️ Merge To: ${env.ENV_MERGE_TO}"
-                def prInfo = prHtmlLink != "null" ? "<${env.ENV_PR_HTML_LINK} | PR #${env.ENV_PR_NUMBER}>" : "PR 없음"
-
-                def finalMsg = """빌드가 성공했습니다! ✅
-                                PR 제목: ${env.ENV_PR_TITLE}
-                                커밋 바로가기: ${commitUrl}
-                                ${fromTo}
-                                PR 링크: ${prInfo}"""
-
-                discordSend(
-                    webhookURL: env.WEBHOOK_DISCORD_URL,
-                    description: finalMsg,
-                    title: "Jenkins CI/CD - 성공",
-                    footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
-                    link: env.BUILD_URL,
-                    result: currentBuild.currentResult
-                )
-            }
-        }
-        failure {
-            script {
-                def gitUrl = sh(script: "git config --get remote.origin.url", returnStdout: true).trim()
-                def commitHash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
-                def commitUrl = gitUrl.replace('.git','') + "/commit/" + commitHash
-                def fromTo = "Merge From: ${env.ENV_MERGE_FROM} ➡️ Merge To: ${env.ENV_MERGE_TO}"
-                def prInfo = prHtmlLink != "null" ? "<${env.ENV_PR_HTML_LINK} | PR #${env.ENV_PR_NUMBER}>" : "PR 없음"
-
-                def errorMessage = """빌드가 실패했습니다! ❌
-                                        PR 제목: ${env.ENV_PR_TITLE}
-                                        커밋 바로가기: ${commitUrl}
-                                        ${fromTo}
-                                        PR 링크: ${prInfo}"""
-
-                discordSend(
-                    webhookURL: env.WEBHOOK_DISCORD_URL,
-                    description: errorMessage,
-                    title: "Jenkins CI/CD - 실패",
-                    footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
-                    link: env.BUILD_URL,
-                    result: currentBuild.currentResult
-                )
-            }
-        }
-    }
+//     post {
+//         success {
+//             script {
+//                 def gitUrl = sh(script: "git config --get remote.origin.url", returnStdout: true).trim()
+//                 def commitHash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
+//                 def commitUrl = gitUrl.replace('.git','') + "/commit/" + commitHash
+//                 def fromTo = "Merge From: ${env.ENV_MERGE_FROM} ➡️ Merge To: ${env.ENV_MERGE_TO}"
+//                 def prInfo = prHtmlLink != "null" ? "<${env.ENV_PR_HTML_LINK} | PR #${env.ENV_PR_NUMBER}>" : "PR 없음"
+//
+//                 def finalMsg = """빌드가 성공했습니다! ✅
+//                                 PR 제목: ${env.ENV_PR_TITLE}
+//                                 커밋 바로가기: ${commitUrl}
+//                                 ${fromTo}
+//                                 PR 링크: ${prInfo}"""
+//
+//                 discordSend(
+//                     webhookURL: env.WEBHOOK_DISCORD_URL,
+//                     description: finalMsg,
+//                     title: "Jenkins CI/CD - 성공",
+//                     footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
+//                     link: env.BUILD_URL,
+//                     result: currentBuild.currentResult
+//                 )
+//             }
+//         }
+//         failure {
+//             script {
+//                 def gitUrl = sh(script: "git config --get remote.origin.url", returnStdout: true).trim()
+//                 def commitHash = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
+//                 def commitUrl = gitUrl.replace('.git','') + "/commit/" + commitHash
+//                 def fromTo = "Merge From: ${env.ENV_MERGE_FROM} ➡️ Merge To: ${env.ENV_MERGE_TO}"
+//                 def prInfo = prHtmlLink != "null" ? "<${env.ENV_PR_HTML_LINK} | PR #${env.ENV_PR_NUMBER}>" : "PR 없음"
+//
+//                 def errorMessage = """빌드가 실패했습니다! ❌
+//                                         PR 제목: ${env.ENV_PR_TITLE}
+//                                         커밋 바로가기: ${commitUrl}
+//                                         ${fromTo}
+//                                         PR 링크: ${prInfo}"""
+//
+//                 discordSend(
+//                     webhookURL: env.WEBHOOK_DISCORD_URL,
+//                     description: errorMessage,
+//                     title: "Jenkins CI/CD - 실패",
+//                     footer: "Job: ${env.JOB_NAME} | Build #${env.BUILD_NUMBER}",
+//                     link: env.BUILD_URL,
+//                     result: currentBuild.currentResult
+//                 )
+//             }
+//         }
+//     }
 }

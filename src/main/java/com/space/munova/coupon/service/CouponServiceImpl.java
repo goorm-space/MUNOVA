@@ -74,6 +74,9 @@ public class CouponServiceImpl implements CouponService {
         Coupon coupon = Coupon.issuedCoupon(memberId, couponDetail);
         Coupon saveCoupon = couponRepository.save(coupon);
 
+        // 알림 전송
+
+
         return IssueCouponResponse.of(saveCoupon.getId(), saveCoupon.getStatus());
     }
 

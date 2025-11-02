@@ -8,9 +8,9 @@ pipeline {
     triggers {
         GenericTrigger(
             genericVariables: [
-                [key: 'repository', value: '$.repository.name', defaultValue: 'null'],
+                [key: 'action', value: '$.action', defaultValue: 'none'],
+                [key: 'repository', value: '$.repository.full_name', defaultValue: 'null'],
                 [key: 'repositoryLink', value: '$.repository.html_url', defaultValue: 'null'],
-                [key: 'action', value: '$.action', defaultValue: 'null'],
                 [key: 'prIsMerged', value: '$.pull_request.merged', defaultValue: 'false'],
                 [key: 'prNumber', value: '$.pull_request.number', defaultValue: '0'],
                 [key: 'prHtmlLink', value: '$.pull_request.html_url', defaultValue: 'null'],
@@ -20,8 +20,8 @@ pipeline {
                 [key: 'mergeFrom', value: '$.pull_request.head.ref', defaultValue: 'null'],
             ],
             tokenCredentialId: 'MUNOVA-jenkins-Hook',
-//             regexpFilterText: '$ref',
-//             regexpFilterExpression: '^refs/head/deploy$'
+            regexpFilterText: '$.action'
+            regexpFilterExpression: '^closed$'
         )
     }
 
@@ -71,6 +71,26 @@ pipeline {
                     credentialsId: 'MUNOVA-Access-Token'
             }
         }
+
+        stage('Check Webhook Payload') {
+                steps {
+                    echo "===== 🔍 Webhook Payload Debug Info ====="
+                    echo "Action: ${action}"
+                    echo "Repository: ${repository}"
+                    echo "Repository Link: ${repositoryLink}"
+                    echo "PR Merged?: ${prIsMerged}"
+                    echo "PR Number: ${prNumber}"
+                    echo "PR Title: ${prTitle}"
+                    echo "PR Requester: ${prRequester}"
+                    echo "PR Link: ${prHtmlLink}"
+                    echo "Merge From: ${mergeFrom}"
+                    echo "Merge To: ${mergeTo}"
+                    echo "========================================"
+
+                    // 전체 환경변수 출력 (필요 시)
+                    // sh 'printenv | sort'
+                }
+            }
 
 
 //         stage('Prepare application.properties') {

@@ -86,11 +86,8 @@ pipeline {
                     echo "Merge From: ${mergeFrom}"
                     echo "Merge To: ${mergeTo}"
                     echo "========================================"
-
-                    // 전체 환경변수 출력 (필요 시)
-                    // sh 'printenv | sort'
                 }
-            }
+        }
 
 
 //         stage('Prepare application.properties') {
@@ -162,7 +159,7 @@ pipeline {
 //                }
 //            }
 //        }
-
+    }
 
     post {
         success {
@@ -214,5 +211,4 @@ pipeline {
             }
         }
     }
-}
 }

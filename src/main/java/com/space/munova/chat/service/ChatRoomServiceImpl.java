@@ -180,6 +180,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     }
 
     @Override
+    @Transactional
     public List<GroupChatDetailResponseDto> getMyGroupChatRooms() {
         Long memberId = JwtHelper.getMemberId();
 
@@ -262,7 +263,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         Long memberId = JwtHelper.getMemberId();
 
         // 채팅방 정보 및 해당 사용자가 해당 방의 생성자인지 확인
-        ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, ChatStatus.OPENED, ChatType.GROUP, ChatUserType.OWNER)
+        ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, null, ChatType.GROUP, ChatUserType.OWNER)
                 .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId=" + chatId));
 
         chatMember.getChatId().updateMaxParticipant(groupChatUpdateDto.maxParticipants());
@@ -340,6 +341,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 
     // Service
     @Override
+    @Transactional
     public GroupChatDetailResponseDto getGroupChatDetail(Long chatId) {
         Chat chat = chatRepository.findByIdAndType(chatId, ChatType.GROUP)
                 .orElseThrow(() -> ChatException.cannotFindChatException("chatId=" + chatId));

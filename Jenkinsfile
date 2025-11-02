@@ -90,75 +90,75 @@ pipeline {
         }
 
 
-//         stage('Prepare application.properties') {
-//             steps {
-//                 withCredentials([file(credentialsId: 'MUNOVA_APPLICATION_PROPERTIES', variable: 'SECRET_FILE')]) {
-//                     sh '''
-//                         rm -f src/main/resources/application.properties
-//                         mkdir -p src/main/resources
-//                         cp $SECRET_FILE src/main/resources/application.properties
-//                     '''
-//                 }
-//             }
-//         }
-//
-//         stage('Build Jar') {
-//             steps {
-//                 sh './gradlew clean build'
-//             }
-//         }
-//
-//         stage('Docker Build') {
-//             steps {
-//                 sh "docker -v"
-//                 sh "docker build --no-cache -t ${IMAGE_NAME}:${TAG} ."
-//             }
-//         }
-//
-//         stage('Save & Zip Docker Image') {
-//              steps{
-//                 sh """
-//                     docker save -o ${DOCKER_TAR} ${IMAGE_NAME}:${TAG}
-//                 """
-//              }
-//         }
-//
-//        stage('Upload to S3') {
-//            steps {
-//                withCredentials([[
-//                    $class: 'AmazonWebServicesCredentialsBinding',
-//                    credentialsId: 'aws_access_credential',
-//                    accessKeyVariable: 'AWS_ACCESS_KEY',
-//                    secretKeyVariable: 'AWS_SECRET_KEY'
-//                ]]) {
-//                    script {
-//                        echo "=== Start Upload Stage ==="
-//
-//                        echo "AWS_ACCESS_KEY is set: ${env.AWS_ACCESS_KEY ? 'YES' : 'NO'}"
-//                        echo "AWS_SECRET_KEY is set: ${env.AWS_SECRET_KEY ? 'YES' : 'NO'}"
-//
-//                        sh """
-//                            echo "Uploading ${env.DOCKER_TAR} to S3..."
-//                            aws s3 cp ${env.DOCKER_TAR} s3://${env.S3_BUCKET}/${env.DOCKER_TAR} --region ap-northeast-2
-//                        """
-//                        echo "✅ S3 업로드 완료: ${env.S3_BUCKET}/${env.DOCKER_TAR}"
-//                    }
-//                }
-//            }
-//        }
-//
-//
-//        stage('Deploy to EC2') {
-//            steps {
-//                withCredentials([file(credentialsId: 'munova-ec2-access-pem', variable: 'PEM_FILE')]) {
-//                    sh(script: '''
-//                        echo "🔑 Testing SSH connection..."
-//                        ssh -i "$PEM_FILE" -o StrictHostKeyChecking=no ubuntu@16.184.61.147 "echo Connected"
-//                        ssh -i "$PEM_FILE" -o StrictHostKeyChecking=no ubuntu@16.184.61.147 "bash /home/ubuntu/deploy/deploy.sh ${BUILD_NUMBER}"
-//                    ''')
-//                }
-//            }
-//        }
+        stage('Prepare application.properties') {
+            steps {
+                withCredentials([file(credentialsId: 'MUNOVA_APPLICATION_PROPERTIES', variable: 'SECRET_FILE')]) {
+                    sh '''
+                        rm -f src/main/resources/application.properties
+                        mkdir -p src/main/resources
+                        cp $SECRET_FILE src/main/resources/application.properties
+                    '''
+                }
+            }
+        }
+
+        stage('Build Jar') {
+            steps {
+                sh './gradlew clean build'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh "docker -v"
+                sh "docker build --no-cache -t ${IMAGE_NAME}:${TAG} ."
+            }
+        }
+
+        stage('Save & Zip Docker Image') {
+             steps{
+                sh """
+                    docker save -o ${DOCKER_TAR} ${IMAGE_NAME}:${TAG}
+                """
+             }
+        }
+
+       stage('Upload to S3') {
+           steps {
+               withCredentials([[
+                   $class: 'AmazonWebServicesCredentialsBinding',
+                   credentialsId: 'aws_access_credential',
+                   accessKeyVariable: 'AWS_ACCESS_KEY',
+                   secretKeyVariable: 'AWS_SECRET_KEY'
+               ]]) {
+                   script {
+                       echo "=== Start Upload Stage ==="
+
+                       echo "AWS_ACCESS_KEY is set: ${env.AWS_ACCESS_KEY ? 'YES' : 'NO'}"
+                       echo "AWS_SECRET_KEY is set: ${env.AWS_SECRET_KEY ? 'YES' : 'NO'}"
+
+                       sh """
+                           echo "Uploading ${env.DOCKER_TAR} to S3..."
+                           aws s3 cp ${env.DOCKER_TAR} s3://${env.S3_BUCKET}/${env.DOCKER_TAR} --region ap-northeast-2
+                       """
+                       echo "✅ S3 업로드 완료: ${env.S3_BUCKET}/${env.DOCKER_TAR}"
+                   }
+               }
+           }
+       }
+
+
+       stage('Deploy to EC2') {
+           steps {
+               withCredentials([file(credentialsId: 'munova-ec2-access-pem', variable: 'PEM_FILE')]) {
+                   sh(script: '''
+                       echo "🔑 Testing SSH connection..."
+                       ssh -i "$PEM_FILE" -o StrictHostKeyChecking=no ubuntu@16.184.61.147 "echo Connected"
+                       ssh -i "$PEM_FILE" -o StrictHostKeyChecking=no ubuntu@16.184.61.147 "bash /home/ubuntu/deploy/deploy.sh ${BUILD_NUMBER}"
+                   ''')
+               }
+           }
+       }
     }
 
     post {

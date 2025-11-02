@@ -1,6 +1,8 @@
 package com.space.munova.order.dto;
 
 import com.space.munova.order.entity.OrderItem;
+import com.space.munova.product.domain.ProductImage;
+import com.space.munova.product.domain.enums.ProductImageType;
 
 import java.util.stream.Collectors;
 
@@ -35,8 +37,7 @@ public record OrderItemDto(
                 orderItem.getQuantity(),
                 orderItem.getPriceSnapshot(),
                 orderItem.getStatus(),
-"https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcREdixMliFliUNy1jx3BOcvILQ-NYjVbkF63dVbnTFLybgPvHMHqSaUP5M7ur6G--T5KngDwZVTZt3w4DcFUeb-crAWVWic2h92FAIlg8DHvuOLTvOrKaEQdzH_cwlqpG3nqoU20VE&usqp=CAc"
-//                orderItem.getProductDetail().getProduct().getProductImages().getFirst().getOriginName()
+                orderItem.getProductDetail().getProduct().getProductImages().stream().filter(image -> image.getImageType() == ProductImageType.MAIN).map(ProductImage::getImgUrl).findFirst().orElse(null)
         );
     }
 }

@@ -4,6 +4,7 @@ pipeline {
     options {
         disableConcurrentBuilds()
     }
+    
     triggers {
         GenericTrigger(
             genericVariables: [

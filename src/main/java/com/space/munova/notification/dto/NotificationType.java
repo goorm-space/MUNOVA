@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public enum NotificationType {
     COUPON("쿠폰", true),
-    ORDER("주문", true),
+    PAYMENT("결제", true),
     SYSTEM("시스템", false),
     CHAT("채팅", false);
 

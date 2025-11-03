@@ -47,7 +47,7 @@ public class Notification extends BaseEntity {
                 .memberId(payload.memberId())
                 .type(payload.type())
                 .title(notificationMessage.getTitle())
-                .content(notificationMessage.getMessage())
+                .content(payload.message())
                 .redirectUrl(notificationMessage.getRedirectUrl())
                 .build();
     }

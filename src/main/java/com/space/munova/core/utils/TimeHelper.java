@@ -3,6 +3,7 @@ package com.space.munova.core.utils;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 public class TimeHelper {
 
@@ -23,6 +24,14 @@ public class TimeHelper {
                 .atZone(ZoneId.systemDefault())
                 .toInstant()
                 .toEpochMilli();
+    }
+
+    /**
+     * LocalDateTime 문자 변경
+     */
+    public static String formatLocalDateTime(LocalDateTime dateTime) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        return dateTime.format(formatter);
     }
 
 }

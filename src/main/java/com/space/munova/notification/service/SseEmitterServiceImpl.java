@@ -1,6 +1,6 @@
 package com.space.munova.notification.service;
 
-import com.space.munova.notification.common.NotificationMessage;
+import com.space.munova.notification.dto.NotificationSseResponse;
 import com.space.munova.notification.repository.EmitterRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,20 +54,20 @@ public class SseEmitterServiceImpl implements SseEmitterService {
     // 알림 전송
     // - 생성된 sseEmitter로 전송
     @Override
-    public void sendNotification(SseEmitter sseEmitter, Object emitterId, NotificationMessage data) {
-        send(sseEmitter, emitterId, data);
+    public void sendNotification(SseEmitter sseEmitter, Object emitterId, NotificationSseResponse response) {
+        send(sseEmitter, emitterId, response);
     }
 
     // 알림 전송
     // - emitterKey에 해당하는 모든 sseEmitter에 전송
     @Override
-    public void sendNotification(Object emitterKey, NotificationMessage data) {
+    public void sendNotification(Object emitterKey, NotificationSseResponse response) {
         List<SseEmitter> emitterList = emitterRepository.findAllEmitterById(emitterKey);
-        emitterList.forEach(emitter -> send(emitter, emitterKey, data));
+        emitterList.forEach(emitter -> send(emitter, emitterKey, response));
     }
 
     // 알림 전송
-    private void send(SseEmitter emitter, Object emitterId, NotificationMessage data) {
+    private void send(SseEmitter emitter, Object emitterId, NotificationSseResponse response) {
         if (emitter == null) {
             return;
         }
@@ -75,8 +75,8 @@ public class SseEmitterServiceImpl implements SseEmitterService {
             emitter.send(
                     SseEmitter.event()
                             .id(emitterId.toString())
-                            .name(data.getNotificationType().name())
-                            .data(data)
+                            .name(response.notificationType())
+                            .data(response)
                             .reconnectTime(emitterReconnectTime)
             );
         } catch (IOException e) {

@@ -3,6 +3,8 @@ package com.space.munova.notification.service;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.notification.dto.NotificationPayload;
 import com.space.munova.notification.dto.NotificationResponse;
+import com.space.munova.notification.dto.NotificationSseResponse;
+import com.space.munova.notification.dto.NotificationType;
 import com.space.munova.notification.entity.Notification;
 import com.space.munova.notification.exception.NotificationException;
 import com.space.munova.notification.repository.NotificationQueryDslRepository;
@@ -33,8 +35,15 @@ public class NotificationServiceImpl implements NotificationService {
     public SseEmitter subscribe(Long memberId) {
         // SseEmitter 생성
         SseEmitter emitter = emitterService.createSseEmitter(memberId);
+        NotificationPayload payload = NotificationPayload.of(
+                memberId,
+                memberId,
+                NotificationType.SYSTEM,
+                CLIENT_CONNECT
+        );
         // 연결 알림
-        emitterService.sendNotification(emitter, memberId.toString(), CLIENT_CONNECT);
+        NotificationSseResponse response = NotificationSseResponse.from(payload);
+        emitterService.sendNotification(emitter, memberId.toString(), response);
         log.info("SSE 구독 성공: emitterId={}", memberId);
 
         return emitter;
@@ -44,13 +53,14 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void sendNotification(NotificationPayload payload) {
+        Notification notification = Notification.from(payload);
         // 타입에 따라 DB 저장 여부 결정
         if (payload.type().isShouldSave()) {
-            Notification notification = Notification.from(payload);
             notificationRepository.save(notification);
         }
         // 알림 전송
-        emitterService.sendNotification(payload.emitterId(), payload.notificationData());
+        NotificationSseResponse response = NotificationSseResponse.from(notification.getId(), payload);
+        emitterService.sendNotification(payload.emitterId(), response);
     }
 
     // 알림 조회

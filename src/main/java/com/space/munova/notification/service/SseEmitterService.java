@@ -1,6 +1,6 @@
 package com.space.munova.notification.service;
 
-import com.space.munova.notification.common.NotificationMessage;
+import com.space.munova.notification.dto.NotificationSseResponse;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 public interface SseEmitterService {
@@ -10,9 +10,9 @@ public interface SseEmitterService {
 
     // 알림 전송
     // - 생성된 sseEmitter로 전송
-    void sendNotification(SseEmitter sseEmitter, Object emitterId, NotificationMessage data);
+    void sendNotification(SseEmitter sseEmitter, Object emitterId, NotificationSseResponse response);
 
     // 알림 전송
     // - emitterKey에 해당하는 모든 sseEmitter에 전송
-    void sendNotification(Object emitterKey, NotificationMessage data);
+    void sendNotification(Object emitterKey, NotificationSseResponse response);
 }

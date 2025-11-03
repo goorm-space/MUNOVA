@@ -12,6 +12,9 @@ public interface NotificationMessage {
     NotificationType getNotificationType();
 
     default String format(Object... args) {
+        if (args.length == 0) {
+            return getMessage();
+        }
         return String.format(getMessage(), args);
     }
 }

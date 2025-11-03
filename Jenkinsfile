@@ -59,7 +59,7 @@ pipeline {
     stages {
         stage('Clean Workspace') {
             steps {
-                deleteDir() // workspace 안의 모든 파일 삭제
+                deleteDir() // workspace 안의 모든 파일 삭 제
             }
         }
 
@@ -81,7 +81,7 @@ pipeline {
 //                     echo "PR Merged?: ${prIsMerged}"
 //                     echo "PR Number: ${prNumber}"
 //                     echo "PR Title: ${prTitle}"
-//                     echo "PR Requester: ${prRequester}"
+//                     echo "PR Requester: ${prReq uester}"
 //                     echo "PR Link: ${prHtmlLink}"
 //                     echo "Merge From: ${mergeFrom}"
 //                     echo "Merge To: ${mergeTo}"

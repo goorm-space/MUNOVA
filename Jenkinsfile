@@ -23,7 +23,6 @@ pipeline {
             regexpFilterExpression: '^closed$'
         )
     }
-
     tools {
         jdk 'JDK21'
     }

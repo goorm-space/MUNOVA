@@ -54,4 +54,13 @@ public class CouponController {
         return ResponseApi.ok(useCouponResponse);
     }
 
+    @PostMapping("/validate/{couponId}")
+    public ResponseApi<ValidateCouponResponse> validateCoupon(
+            @PathVariable Long couponId,
+            @Valid @RequestBody UseCouponRequest useCouponRequest
+    ) {
+        ValidateCouponResponse validateCouponResponse = couponService.validateCoupon(couponId, useCouponRequest);
+        return ResponseApi.ok(validateCouponResponse);
+    }
+
 }

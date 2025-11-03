@@ -49,7 +49,7 @@ public class JwtHelper {
      */
     public String generateAccessToken(Long memberId, String userName, MemberRole role) {
         long now = System.currentTimeMillis();
-        Date accessTokenExpiration = new Date(now + accessExpiration * 1000);
+        Date accessTokenExpiration = new Date(now + accessExpiration);
 
         return Jwts.builder()
                 .subject(memberId.toString())
@@ -66,7 +66,7 @@ public class JwtHelper {
      */
     public String generateRefreshToken(Long memberId) {
         long now = System.currentTimeMillis();
-        Date refreshTokenExpiration = new Date(now + refreshExpiration * 1000);
+        Date refreshTokenExpiration = new Date(now + refreshExpiration);
 
         return Jwts.builder()
                 .subject(memberId.toString())
@@ -104,7 +104,7 @@ public class JwtHelper {
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setPath("/");
-        cookie.setMaxAge(Math.toIntExact(refreshExpiration));
+        cookie.setMaxAge(Math.toIntExact(refreshExpiration / 1000));
         response.addCookie(cookie);
     }
 

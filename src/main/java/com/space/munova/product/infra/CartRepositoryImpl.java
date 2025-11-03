@@ -48,7 +48,7 @@ public class CartRepositoryImpl implements CartRepositoryCustom {
                         product.price.as("productPrice"),
                         productDetail.quantity.as("productQuantity"),
                         cart.quantity.as("cartItemQuantity"),
-                        productImage.savedName.as("mainImgSrc"),
+                        productImage.imgUrl.as("mainImgSrc"),
                         brand.brandName.as("brandName"),
                         option.id.as("optionId"),
                         option.optionType.as("optionType"),
@@ -77,8 +77,5 @@ public class CartRepositoryImpl implements CartRepositoryCustom {
 
         return new PageImpl<>(val, pageable, count != null ? count : 0L);
     }
-
-
-
 
 }

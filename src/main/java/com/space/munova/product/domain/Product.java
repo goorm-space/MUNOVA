@@ -8,6 +8,9 @@
     import lombok.*;
     import org.hibernate.annotations.ColumnDefault;
 
+    import java.util.ArrayList;
+    import java.util.List;
+
     @Builder
     @Entity
     @Table(name = "product")
@@ -51,6 +54,14 @@
 
         @ColumnDefault("0")
         private boolean isDeleted;
+
+        @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        private List<ProductImage> productImages = new ArrayList<>();
+
+        @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        private List<ProductDetail> productDetails = new ArrayList<>();
 
         public static Product createDefaultProduct(String name,
                                                    String info,
@@ -98,9 +109,7 @@
 
         public void updateProduct(String name,
                                   String info,
-                                  Long price,
-                                  Brand brand,
-                                  Category category ) {
+                                  Long price) {
 
             if(price < 0) {
                 throw new IllegalArgumentException("가격은 0보다 작을수 없습니다.");
@@ -108,8 +117,6 @@
             this.name = name;
             this.info = info;
             this.price = price;
-            this.brand = brand;
-            this.category = category;
         }
 
         /// 상품 논리적 제거
@@ -143,5 +150,6 @@
         public void plusSalesCount(int salesCount) {
             this.salesCount += salesCount;
         }
+
 
     }

@@ -3,6 +3,9 @@ package com.space.munova.payment.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.space.munova.notification.dto.NotificationPayload;
+import com.space.munova.notification.dto.NotificationType;
+import com.space.munova.notification.service.NotificationService;
 import com.space.munova.order.dto.CancelOrderItemRequest;
 import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.order.entity.Order;
@@ -20,13 +23,14 @@ import com.space.munova.payment.exception.PaymentException;
 import com.space.munova.payment.repository.PaymentRepository;
 import com.space.munova.payment.repository.RefundRepository;
 import com.space.munova.product.application.CartService;
+import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static com.space.munova.payment.dto.PaymentNotification.PAYMENT_CONFIRM;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +42,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final OrderRepository orderRepository;
     private final TossApiClient tossApiClient;
     private final CartService cartService;
+    private final NotificationService notificationService;
 
     @Transactional
     @Override
@@ -58,6 +63,7 @@ public class PaymentServiceImpl implements PaymentService {
                 }
 
                 order.updateStatus(OrderStatus.PAID);
+                order.getCoupon().updateCouponUsed();
 
                 Payment payment = Payment.builder()
                         .order(order)
@@ -79,6 +85,9 @@ public class PaymentServiceImpl implements PaymentService {
                         .map(orderItem -> orderItem.getProductDetail().getId())
                         .toList();
                 cartService.deleteByProductDetailIdsAndMemberId(productDetailIds);
+
+                // 알림 발송
+                sendPaymentNotification(order.getOrderNum(), payment.getTotalAmount());
             }
         } catch (JsonProcessingException e) {
             throw new RuntimeException("JSON 변환 오류 발생", e);
@@ -131,5 +140,20 @@ public class PaymentServiceImpl implements PaymentService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException("JSON 변환 오류 발생", e);
         }
+    }
+
+    // 결제완료 알림전송
+    private void sendPaymentNotification(String orderNum, Long totalAmount) {
+        Long memberId = JwtHelper.getMemberId();
+        // 알림 전송
+        NotificationPayload notificationPayload = NotificationPayload.of(
+                memberId,
+                memberId,
+                NotificationType.PAYMENT,
+                PAYMENT_CONFIRM,
+                orderNum,
+                totalAmount.toString()
+        );
+        notificationService.sendNotification(notificationPayload);
     }
 }

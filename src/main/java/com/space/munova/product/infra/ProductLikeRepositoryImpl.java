@@ -29,7 +29,7 @@ public class ProductLikeRepositoryImpl implements ProductLikeRepositoryCustom {
         Long count = queryFactory
                 .select(productLike.count())
                 .from(productLike)
-                .where(product.isDeleted.eq(false)
+                .where(productLike.isDeleted.eq(false)
                         .and(productLike.member.id.eq(memberId)))
                 .fetchOne();
 
@@ -37,7 +37,7 @@ public class ProductLikeRepositoryImpl implements ProductLikeRepositoryCustom {
         List<FindProductResponseDto> dtos = queryFactory
                 .select(Projections.constructor(FindProductResponseDto.class,
                         product.id.as("productId"),
-                        productImage.savedName.as("mainImgSrc"),
+                        productImage.imgUrl.as("mainImgSrc"),
                         brand.brandName.as("brandName"),
                         product.name.as("productName"),
                         product.price.as("price"),
@@ -50,7 +50,7 @@ public class ProductLikeRepositoryImpl implements ProductLikeRepositoryCustom {
                 .on(productLike.product.id.eq(product.id))
                 .join(member)
                 .on(productLike.member.id.eq(member.id))
-                .join(productImage)
+                .leftJoin(productImage)
                 .on(productImage.product.id.eq(product.id)
                         .and(productImage.imageType.eq(ProductImageType.MAIN)))
                 .join(brand)

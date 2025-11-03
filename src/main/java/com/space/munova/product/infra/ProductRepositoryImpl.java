@@ -6,7 +6,6 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.space.munova.product.application.dto.FindProductResponseDto;
-import com.space.munova.product.domain.QProduct;
 import com.space.munova.product.domain.Repository.ProductRepositoryCustom;
 import com.space.munova.product.domain.enums.ProductImageType;
 import lombok.RequiredArgsConstructor;
@@ -57,7 +56,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         List<FindProductResponseDto> findProductByConditions = queryFactory
                 .select(Projections.constructor(FindProductResponseDto.class,
                         product.id.as("productId"),
-                        productImage.savedName.as("mainImgSrc"),
+                        productImage.imgUrl.as("mainImgSrc"),
                         brand.brandName.as("brandName"),
                         product.name.as("productName"),
                         product.price.as("price"),
@@ -99,7 +98,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         List<FindProductResponseDto> content = queryFactory
                 .select(Projections.constructor(FindProductResponseDto.class,
                         product.id.as("productId"),
-                        productImage.savedName.as("mainImgSrc"),
+                        productImage.imgUrl.as("mainImgSrc"),
                         brand.brandName.as("brandName"),
                         product.name.as("productName"),
                         product.price.as("price"),

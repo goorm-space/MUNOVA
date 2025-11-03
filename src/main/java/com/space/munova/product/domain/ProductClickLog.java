@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 public class ProductClickLog {
 
     @Id
+    @Column(name="product_click_log_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long productClickLogId;
 

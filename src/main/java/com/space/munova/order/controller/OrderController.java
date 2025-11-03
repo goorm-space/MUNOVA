@@ -33,16 +33,14 @@ public class OrderController {
     @GetMapping
     public ResponseApi<PagingResponse<OrderSummaryDto>> getOrders(@RequestParam(value = "page", defaultValue = "0") int page) {
         PagingResponse<OrderSummaryDto> response = orderService.getOrderList(page);
+        System.out.print(response.content());
 
         return ResponseApi.ok(response);
     }
 
     @GetMapping("/{orderId}")
     public ResponseApi<?> getOrderDetail(@PathVariable("orderId") Long orderId) {
-        Order order = orderService.getOrderDetail(orderId);
-        Payment payment = paymentService.getPaymentByOrderId(orderId);
-
-        GetOrderDetailResponse response = GetOrderDetailResponse.from(order, payment);
+        GetOrderDetailResponse response = orderService.getOrderDetail(orderId);
 
         return ResponseApi.ok(response);
     }

@@ -15,4 +15,5 @@ public interface CouponService {
 
     // 쿠폰 사용
     UseCouponResponse useCoupon(Long couponId, UseCouponRequest useCouponRequest);
+
 }

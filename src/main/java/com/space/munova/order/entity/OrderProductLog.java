@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class OrderProductLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "order_product_log")
+    @Column(name = "order_product_log_id")
     private Long order_product_log_id;
 
     @Column(name = "member_id", nullable = false)

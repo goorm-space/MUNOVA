@@ -19,15 +19,15 @@ import com.space.munova.order.exception.OrderException;
 import com.space.munova.order.repository.OrderItemRepository;
 import com.space.munova.order.repository.OrderProductLogRepository;
 import com.space.munova.order.repository.OrderRepository;
+import com.space.munova.payment.entity.Payment;
+import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.ProductDetailService;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.aspectj.weaver.ast.Or;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +51,7 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderProductLogRepository orderProductLogRepository;
     private final CouponRepository couponRepository;
+    private final PaymentService paymentService;
 
     @Transactional
     @Override
@@ -107,6 +108,27 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public Page<OrderSummaryDto> getOrdersByMember(Long memberId, OrderStatus status, Pageable pageable) {
+        Page<Order> orderPage = orderRepository.findAllByMember_IdAndStatus(memberId, status, pageable);
+
+        if (orderPage.getContent().isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        List<Long> orderIds = orderPage.getContent().stream()
+                .map(Order::getId)
+                .toList();
+
+        List<Order> ordersWithDetails = orderRepository.findAllWithDetailsByOrderIds(orderIds);
+
+        List<OrderSummaryDto> orderDtos = ordersWithDetails.stream()
+                .map(OrderSummaryDto::from)
+                .toList();
+
+        return new PageImpl<>(orderDtos, pageable, orderPage.getTotalElements());
+    }
+
+    @Override
     public PagingResponse<OrderSummaryDto> getOrderList(int page) {
         Long userId = JwtHelper.getMemberId();
         Pageable pageable = PageRequest.of(
@@ -115,15 +137,12 @@ public class OrderServiceImpl implements OrderService {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<Order> orderPage = orderRepository.findAllByMember_IdAndStatus(userId, OrderStatus.PAID, pageable);
-
-        Page<OrderSummaryDto> dtoPage = orderPage.map(OrderSummaryDto::from);
-
-        return PagingResponse.from(dtoPage);
+        Page<OrderSummaryDto> orders = getOrdersByMember(userId, OrderStatus.PAID, pageable);
+        return PagingResponse.from(orders);
     }
 
     @Override
-    public Order getOrderDetail(Long orderId) {
+    public GetOrderDetailResponse getOrderDetail(Long orderId) {
         Long userId = JwtHelper.getMemberId();
 
         Order order = orderRepository.findOrderDetailsById(orderId)
@@ -135,7 +154,10 @@ public class OrderServiceImpl implements OrderService {
                     "orderId:", orderId.toString()
             );
         }
-        return order;
+
+        Payment payment = paymentService.getPaymentByOrderId(orderId);
+
+        return GetOrderDetailResponse.from(order, payment);
     }
 
     private List<OrderItem> deductStockAndCreateOrderItems(List<OrderItemRequest> itemRequests, Order order) {
@@ -165,25 +187,35 @@ public class OrderServiceImpl implements OrderService {
                 .mapToLong(item -> item.getPriceSnapshot() * item.getQuantity())
                 .sum();
 
-        UseCouponRequest couponRequest = UseCouponRequest.of(totalProductAmount);
-        UseCouponResponse couponResponse = couponService.useCoupon(request.orderCouponId(), couponRequest);
+        if (request.orderCouponId() != null) {
+            UseCouponRequest couponRequest = UseCouponRequest.of(totalProductAmount);
+            UseCouponResponse couponResponse = couponService.useCoupon(request.orderCouponId(), couponRequest);
 
-        if (couponResponse.finalPrice().longValue() != request.clientCalculatedAmount().longValue()) {
-            throw OrderException.amountMismatchException(
-                    String.format("client: %d, server: %d", request.clientCalculatedAmount(), couponResponse.finalPrice())
+            if (couponResponse.finalPrice().longValue() != request.clientCalculatedAmount().longValue()) {
+                throw OrderException.amountMismatchException(
+                        String.format("client: %d, server: %d", request.clientCalculatedAmount(), couponResponse.finalPrice())
+                );
+            }
+
+            Coupon coupon = couponRepository.findWithCouponDetailById(request.orderCouponId())
+                    .orElseThrow(CouponException::notFoundException);
+
+            order.updateFinalOrder(
+                    couponResponse.originalPrice(),
+                    couponResponse.discountPrice(),
+                    couponResponse.finalPrice(),
+                    coupon,
+                    OrderStatus.PAYMENT_PENDING
+            );
+        } else {
+            order.updateFinalOrder(
+                    totalProductAmount,
+                    0L,
+                    totalProductAmount,
+                    null,
+                    OrderStatus.PAYMENT_PENDING
             );
         }
-
-        Coupon coupon = couponRepository.findWithCouponDetailById(request.orderCouponId())
-                .orElseThrow(CouponException::notFoundException);
-
-        order.updateFinalOrder(
-                couponResponse.originalPrice(),
-                couponResponse.discountPrice(),
-                couponResponse.finalPrice(),
-                coupon,
-                OrderStatus.PAYMENT_PENDING
-        );
 
         return order;
     }

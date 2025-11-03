@@ -6,6 +6,8 @@ import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.application.dto.*;
+import com.space.munova.product.application.event.ProductDeleteEvenForLikeDto;
+import com.space.munova.product.application.event.ProductDeleteEventForCartDto;
 import com.space.munova.product.application.exception.ProductException;
 import com.space.munova.product.domain.*;
 import com.space.munova.product.domain.Repository.ProductClickLogRepository;
@@ -14,10 +16,9 @@ import com.space.munova.product.domain.Repository.ProductSearchLogRepository;
 import com.space.munova.product.domain.enums.ProductCategory;
 import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -44,10 +46,11 @@ public class ProductService {
     private final CategoryService categoryService;
     private final MemberRepository memberRepository;
     private final ProductOptionService productOptionService;
-    //private final ProductLikeService productLikeService;  -> 이후 카프카로 이벤트를 쏴주어야함.
     private final ProductSearchLogRepository productSearchLogRepository;
     private final RecommendService recommendService;
 
+    ///  스프린 내부 이벤트 발행 인터페이스 추가
+    private final ApplicationEventPublisher eventPublisher;
 
     /// 모든 카테고리 조회 메서드
     public List<ProductCategoryResponseDto> findProductCategories() {
@@ -57,10 +60,6 @@ public class ProductService {
     /// 상품 등록 메서드
     @Transactional
     public void saveProduct(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, AddProductRequestDto reqDto)  {
-
-        if(mainImgFile.isEmpty()) {
-            throw ProductException.badRequestException("메인 이미지는 필수값 입니다.");
-        }
 
         ///멤버서비스에서 member객체를가져온다.
         Long sellerId = JwtHelper.getMemberId();
@@ -85,8 +84,7 @@ public class ProductService {
             Product savedProduct = productRepository.save(product);
 
             // 이미지 저장.
-            productImageService.saveMainImg(mainImgFile, savedProduct);
-            productImageService.saveSideImg(sideImgFile, savedProduct);
+            saveImages(mainImgFile, sideImgFile, savedProduct);
 
             // 상품 디테일 옵션 저장.
             productDetailService.saveProductDetailAndOption(savedProduct, reqDto.shoeOptionDtos());
@@ -98,6 +96,8 @@ public class ProductService {
             throw new RuntimeException();
         }
     }
+
+
 
     public ProductDetailResponseDto findProductDetails(Long productId) {
 
@@ -150,20 +150,31 @@ public class ProductService {
     public void deleteProduct(List<Long> productIds) {
 
         Long sellerId = JwtHelper.getMemberId();
+        List<Product> allById = productRepository.findAllById(productIds);
 
-        productRepository.findAllById(productIds).forEach(product -> {
+        List<Product> filteredProduct = filterProduct(allById, productIds, sellerId);
+        List<Long> filteredProductIds = createDeleteProductIds(filteredProduct);
 
-            if(!product.getMember().getId().equals(sellerId)) {
-                throw ProductException.unauthorizedAccessException();
-            }
-        });
+        productImageService.deleteImagesByProductIds(filteredProductIds);
 
-        productImageService.deleteImagesByProductIds(productIds);
-        productDetailService.deleteProductDetailByProductId(productIds);
-       // productLikeService.deleteProductLikeByProductId(productIds);
+        /// 삭제된 디테일 아이디 값반환.
+        List<Long> deletedDetailIds = productDetailService.deleteProductDetailByProductId(filteredProductIds);
+
+        ///  더티체킹
+        //deleteProducts(filteredProduct);
         productRepository.deleteAllByProductIds(productIds);
 
+        /// 비동기로 장바구니, 좋아요에 상품 삭제 메시지 발행
+        ProductDeleteEventForCartDto deleteCartMessage = new ProductDeleteEventForCartDto(deletedDetailIds, true);
+        ProductDeleteEvenForLikeDto deleteLikeMessage = new ProductDeleteEvenForLikeDto(filteredProductIds, true);
+        /// 라이크 제거 메세지 발행
+        eventPublisher.publishEvent(deleteLikeMessage);
+        ///  장바구니 제거 메세지 발행
+        eventPublisher.publishEvent(deleteCartMessage);
+
     }
+
+
 
 
     public PagingResponse<FindProductResponseDto> findProductsWithOptionalLogging(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
@@ -219,25 +230,52 @@ public class ProductService {
     public void updateProductInfo(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, UpdateProductRequestDto reqDto) throws IOException {
         Long sellerId = JwtHelper.getMemberId();
 
+
         Product product = productRepository.findByIdAndMemberIdAndIsDeletedFalse(reqDto.productId(), sellerId)
                 .orElseThrow(() -> ProductException.badRequestException("등록한 상품을 찾을 수 없습니다."));
 
 
-        // 브랜드 조회.
-        Brand brand = brandService.findById(reqDto.brandId());
-
-        //카테고리 조회.
-        Category category = categoryService.findById(reqDto.categoryId());
-
         // 상품수정
         try {
-            product.updateProduct(reqDto.ProductName(), reqDto.info(), reqDto.price(), brand, category);
+            product.updateProduct(reqDto.ProductName(), reqDto.info(), reqDto.price());
 
-            productImageService.deleteImagesByImgIds(reqDto.deletedImgIds(), reqDto.productId());
-            updateImages(mainImgFile, sideImgFile, product);
+            //productImageService.deleteImagesByImgIds(reqDto.deletedImgIds(), reqDto.productId());
+
+            /// 이미지 수정
+            updateImages(mainImgFile, sideImgFile, reqDto, product);
+
+            /// 상품 상세 업데이트
+            List<ShoeOptionDto> addShoeOptionDtos = reqDto.addShoeOptionDto() == null ? new ArrayList<>() :  reqDto.addShoeOptionDto().shoeOptionDtos();
+            List<UpdateQuantityDto> updateQuantityDtos = reqDto.updateQuantityDto() == null ?  new ArrayList<>() :  reqDto.updateQuantityDto();
+            List<Long> deleteDetailIds = reqDto.deleteProductDetailDto() == null ? new ArrayList<>() :  reqDto.deleteProductDetailDto().detailId();
+
+            /// 삭제아이템과 업데이트아이템이 겹칠경우 업데이트아이템에서 삭제된아이템제거
+            if(!updateQuantityDtos.isEmpty() && !deleteDetailIds.isEmpty()) {
+                for (UpdateQuantityDto dto : updateQuantityDtos) {
+                    for (Long deleteDetailId : deleteDetailIds) {
+                        if(dto.detailId().equals(deleteDetailId)) {
+                            updateQuantityDtos.remove(dto);
+                        }
+                    }
+                }
+
+
+            }
+
+            if(!addShoeOptionDtos.isEmpty()) {
+                productDetailService.saveProductDetailAndOption(product, reqDto.addShoeOptionDto().shoeOptionDtos());
+            }
+
+            if(!updateQuantityDtos.isEmpty()) {
+                productDetailService.updateQuantity(updateQuantityDtos);
+            }
+
+            if(!deleteDetailIds.isEmpty()) {
+                productDetailService.deleteProductDetailByIds(deleteDetailIds);
+            }
 
             // 상품 디테일 옵션 저장.
-            productDetailService.saveProductDetailAndOption(product, reqDto.shoeOptionDtos());
+        //    productDetailService.saveProductDetailAndOption(product, reqDto.shoeOptionDtos());
         } catch (IllegalArgumentException e) {
             log.error(e.getMessage());
             throw ProductException.badRequestException(e.getMessage());
@@ -248,6 +286,10 @@ public class ProductService {
 
 
     }
+
+
+
+
 
     public List<ProductOptionResponseDto> findOptions() {
         return productOptionService.findOptions();
@@ -278,4 +320,65 @@ public class ProductService {
     }
 
 
+    private void saveImages(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, Product savedProduct) throws IOException {
+        productImageService.saveMainImg(mainImgFile, savedProduct);
+        productImageService.saveSideImg(sideImgFile, savedProduct);
+    }
+
+
+    public CreateProductConditionsResponseDto findCreateProductConditions() {
+        return new CreateProductConditionsResponseDto(
+                findOptions(),
+                findProductCategories()
+        );
+    }
+
+    private void updateImages(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, UpdateProductRequestDto reqDto, Product product) throws IOException {
+        /// 메인이미지가 넘어왔을경우 메인이미지 업데이트
+        if(mainImgFile != null &&  !mainImgFile.isEmpty())  {
+            productImageService.updateMainImg(mainImgFile, product);
+        }
+
+        /// 삭제된 사이드 이미지 갯수가 1개이상일경우 업데이트
+        if(sideImgFile != null &&  !sideImgFile.isEmpty())  {
+            productImageService.saveSideImg(sideImgFile, product);
+        }
+
+        productImageService.deleteImagesByImgIds(reqDto.deletedImgIds(), product.getId());
+    }
+
+
+
+    private List<Product> filterProduct(List<Product> productList, List<Long> productIds, Long sellerId) {
+
+        List<Product> retVal = new ArrayList<>();
+        for (Product product : productList) {
+            if(!product.getMember().getId().equals(sellerId)) {
+                throw ProductException.unauthorizedAccessException();
+            }
+            retVal.add(product);
+        }
+
+        return retVal;
+    }
+
+    private List<Long> createDeleteProductIds(List<Product> filteredProduct) {
+        List<Long> filteredProductIds = new ArrayList<>();
+        for (Product product : filteredProduct) {
+            filteredProductIds.add(product.getId());
+        }
+        return filteredProductIds;
+    }
+
+
+    private void deleteProducts(List<Product> filteredProduct) {
+        for(Product product : filteredProduct) {
+            product.deleteProduct();
+        }
+    }
+
+    @Transactional(readOnly = false)
+    public void plusLikeCountByProductId(Long productId) {
+        productRepository.plusLikeCountByProductId(productId);
+    }
 }

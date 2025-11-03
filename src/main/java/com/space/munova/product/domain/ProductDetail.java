@@ -7,6 +7,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Builder
 @Entity
 @Table(name = "product_detail")
@@ -28,6 +31,9 @@ public class ProductDetail extends BaseEntity {
     @ColumnDefault("0")
     private boolean isDeleted;
 
+    @OneToMany(mappedBy = "productDetail", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ProductOptionMapping>  optionMappings = new ArrayList<>();
 
     public static ProductDetail createDefaultProductDetail(Product product, Integer quantity) {
 

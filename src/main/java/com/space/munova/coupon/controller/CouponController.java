@@ -53,5 +53,4 @@ public class CouponController {
         UseCouponResponse useCouponResponse = couponService.useCoupon(couponId, useCouponRequest);
         return ResponseApi.ok(useCouponResponse);
     }
-
 }

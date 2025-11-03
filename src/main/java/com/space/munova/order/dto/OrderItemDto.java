@@ -1,22 +1,43 @@
 package com.space.munova.order.dto;
 
 import com.space.munova.order.entity.OrderItem;
+import com.space.munova.product.domain.ProductImage;
+import com.space.munova.product.domain.enums.ProductImageType;
+
+import java.util.stream.Collectors;
 
 public record OrderItemDto(
         Long orderItemId,
+        String brandName,
         String productName,
-        // Todo: 판매자, 옵션정보, 이미지도 불러와야한다
-        int quantity,
+        String option,
+        Integer quantity,
         Long totalPrice,
-        OrderStatus status
+        OrderStatus status,
+        String imageUrl
 ) {
     public static OrderItemDto from(OrderItem orderItem) {
+        String optionStr = OptionDto.combineOptionNamesByType(
+                orderItem.getProductDetail()
+                        .getOptionMappings()
+                        .stream()
+                        .map(mapping -> new OptionDto(
+                                mapping.getOption().getId(),
+                                mapping.getOption().getOptionType(),
+                                mapping.getOption().getOptionName()
+                        ))
+                        .collect(Collectors.toList())
+        );
+
         return new OrderItemDto(
                 orderItem.getId(),
+                orderItem.getProductDetail().getProduct().getBrand().getBrandName(),
                 orderItem.getNameSnapshot(),
+                optionStr,
                 orderItem.getQuantity(),
-                orderItem.getPriceSnapshot() * orderItem.getQuantity(),
-                orderItem.getStatus()
+                orderItem.getPriceSnapshot()*orderItem.getQuantity(),
+                orderItem.getStatus(),
+                orderItem.getProductDetail().getProduct().getProductImages().stream().filter(image -> image.getImageType() == ProductImageType.MAIN).map(ProductImage::getImgUrl).findFirst().orElse(null)
         );
     }
 }

@@ -66,6 +66,12 @@ public class ChatRoomController {
         return ResponseApi.ok(chatService.searchGroupChatRooms(keyword, tagIds, isMine));
     }
 
+    // 내 채팅방 목록 확인
+    @GetMapping("/group/owner")
+    public ResponseApi<List<GroupChatDetailResponseDto>> getMyGroupChatRooms() {
+        return ResponseApi.ok(chatService.getMyGroupChatRooms());
+    }
+
     // 참여 중인 그룹 채팅 목록 확인
     @GetMapping("/group")
     public ResponseApi<List<ChatItemDto>> getGroupChatRooms() {
@@ -100,10 +106,17 @@ public class ChatRoomController {
         return ResponseApi.ok();
     }
 
-    // 그룹채팅(Owner) 채팅방 닫기
+    // 그룹채팅(Owner) 채팅방 비활성화
     @PatchMapping("/group/close/{chatId}")
     public ResponseApi<Void> closeGroupChat(@PathVariable Long chatId) {
         chatService.closeGroupChat(chatId);
+        return ResponseApi.ok();
+    }
+
+    // 그룹채팅(Owner) 채팅방 재활성화
+    @PatchMapping("/group/open/{chatId}")
+    public ResponseApi<Void> openGroupChat(@PathVariable Long chatId) {
+        chatService.openGroupChat(chatId);
         return ResponseApi.ok();
     }
 

@@ -171,7 +171,40 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                         chat.getChatMembers() != null
                                 ? chat.getChatMembers().stream()
                                 .filter(Objects::nonNull)
-                                .map(cm -> cm.getMemberId() != null ? MemberInfoDto.of(cm.getMemberId().getId(), cm.getName()) : null)
+                                .map(cm -> cm.getMemberId() != null ? MemberInfoDto.of(cm.getMemberId().getId(), cm.getName(), cm.getChatMemberType()) : null)
+                                .filter(Objects::nonNull)
+                                .toList()
+                                : List.of()
+                ))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public List<GroupChatDetailResponseDto> getMyGroupChatRooms() {
+        Long memberId = JwtHelper.getMemberId();
+
+        List<Chat> chatRoomLists = chatRepository.findByMemberIdAndChatUserType(memberId, ChatType.GROUP, ChatUserType.OWNER);
+
+        return chatRoomLists.stream()
+                .map(chat -> GroupChatDetailResponseDto.of(
+                        chat.getId(),
+                        chat.getName(),
+                        chat.getMaxParticipant(),
+                        chat.getCurParticipant(),
+                        chat.getStatus(),
+                        chat.getCreatedAt(),
+                        chat.getChatTags() != null
+                                ? chat.getChatTags().stream()
+                                .filter(Objects::nonNull)
+                                .map(ct -> ct.getCategoryType() != null ? ct.getCategoryType().getDescription() : null)
+                                .filter(Objects::nonNull)
+                                .toList()
+                                : List.of(), // null이면 빈 리스트
+                        chat.getChatMembers() != null
+                                ? chat.getChatMembers().stream()
+                                .filter(Objects::nonNull)
+                                .map(cm -> cm.getMemberId() != null ? MemberInfoDto.of(cm.getMemberId().getId(), cm.getName(), cm.getChatMemberType()) : null)
                                 .filter(Objects::nonNull)
                                 .toList()
                                 : List.of()
@@ -230,7 +263,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         Long memberId = JwtHelper.getMemberId();
 
         // 채팅방 정보 및 해당 사용자가 해당 방의 생성자인지 확인
-        ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, ChatStatus.OPENED, ChatType.GROUP, ChatUserType.OWNER)
+        ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, null, ChatType.GROUP, ChatUserType.OWNER)
                 .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId=" + chatId));
 
         chatMember.getChatId().updateMaxParticipant(groupChatUpdateDto.maxParticipants());
@@ -292,8 +325,23 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         chatMember.getChatId().updateChatStatusClosed(ChatStatus.CLOSED);
     }
 
+    // OWNER가 채팅방 CLOSED로 전환
+    @Override
+    @Transactional
+    public void openGroupChat(Long chatId) {
+
+        Long memberId = JwtHelper.getMemberId();
+
+        // 해당 채팅방이 CLOSED 되어 있고, 이에 대한 OWENER 인 경우
+        ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, ChatStatus.CLOSED, ChatType.GROUP, ChatUserType.OWNER)
+                .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId=" + chatId));
+
+        chatMember.getChatId().updateChatStatusClosed(ChatStatus.OPENED);
+    }
+
     // Service
     @Override
+    @Transactional
     public GroupChatDetailResponseDto getGroupChatDetail(Long chatId) {
         Chat chat = chatRepository.findByIdAndType(chatId, ChatType.GROUP)
                 .orElseThrow(() -> ChatException.cannotFindChatException("chatId=" + chatId));
@@ -305,7 +353,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                 .toList();
 
         List<MemberInfoDto> memberList = chat.getChatMembers().stream()
-                .map(cm -> MemberInfoDto.of(cm.getMemberId().getId(), cm.getName()))
+                .map(cm -> MemberInfoDto.of(cm.getMemberId().getId(), cm.getName(), cm.getChatMemberType()))
                 .toList();
 
         return new GroupChatDetailResponseDto(

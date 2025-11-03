@@ -15,6 +15,8 @@ public interface ProductLikeRepository extends JpaRepository<ProductLike, Long>,
             "WHERE pl.product.id IN :productIds")
     void deleteAllByProductIds(List<Long> productIds);
 
+
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE ProductLike pl " +
             "SET pl.isDeleted = true " +
@@ -23,4 +25,7 @@ public interface ProductLikeRepository extends JpaRepository<ProductLike, Long>,
             "AND pl.isDeleted = false")
     int deleteAllByProductIdsAndMemberId(Long productId, Long memberId);
 
+    boolean existsByProductIdAndMemberIdAndIsDeletedFalse(Long productId, Long memberId);
+
+    ProductLike findLikeProductByProductIdAndMemberId(Long productId, Long memberId);
 }

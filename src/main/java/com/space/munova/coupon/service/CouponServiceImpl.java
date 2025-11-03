@@ -1,6 +1,7 @@
 package com.space.munova.coupon.service;
 
 import com.space.munova.core.dto.PagingResponse;
+import com.space.munova.core.utils.TimeHelper;
 import com.space.munova.coupon.dto.*;
 import com.space.munova.coupon.entity.Coupon;
 import com.space.munova.coupon.entity.CouponDetail;
@@ -9,6 +10,9 @@ import com.space.munova.coupon.repository.CouponDetailRepository;
 import com.space.munova.coupon.repository.CouponRedisRepository;
 import com.space.munova.coupon.repository.CouponRepository;
 import com.space.munova.coupon.repository.CouponSearchQueryDslRepository;
+import com.space.munova.notification.dto.NotificationPayload;
+import com.space.munova.notification.dto.NotificationType;
+import com.space.munova.notification.service.NotificationService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,12 +21,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.space.munova.coupon.dto.CouponNotification.COUPON_ISSUED;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CouponServiceImpl implements CouponService {
 
     private final CouponRepository couponRepository;
+    private final NotificationService notificationService;
     private final CouponDetailRepository couponDetailRepository;
     private final CouponRedisRepository couponRedisRepository;
     private final CouponSearchQueryDslRepository couponSearchQueryDslRepository;
@@ -74,6 +81,17 @@ public class CouponServiceImpl implements CouponService {
         Coupon coupon = Coupon.issuedCoupon(memberId, couponDetail);
         Coupon saveCoupon = couponRepository.save(coupon);
 
+        // 알림 전송
+        NotificationPayload notificationPayload = NotificationPayload.of(
+                memberId,
+                memberId,
+                NotificationType.COUPON,
+                COUPON_ISSUED,
+                couponDetail.getCouponName(),
+                TimeHelper.formatLocalDateTime(couponDetail.getExpiredAt())
+        );
+        notificationService.sendNotification(notificationPayload);
+
         return IssueCouponResponse.of(saveCoupon.getId(), saveCoupon.getStatus());
     }
 
@@ -91,6 +109,17 @@ public class CouponServiceImpl implements CouponService {
         Long finalPrice = coupon.useCoupon(originalPrice);
 
         return UseCouponResponse.of(originalPrice, originalPrice - finalPrice, finalPrice);
+    }
+
+    @Override
+    public ValidateCouponResponse validateCoupon(Long couponId, UseCouponRequest useCouponRequest) {
+        Coupon coupon = couponRepository.findWithCouponDetailById(couponId)
+                .orElseThrow(CouponException::notFoundException);
+
+        Long originalPrice = useCouponRequest.originalPrice();
+        Boolean isValid = coupon.confirmCoupon(originalPrice);
+
+        return ValidateCouponResponse.of(isValid);
     }
 
 

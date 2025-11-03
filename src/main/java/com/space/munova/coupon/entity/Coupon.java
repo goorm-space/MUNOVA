@@ -58,6 +58,15 @@ public class Coupon extends BaseEntity {
         return finalPrice;
     }
 
+    public boolean confirmCoupon(Long originalPrice) {
+        validateCoupon();
+
+        DiscountPolicy discountPolicy = couponDetail.getDiscountPolicy();
+        Long discountPrice = discountPolicy.calculateDiscountPrice(originalPrice);
+
+        return originalPrice >= discountPrice;
+    }
+
     // 할인금액 계산
     // 최종금액(원가 - 할인가) 반환
     private Long calculateFinalPrice(Long originalPrice) {

@@ -59,10 +59,10 @@ public class SseEmitterServiceImpl implements SseEmitterService {
     }
 
     // 알림 전송
-    // - emitterKey에 해당하는 모든 sseEmitter에 전송
+    // - emitterKey에 해당하는 sseEmitter에 전송
     @Override
     public void sendNotification(Object emitterKey, NotificationSseResponse response) {
-        List<SseEmitter> emitterList = emitterRepository.findAllEmitterById(emitterKey);
+        List<SseEmitter> emitterList = emitterRepository.findEmitterById(emitterKey);
         emitterList.forEach(emitter -> send(emitter, emitterKey, response));
     }
 

@@ -54,13 +54,18 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void sendNotification(NotificationPayload payload) {
         Notification notification = Notification.from(payload);
-        NotificationSseResponse response = NotificationSseResponse.from(notification.getId(), payload);
-        // 알림 전송
-        emitterService.sendNotification(payload.emitterId(), response);
+        Long notificationId = 0L;
+
         // DB 저장
         if (payload.type().isShouldSave()) {
-            notificationRepository.save(notification);
+            Notification savedNotification = notificationRepository.save(notification);
+            notificationId = savedNotification.getId();
         }
+
+        NotificationSseResponse response = NotificationSseResponse.from(notificationId, payload);
+        // 알림 전송
+        emitterService.sendNotification(payload.emitterId(), response);
+
     }
 
     // 알림 조회

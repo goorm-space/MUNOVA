@@ -6,6 +6,8 @@ import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.application.dto.*;
+import com.space.munova.product.application.event.ProductDeleteEvenForLikeDto;
+import com.space.munova.product.application.event.ProductDeleteEventForCartDto;
 import com.space.munova.product.application.exception.ProductException;
 import com.space.munova.product.domain.*;
 import com.space.munova.product.domain.Repository.ProductClickLogRepository;
@@ -14,10 +16,9 @@ import com.space.munova.product.domain.Repository.ProductSearchLogRepository;
 import com.space.munova.product.domain.enums.ProductCategory;
 import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -45,10 +46,11 @@ public class ProductService {
     private final CategoryService categoryService;
     private final MemberRepository memberRepository;
     private final ProductOptionService productOptionService;
-    //private final ProductLikeService productLikeService;  -> 이후 카프카로 이벤트를 쏴주어야함.
     private final ProductSearchLogRepository productSearchLogRepository;
     private final RecommendService recommendService;
 
+    ///  스프린 내부 이벤트 발행 인터페이스 추가
+    private final ApplicationEventPublisher eventPublisher;
 
     /// 모든 카테고리 조회 메서드
     public List<ProductCategoryResponseDto> findProductCategories() {
@@ -148,20 +150,31 @@ public class ProductService {
     public void deleteProduct(List<Long> productIds) {
 
         Long sellerId = JwtHelper.getMemberId();
+        List<Product> allById = productRepository.findAllById(productIds);
 
-        productRepository.findAllById(productIds).forEach(product -> {
+        List<Product> filteredProduct = filterProduct(allById, productIds, sellerId);
+        List<Long> filteredProductIds = createDeleteProductIds(filteredProduct);
 
-            if(!product.getMember().getId().equals(sellerId)) {
-                throw ProductException.unauthorizedAccessException();
-            }
-        });
+        productImageService.deleteImagesByProductIds(filteredProductIds);
 
-        productImageService.deleteImagesByProductIds(productIds);
-        productDetailService.deleteProductDetailByProductId(productIds);
-       // productLikeService.deleteProductLikeByProductId(productIds);
+        /// 삭제된 디테일 아이디 값반환.
+        List<Long> deletedDetailIds = productDetailService.deleteProductDetailByProductId(filteredProductIds);
+
+        ///  더티체킹
+        //deleteProducts(filteredProduct);
         productRepository.deleteAllByProductIds(productIds);
 
+        /// 비동기로 장바구니, 좋아요에 상품 삭제 메시지 발행
+        ProductDeleteEventForCartDto deleteCartMessage = new ProductDeleteEventForCartDto(deletedDetailIds, true);
+        ProductDeleteEvenForLikeDto deleteLikeMessage = new ProductDeleteEvenForLikeDto(filteredProductIds, true);
+        /// 라이크 제거 메세지 발행
+        eventPublisher.publishEvent(deleteLikeMessage);
+        ///  장바구니 제거 메세지 발행
+        eventPublisher.publishEvent(deleteCartMessage);
+
     }
+
+
 
 
     public PagingResponse<FindProductResponseDto> findProductsWithOptionalLogging(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
@@ -336,4 +349,36 @@ public class ProductService {
 
 
 
+    private List<Product> filterProduct(List<Product> productList, List<Long> productIds, Long sellerId) {
+
+        List<Product> retVal = new ArrayList<>();
+        for (Product product : productList) {
+            if(!product.getMember().getId().equals(sellerId)) {
+                throw ProductException.unauthorizedAccessException();
+            }
+            retVal.add(product);
+        }
+
+        return retVal;
+    }
+
+    private List<Long> createDeleteProductIds(List<Product> filteredProduct) {
+        List<Long> filteredProductIds = new ArrayList<>();
+        for (Product product : filteredProduct) {
+            filteredProductIds.add(product.getId());
+        }
+        return filteredProductIds;
+    }
+
+
+    private void deleteProducts(List<Product> filteredProduct) {
+        for(Product product : filteredProduct) {
+            product.deleteProduct();
+        }
+    }
+
+    @Transactional(readOnly = false)
+    public void plusLikeCountByProductId(Long productId) {
+        productRepository.plusLikeCountByProductId(productId);
+    }
 }

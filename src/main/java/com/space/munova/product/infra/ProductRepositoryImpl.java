@@ -6,7 +6,6 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.space.munova.product.application.dto.FindProductResponseDto;
-import com.space.munova.product.domain.QProduct;
 import com.space.munova.product.domain.Repository.ProductRepositoryCustom;
 import com.space.munova.product.domain.enums.ProductImageType;
 import lombok.RequiredArgsConstructor;

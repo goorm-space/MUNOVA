@@ -35,7 +35,7 @@ public record OrderItemDto(
                 orderItem.getNameSnapshot(),
                 optionStr,
                 orderItem.getQuantity(),
-                orderItem.getPriceSnapshot(),
+                orderItem.getPriceSnapshot()*orderItem.getQuantity(),
                 orderItem.getStatus(),
                 orderItem.getProductDetail().getProduct().getProductImages().stream().filter(image -> image.getImageType() == ProductImageType.MAIN).map(ProductImage::getImgUrl).findFirst().orElse(null)
         );

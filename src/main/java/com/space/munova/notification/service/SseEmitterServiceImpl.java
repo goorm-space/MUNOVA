@@ -1,5 +1,6 @@
 package com.space.munova.notification.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.space.munova.notification.dto.NotificationSseResponse;
 import com.space.munova.notification.repository.EmitterRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import java.util.List;
 public class SseEmitterServiceImpl implements SseEmitterService {
 
     private final EmitterRepository emitterRepository;
+    private final ObjectMapper objectMapper;
 
     @Value("${emitter.timeout}")
     private long emitterTimeout;
@@ -72,11 +74,13 @@ public class SseEmitterServiceImpl implements SseEmitterService {
             return;
         }
         try {
+            String jsonData = objectMapper.writeValueAsString(response);
+
             emitter.send(
                     SseEmitter.event()
                             .id(emitterId.toString())
                             .name(response.notificationType())
-                            .data(response)
+                            .data(jsonData)
                             .reconnectTime(emitterReconnectTime)
             );
         } catch (IOException e) {

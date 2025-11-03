@@ -63,6 +63,7 @@ public class PaymentServiceImpl implements PaymentService {
                 }
 
                 order.updateStatus(OrderStatus.PAID);
+                order.getCoupon().updateCouponUsed();
 
                 Payment payment = Payment.builder()
                         .order(order)

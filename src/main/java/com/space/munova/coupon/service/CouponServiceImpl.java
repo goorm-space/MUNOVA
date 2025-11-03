@@ -111,16 +111,4 @@ public class CouponServiceImpl implements CouponService {
         return UseCouponResponse.of(originalPrice, originalPrice - finalPrice, finalPrice);
     }
 
-    @Override
-    public ValidateCouponResponse validateCoupon(Long couponId, UseCouponRequest useCouponRequest) {
-        Coupon coupon = couponRepository.findWithCouponDetailById(couponId)
-                .orElseThrow(CouponException::notFoundException);
-
-        Long originalPrice = useCouponRequest.originalPrice();
-        Boolean isValid = coupon.confirmCoupon(originalPrice);
-
-        return ValidateCouponResponse.of(isValid);
-    }
-
-
 }

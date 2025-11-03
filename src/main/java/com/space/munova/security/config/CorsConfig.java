@@ -18,7 +18,8 @@ public class CorsConfig {
         // 허용할 Origin 설정
         corsConfiguration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
-                "https://femunova.jeondoh.synology.me/"
+                "https://femunova.jeondoh.synology.me/",
+                "https://fe-munova-haeusltk3-leeseongnams-projects.vercel.app"
         ));
 
         // 허용할 HTTP 메서드 설정

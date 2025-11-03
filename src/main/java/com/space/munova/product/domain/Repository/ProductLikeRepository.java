@@ -15,11 +15,7 @@ public interface ProductLikeRepository extends JpaRepository<ProductLike, Long>,
             "WHERE pl.product.id IN :productIds")
     void deleteAllByProductIds(List<Long> productIds);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE Product p " +
-            "SET p.likeCount = p.likeCount - 1 " +
-            "WHERE p.id = :productId")
-    void minusLikeCount(Long productId);
+
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE ProductLike pl " +

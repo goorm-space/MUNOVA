@@ -94,7 +94,7 @@ public class ProductDetailService {
     }
 
 
-    public void deleteProductDetailByProductId(List<Long> productIds) {
+    public List<Long> deleteProductDetailByProductId(List<Long> productIds) {
 
         List<ProductDetail> productDetails = productDetailRepository.findAllByProductId(productIds);
         List<Long> productDetailIds = getProductDetailIds(productDetails);
@@ -107,6 +107,7 @@ public class ProductDetailService {
 
         /// 디테일 아이디를 가진 디테일 테이블 데이터 논리 삭제
         productDetailRepository.deleteProductDetailByIds(productDetailIds);
+        return productDetailIds;
     }
 
 //    public List<ProductInfoForCartDto> findProductInfoByDetailIds(List<Long> productDetailIds) {

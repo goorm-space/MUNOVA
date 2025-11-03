@@ -27,7 +27,6 @@ pipeline {
     tools {
         jdk 'JDK21'
     }
-
     environment {
         TAG        = "${env.BUILD_NUMBER}"
         APP_NAME   = "MUNOVA-api"

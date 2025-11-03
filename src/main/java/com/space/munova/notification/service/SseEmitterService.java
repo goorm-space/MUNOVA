@@ -13,6 +13,6 @@ public interface SseEmitterService {
     void sendNotification(SseEmitter sseEmitter, Object emitterId, NotificationSseResponse response);
 
     // 알림 전송
-    // - emitterKey에 해당하는 모든 sseEmitter에 전송
+    // - emitterKey에 해당하는 sseEmitter에 전송
     void sendNotification(Object emitterKey, NotificationSseResponse response);
 }

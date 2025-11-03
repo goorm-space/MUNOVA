@@ -20,7 +20,7 @@ public class EmitterRepository {
                 .add(emitter);
     }
 
-    public List<SseEmitter> findAllEmitterById(Object emitterKey) {
+    public List<SseEmitter> findEmitterById(Object emitterKey) {
         return Optional.ofNullable(emitters.get(emitterKey))
                 .orElse(Collections.emptyList());
     }

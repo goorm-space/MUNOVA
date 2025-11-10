@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
 import static com.space.munova.core.config.StaticVariables.REDISSON_LOCK_PREFIX;
 
 /**
- * @DistributedLock 수행시 실행
+ * @RedisDistributeLock 수행시 실행
  * 트랜잭션 AOP보다 먼저 실행되도록 @Order 적용
  * - 대상 메서드(proceed()) 종료 후 락 해제
  * - 에러가 나더라도 락 해제

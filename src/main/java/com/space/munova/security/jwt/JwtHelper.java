@@ -18,6 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.function.Function;
 
+import static com.space.munova.core.config.StaticVariables.*;
+
 @Component
 public class JwtHelper {
 
@@ -30,18 +32,22 @@ public class JwtHelper {
     @Value("${jwt.refresh-expiration}")
     private Long refreshExpiration;
 
-    private SecretKey secretKey;
+    @Value("${jwt.key.invalid-token-code}")
+    private String invalidTokenCode;
 
-    public static final String INVALID_TOKEN = "INVALID_TOKEN";
-    public static final String EXPIRED_TOKEN = "EXPIRED_TOKEN";
-    public static final String ROLE_CLAIM_KEY = "authorities";
-    public static final String NAME_CLAIM_KEY = "username";
-    public static final String REFRESH_TOKEN_COOKIE_KEY = "refresh-token";
+    @Value("${jwt.key.expired-token-code}")
+    private String expiredTokenCode;
+
+    private SecretKey secretKey;
 
     @PostConstruct
     public void init() {
+        initializeSecretKey();
+    }
+
+    private void initializeSecretKey() {
         byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
-        this.secretKey = Keys.hmacShaKeyFor(bytes);
+        secretKey = Keys.hmacShaKeyFor(bytes);
     }
 
     /**
@@ -86,13 +92,13 @@ public class JwtHelper {
                     .build()
                     .parseSignedClaims(token);
         } catch (SecurityException | MalformedJwtException e) {
-            throw new CustomAuthenticationException("잘못된 JWT 서명입니다.", INVALID_TOKEN);
+            throw new CustomAuthenticationException("잘못된 JWT 서명입니다.", invalidTokenCode);
         } catch (ExpiredJwtException e) {
-            throw new CustomAuthenticationException("만료된 JWT 토큰입니다.", EXPIRED_TOKEN);
+            throw new CustomAuthenticationException("만료된 JWT 토큰입니다.", expiredTokenCode);
         } catch (UnsupportedJwtException e) {
-            throw new CustomAuthenticationException("지원되지 않는 JWT 토큰입니다.", INVALID_TOKEN);
+            throw new CustomAuthenticationException("지원되지 않는 JWT 토큰입니다.", invalidTokenCode);
         } catch (IllegalArgumentException e) {
-            throw new CustomAuthenticationException("JWT 토큰이 잘못되었습니다.", INVALID_TOKEN);
+            throw new CustomAuthenticationException("JWT 토큰이 잘못되었습니다.", invalidTokenCode);
         }
     }
 

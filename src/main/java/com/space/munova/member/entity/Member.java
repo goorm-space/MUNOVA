@@ -11,6 +11,9 @@ import org.springframework.util.StringUtils;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Table(uniqueConstraints = {
+        @UniqueConstraint(columnNames = "username")
+})
 public class Member extends BaseEntity {
 
     @Id

@@ -8,7 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
-import static com.space.munova.security.jwt.JwtHelper.ROLE_CLAIM_KEY;
+import static com.space.munova.core.config.StaticVariables.ROLE_CLAIM_KEY;
 
 @Component
 @RequiredArgsConstructor

@@ -11,9 +11,9 @@ public interface AuthService {
     SignupResponse signup(SignupRequest signupRequest);
 
     // 로그인
-    SignInGenerateToken signIn(SignInRequest signInRequest);
+    SignInGenerateToken signIn(SignInRequest signInRequest, String deviceId);
 
     // 로그아웃
-    void signOut();
+    void signOut(String deviceId);
 
 }

@@ -4,6 +4,7 @@ import com.space.munova.core.config.ResponseApi;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -47,7 +48,7 @@ public class BaseExceptionHandler {
     public ResponseApi<Object> handleAuthenticationException(AuthenticationException ex) {
         log.error("{}: {}", HttpStatus.UNAUTHORIZED, ex.getMessage());
 
-        return ResponseApi.nok(HttpStatus.UNAUTHORIZED, "AUTH_FAILED", ex.getMessage());
+        return ResponseApi.nok(HttpStatus.UNAUTHORIZED, "AUTH_FAILED", "권한이 없습니다.");
     }
 
     /**
@@ -66,6 +67,18 @@ public class BaseExceptionHandler {
         log.error("{}: {}", HttpStatus.BAD_REQUEST, errorMessage);
 
         return ResponseApi.nok(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", errorMessage);
+    }
+
+    /**
+     * RDB Unique 제약조건으로 인한 예외처리
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseApi<Object> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        log.error("{}: {}", HttpStatus.BAD_REQUEST, ex.getMessage());
+
+        return ResponseApi.nok(HttpStatus.BAD_REQUEST, "DUPLICATE_ENTITY", "제약조건 위반");
     }
 
     /**

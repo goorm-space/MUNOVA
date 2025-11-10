@@ -2,6 +2,7 @@ package com.space.munova.member.service;
 
 import com.space.munova.auth.dto.GenerateTokens;
 import com.space.munova.auth.service.TokenService;
+import com.space.munova.core.annotation.RedisDistributeLock;
 import com.space.munova.member.dto.GetMemberResponse;
 import com.space.munova.member.dto.MemberRole;
 import com.space.munova.member.dto.UpdateMemberRequest;
@@ -42,8 +43,9 @@ public class MemberServiceImpl implements MemberService {
      */
     @Override
     @Transactional
-    public UpdateMemberResponse updateMember(Long memberId, UpdateMemberRequest updateMemberRequest) {
-        Member member = memberRepository.findById(memberId)
+    @RedisDistributeLock(key = "'MEMBER_UPDATE:' + #memberId")
+    public UpdateMemberResponse updateMember(Long memberId, UpdateMemberRequest updateMemberRequest, String deviceId) {
+        Member member = memberRepository.findByIdWithLock(memberId)
                 .orElseThrow(MemberException::notFoundException);
 
         member.updateMember(
@@ -52,8 +54,10 @@ public class MemberServiceImpl implements MemberService {
                 MemberRole.fromCode(updateMemberRequest.role())
         );
 
+        // 정보 변경 이후 모든 토큰 무효화
+        tokenService.clearAllDeviceRefreshToken(memberId);
         // 업데이트된 정보를 바탕으로 토큰 발급
-        GenerateTokens generateTokens = tokenService.saveRefreshToken(member);
+        GenerateTokens generateTokens = tokenService.saveRefreshToken(member, deviceId);
         return UpdateMemberResponse.of(generateTokens.accessToken(), generateTokens.refreshToken());
     }
 }

@@ -4,7 +4,6 @@ import com.space.munova.auth.dto.*;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
-import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -64,15 +63,13 @@ public class AuthServiceImpl implements AuthService {
     /**
      * 로그아웃
      */
-    public void signOut(String deviceId) {
-        Long memberId = JwtHelper.getMemberId();
-        String memberName = JwtHelper.getMemberName();
+    public void signOut(String deviceId, Long memberId) {
         // 토큰 삭제
         tokenService.clearRefreshToken(memberId, deviceId);
         // SecurityContextHolder 비우기
         tokenService.clearSecurityContext();
 
-        log.info("로그아웃 성공: {}", memberName);
+        log.info("로그아웃 성공: {}", memberId);
     }
 
 }

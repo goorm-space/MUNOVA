@@ -14,6 +14,6 @@ public interface AuthService {
     SignInGenerateToken signIn(SignInRequest signInRequest, String deviceId);
 
     // 로그아웃
-    void signOut(String deviceId);
+    void signOut(String deviceId, Long memberId);
 
 }

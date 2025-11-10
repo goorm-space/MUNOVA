@@ -4,6 +4,7 @@ import com.space.munova.core.config.ResponseApi;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.coupon.dto.*;
 import com.space.munova.coupon.service.CouponDetailService;
+import com.space.munova.security.jwt.JwtHelper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +28,9 @@ public class CouponDetailController {
             @PageableDefault Pageable pageable,
             @SortDefault(sort = "createdAt", direction = Sort.Direction.DESC) Sort sort
     ) {
-        PagingResponse<SearchEventCouponResponse> eventCoupon = couponDetailService.searchEventCoupon(pageable, sort);
+        Long memberId = JwtHelper.getMemberId();
+        PagingResponse<SearchEventCouponResponse> eventCoupon
+                = couponDetailService.searchEventCoupon(pageable, sort, memberId);
         return ResponseApi.ok(eventCoupon);
     }
 
@@ -52,8 +55,9 @@ public class CouponDetailController {
     public ResponseApi<RegisterCouponDetailResponse> registerCoupon(
             @Valid @RequestBody RegisterCouponDetailRequest registerCouponDetailRequest
     ) {
+        Long memberId = JwtHelper.getMemberId();
         RegisterCouponDetailResponse registerCouponDetailResponse
-                = couponDetailService.registerCoupon(registerCouponDetailRequest);
+                = couponDetailService.registerCoupon(memberId, registerCouponDetailRequest);
         return ResponseApi.ok(registerCouponDetailResponse);
     }
 

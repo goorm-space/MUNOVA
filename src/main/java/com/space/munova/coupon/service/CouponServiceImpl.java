@@ -13,7 +13,6 @@ import com.space.munova.coupon.repository.CouponSearchQueryDslRepository;
 import com.space.munova.notification.dto.NotificationPayload;
 import com.space.munova.notification.dto.NotificationType;
 import com.space.munova.notification.service.NotificationService;
-import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,10 +49,9 @@ public class CouponServiceImpl implements CouponService {
      */
     @Override
     @Transactional
-    public IssueCouponResponse issueCoupon(IssueCouponRequest issueCouponRequest) {
+    public IssueCouponResponse issueCoupon(IssueCouponRequest issueCouponRequest, Long memberId) {
         // 쿠폰 수량 확인
         Long couponDetailId = issueCouponRequest.couponDetailId();
-        Long memberId = JwtHelper.getMemberId();
 
         // 쿠폰 중복 발급 확인
         if (couponRepository.existsByMemberIdAndCouponDetailId(memberId, couponDetailId)) {

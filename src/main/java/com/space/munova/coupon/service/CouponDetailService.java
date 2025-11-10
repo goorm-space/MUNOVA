@@ -10,7 +10,7 @@ public interface CouponDetailService {
     /**
      * 선착순 쿠폰조회
      */
-    PagingResponse<SearchEventCouponResponse> searchEventCoupon(Pageable pageable, Sort sort);
+    PagingResponse<SearchEventCouponResponse> searchEventCoupon(Pageable pageable, Sort sort, Long memberId);
 
     /**
      * 관리자 쿠폰조회
@@ -22,5 +22,5 @@ public interface CouponDetailService {
     /**
      * 관리자 쿠폰등록
      */
-    RegisterCouponDetailResponse registerCoupon(RegisterCouponDetailRequest registerCouponDetailRequest);
+    RegisterCouponDetailResponse registerCoupon(Long memberId, RegisterCouponDetailRequest registerCouponDetailRequest);
 }

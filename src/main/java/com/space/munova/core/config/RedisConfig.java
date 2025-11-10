@@ -23,14 +23,14 @@ public class RedisConfig {
     @Value("${spring.data.redis.host}")
     private String host;
     @Value("${spring.data.redis.port}")
-    private String port;
+    private int port;
     @Value("${spring.data.redis.password}")
     private String password;
 
     private RedisStandaloneConfiguration redisStandaloneConfiguration() {
         RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
         redisConfig.setHostName(host);
-        redisConfig.setPort(Integer.parseInt(port));
+        redisConfig.setPort(port);
         redisConfig.setPassword(password);
         redisConfig.setDatabase(0);
         return redisConfig;

@@ -10,5 +10,5 @@ public interface MemberService {
     GetMemberResponse getMember(Long memberId);
 
     // 유저 정보 변경
-    UpdateMemberResponse updateMember(Long memberId, UpdateMemberRequest updateMemberRequest);
+    UpdateMemberResponse updateMember(Long memberId, UpdateMemberRequest updateMemberRequest, String deviceId);
 }

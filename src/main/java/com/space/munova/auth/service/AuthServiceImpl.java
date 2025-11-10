@@ -1,7 +1,6 @@
 package com.space.munova.auth.service;
 
 import com.space.munova.auth.dto.*;
-import com.space.munova.auth.exception.AuthException;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
@@ -27,12 +26,6 @@ public class AuthServiceImpl implements AuthService {
      */
     @Transactional
     public SignupResponse signup(SignupRequest signupRequest) {
-        // 중복 사용자 확인
-        String username = signupRequest.username();
-        if (memberRepository.existsByUsername(username)) {
-            throw AuthException.duplicateUsernameException();
-        }
-
         // 일반 유저 생성
         String encodedPassword = passwordEncoder.encode(signupRequest.password());
         Member member = Member.createMember(
@@ -41,8 +34,7 @@ public class AuthServiceImpl implements AuthService {
                 signupRequest.address()
         );
         Member savedMember = memberRepository.save(member);
-
-        log.info("새 일반 유저 가입: {}", username);
+        log.info("새 일반 유저 가입: {}", member.getUsername());
 
         return SignupResponse.of(savedMember.getId(), savedMember.getUsername());
     }
@@ -50,14 +42,14 @@ public class AuthServiceImpl implements AuthService {
     /**
      * 로그인
      */
-    public SignInGenerateToken signIn(SignInRequest signInRequest) {
+    public SignInGenerateToken signIn(SignInRequest signInRequest, String deviceId) {
         String username = signInRequest.username();
         Member member = memberRepository.findByUsername(username)
                 .filter(m -> passwordEncoder.matches(signInRequest.password(), m.getPassword()))
                 .orElseThrow(MemberException::invalidMemberException);
 
         // 토큰 생성, 저장
-        GenerateTokens generateTokens = tokenService.saveRefreshToken(member);
+        GenerateTokens generateTokens = tokenService.saveRefreshTokenWithLock(member, deviceId);
         log.info("로그인 성공: {}", username);
 
         return SignInGenerateToken.of(
@@ -72,14 +64,15 @@ public class AuthServiceImpl implements AuthService {
     /**
      * 로그아웃
      */
-    public void signOut() {
+    public void signOut(String deviceId) {
         Long memberId = JwtHelper.getMemberId();
         String memberName = JwtHelper.getMemberName();
         // 토큰 삭제
-        tokenService.clearRefreshToken(memberId);
+        tokenService.clearRefreshToken(memberId, deviceId);
         // SecurityContextHolder 비우기
         tokenService.clearSecurityContext();
 
         log.info("로그아웃 성공: {}", memberName);
     }
+
 }

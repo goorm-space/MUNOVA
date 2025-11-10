@@ -9,6 +9,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import static com.space.munova.core.config.StaticVariables.DEVICE_ID_HEADER_PREFIX;
+
 @RestController
 @RequestMapping("/api/member")
 @RequiredArgsConstructor
@@ -31,9 +33,10 @@ public class MemberController {
     @PatchMapping("/{memberId}")
     public ResponseApi<UpdateMemberResponse> updateMember(
             @PathVariable Long memberId,
-            @Valid @RequestBody UpdateMemberRequest updateMemberRequest
+            @Valid @RequestBody UpdateMemberRequest updateMemberRequest,
+            @RequestHeader(value = DEVICE_ID_HEADER_PREFIX) String deviceId
     ) {
-        UpdateMemberResponse updateMemberResponse = memberService.updateMember(memberId, updateMemberRequest);
+        UpdateMemberResponse updateMemberResponse = memberService.updateMember(memberId, updateMemberRequest, deviceId);
         return ResponseApi.ok(updateMemberResponse);
     }
 

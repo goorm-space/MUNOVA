@@ -1,6 +1,7 @@
 package com.space.munova.coupon.repository;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -12,11 +13,13 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class CouponRedisRepository {
 
-    private static final String COUPON_STOCK_PREFIX = "coupon:stock:";
+    @Value("${coupon.redis-stock-prefix}")
+    private String couponStockPrefix;
+
     private final RedisTemplate<String, Object> redisTemplate;
 
     public void saveQuantity(Long couponDetailId, Long quantity, Long expireTime) {
-        String key = COUPON_STOCK_PREFIX + couponDetailId;
+        String key = couponStockPrefix + couponDetailId;
         redisTemplate.opsForValue().set(
                 key,
                 quantity,
@@ -26,12 +29,12 @@ public class CouponRedisRepository {
     }
 
     public Long decreaseQuantity(Long couponDetailId) {
-        String key = COUPON_STOCK_PREFIX + couponDetailId;
+        String key = couponStockPrefix + couponDetailId;
         return redisTemplate.opsForValue().decrement(key);
     }
 
     public Long findBy(Long couponDetailId) {
-        String key = COUPON_STOCK_PREFIX + couponDetailId;
+        String key = couponStockPrefix + couponDetailId;
         Object amount = redisTemplate.opsForValue().get(key);
         return amount != null ? Long.parseLong(amount.toString()) : null;
     }
@@ -42,14 +45,14 @@ public class CouponRedisRepository {
         }
 
         List<String> keys = couponDetailIds.stream()
-                .map(id -> COUPON_STOCK_PREFIX + id)
+                .map(id -> couponStockPrefix + id)
                 .toList();
 
         return redisTemplate.opsForValue().multiGet(keys);
     }
 
-    public void delete(Long memberId) {
-        String key = COUPON_STOCK_PREFIX + memberId;
+    public void delete(Long couponDetailId) {
+        String key = couponStockPrefix + couponDetailId;
         redisTemplate.delete(key);
     }
 }

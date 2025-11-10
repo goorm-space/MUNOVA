@@ -15,6 +15,8 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.io.IOException;
 
+import static com.space.munova.core.config.StaticVariables.AUTH_HEADER_PREFIX;
+
 public class JwtAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
 
     private static final String HEADER_PREFIX = "Bearer ";
@@ -26,10 +28,10 @@ public class JwtAuthenticationFilter extends AbstractAuthenticationProcessingFil
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
         String accessToken = request.getHeader("Authorization");
-        if (accessToken == null || !accessToken.startsWith(HEADER_PREFIX)) {
+        if (accessToken == null || !accessToken.startsWith(AUTH_HEADER_PREFIX)) {
             throw new CustomAuthenticationException("Authorization Header is Invalid!");
         }
-        String accessTokenContent = accessToken.substring(HEADER_PREFIX.length());
+        String accessTokenContent = accessToken.substring(AUTH_HEADER_PREFIX.length());
         JwtAuthenticationToken beforeToken = JwtAuthenticationToken.beforeOf(accessTokenContent);
         return super.getAuthenticationManager().authenticate(beforeToken);
     }

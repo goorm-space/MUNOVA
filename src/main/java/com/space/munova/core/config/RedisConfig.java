@@ -84,4 +84,13 @@ public class RedisConfig {
 
         return redisTemplate;
     }
+
+    @Bean(name = "batchRedisTemplate")
+    public RedisTemplate<String, Object> batchRedisTemplate() {
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(redisConnectionFactory());
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(new StringRedisSerializer()); // 배치는 단순 String
+        return redisTemplate;
+    }
 }

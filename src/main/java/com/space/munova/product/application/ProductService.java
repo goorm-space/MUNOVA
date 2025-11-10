@@ -14,6 +14,7 @@ import com.space.munova.product.domain.Repository.ProductClickLogRepository;
 import com.space.munova.product.domain.Repository.ProductRepository;
 import com.space.munova.product.domain.Repository.ProductSearchLogRepository;
 import com.space.munova.product.domain.enums.ProductCategory;
+import com.space.munova.recommend.infra.RedisStreamProducer;
 import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
@@ -28,8 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-
+import java.util.Map;
 
 
 @Slf4j
@@ -48,6 +48,7 @@ public class ProductService {
     private final ProductOptionService productOptionService;
     private final ProductSearchLogRepository productSearchLogRepository;
     private final RecommendService recommendService;
+    private final RedisStreamProducer logProducer;
 
     ///  스프린 내부 이벤트 발행 인터페이스 추가
     private final ApplicationEventPublisher eventPublisher;
@@ -133,12 +134,16 @@ public class ProductService {
     @Transactional(readOnly = false)
     public void saveProductClickLog(Long productId) {
         Long memberId = JwtHelper.getMemberId();
-        ProductClickLog log = ProductClickLog.builder()
-                .memberId(memberId)
-                .productId(productId)
-                .build();
+        Map<String, Object> logData = Map.of(
+                "event_type", "product_detail_view",
+                "service", "product",
+                "member_id", memberId,
+                "data", Map.of(
+                        "product_id", productId
+                )
+        );
+        logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
 
-        productClickLogRepository.save(log);
     }
 
     /*

@@ -9,17 +9,7 @@ public record SearchEventCouponResponse(
         String couponName,
         DiscountPolicy discountPolicy,
         Boolean isAlreadyIssued,
+        LocalDateTime publishedAt,
         LocalDateTime expiredAt
 ) {
-    public static SearchEventCouponResponse from(CouponDetailWithIssueStatus couponDetail, Long remainQuantity) {
-        return new SearchEventCouponResponse(
-                couponDetail.couponDetailId(),
-                couponDetail.quantity(),
-                remainQuantity,
-                couponDetail.couponName(),
-                couponDetail.discountPolicy(),
-                couponDetail.isAlreadyIssued(),
-                couponDetail.expiredAt()
-        );
-    }
 }

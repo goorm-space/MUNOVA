@@ -4,6 +4,7 @@ import com.space.munova.core.config.ResponseApi;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.coupon.dto.*;
 import com.space.munova.coupon.service.CouponService;
+import com.space.munova.security.jwt.JwtHelper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -37,8 +38,9 @@ public class CouponController {
      */
     @PostMapping("/{couponDetailId}")
     public ResponseApi<IssueCouponResponse> issueCoupon(@PathVariable Long couponDetailId) {
-        IssueCouponRequest issueCouponRequest = IssueCouponRequest.of(couponDetailId);
-        IssueCouponResponse issueCouponResponse = couponService.issueCoupon(issueCouponRequest);
+        Long memberId = JwtHelper.getMemberId();
+        IssueCouponRequest issueCouponRequest = IssueCouponRequest.of(couponDetailId, memberId);
+        IssueCouponResponse issueCouponResponse = couponService.issueCoupon(issueCouponRequest, memberId);
         return ResponseApi.ok(issueCouponResponse);
     }
 

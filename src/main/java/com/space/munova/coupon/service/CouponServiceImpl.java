@@ -9,6 +9,7 @@ import com.space.munova.coupon.repository.CouponDetailRepository;
 import com.space.munova.coupon.repository.CouponRepository;
 import com.space.munova.coupon.repository.CouponSearchQueryDslRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -44,11 +45,6 @@ public class CouponServiceImpl implements CouponService {
         Long memberId = issueCouponRequest.memberId();
         Long couponDetailId = issueCouponRequest.couponDetailId();
 
-        // 쿠폰 중복 발급 확인
-        if (couponRepository.existsByMemberIdAndCouponDetailIdWithLock(memberId, couponDetailId)) {
-            throw CouponException.duplicateIssueException();
-        }
-
         CouponDetail couponDetail = couponDetailRepository.findByIdWithLock(couponDetailId)
                 .orElseThrow(CouponException::notFoundException);
 
@@ -56,13 +52,12 @@ public class CouponServiceImpl implements CouponService {
         couponDetail.validatePublished();
 
         // 쿠폰 발급
-        Coupon coupon = Coupon.issuedCoupon(memberId, couponDetail);
-        couponRepository.save(coupon);
+        Coupon savedCoupon = issuedCoupon(memberId, couponDetail);
 
         // 쿠폰 재고 차감
         couponDetail.decreaseRemainQuantity();
 
-        return IssueCouponResponse.of(coupon.getId(), coupon.getStatus());
+        return IssueCouponResponse.of(savedCoupon.getId(), savedCoupon.getStatus());
     }
 
     /**
@@ -79,6 +74,20 @@ public class CouponServiceImpl implements CouponService {
         Long finalPrice = coupon.useCoupon(originalPrice);
 
         return UseCouponResponse.of(originalPrice, originalPrice - finalPrice, finalPrice);
+    }
+
+    /**
+     * 쿠폰 발급, 유니크 제약조건 예외
+     */
+    private Coupon issuedCoupon(Long memberId, CouponDetail couponDetail) {
+        Coupon coupon = Coupon.issuedCoupon(memberId, couponDetail);
+        Coupon savedCoupon;
+        try {
+            savedCoupon = couponRepository.save(coupon);
+        } catch (DataIntegrityViolationException e) {
+            throw CouponException.duplicateIssueException();
+        }
+        return savedCoupon;
     }
 
 }

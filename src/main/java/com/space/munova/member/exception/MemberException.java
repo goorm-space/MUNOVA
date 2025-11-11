@@ -18,4 +18,7 @@ public class MemberException extends BaseException {
         return new MemberException("MEMBER_02", "사용자 정보가 올바르지 않습니다.", HttpStatus.UNAUTHORIZED, detailMessage);
     }
 
+    public static MemberException duplicatedMemberName(String... detailMessage) {
+        return new MemberException("MEMBER_03", "사용자명이 중복되었습니다.", HttpStatus.BAD_REQUEST, detailMessage);
+    }
 }

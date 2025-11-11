@@ -77,9 +77,10 @@ public class BaseExceptionHandler {
     @ExceptionHandler(MissingRequestHeaderException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseApi<Object> handleMissingRequestHeaderException(MissingRequestHeaderException ex) {
+        String errorMessage = String.format("필수 헤더가 누락되었습니다: %s", ex.getHeaderName());
         log.error("{}: {}", HttpStatus.BAD_REQUEST, ex.getMessage());
 
-        return ResponseApi.nok(HttpStatus.BAD_REQUEST, "HEADER_MISSING", "헤더값 누락");
+        return ResponseApi.nok(HttpStatus.BAD_REQUEST, "HEADER_MISSING", errorMessage);
     }
 
     /**

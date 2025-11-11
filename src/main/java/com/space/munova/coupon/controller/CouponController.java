@@ -40,7 +40,7 @@ public class CouponController {
     public ResponseApi<IssueCouponResponse> issueCoupon(@PathVariable Long couponDetailId) {
         Long memberId = JwtHelper.getMemberId();
         IssueCouponRequest issueCouponRequest = IssueCouponRequest.of(couponDetailId, memberId);
-        IssueCouponResponse issueCouponResponse = couponService.issueCoupon(issueCouponRequest, memberId);
+        IssueCouponResponse issueCouponResponse = couponService.issueCoupon(issueCouponRequest);
         return ResponseApi.ok(issueCouponResponse);
     }
 

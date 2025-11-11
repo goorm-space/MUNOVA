@@ -1,18 +1,13 @@
 package com.space.munova.coupon.service;
 
 import com.space.munova.core.dto.PagingResponse;
-import com.space.munova.core.utils.TimeHelper;
 import com.space.munova.coupon.dto.*;
 import com.space.munova.coupon.entity.Coupon;
 import com.space.munova.coupon.entity.CouponDetail;
 import com.space.munova.coupon.exception.CouponException;
 import com.space.munova.coupon.repository.CouponDetailRepository;
-import com.space.munova.coupon.repository.CouponRedisRepository;
 import com.space.munova.coupon.repository.CouponRepository;
 import com.space.munova.coupon.repository.CouponSearchQueryDslRepository;
-import com.space.munova.notification.dto.NotificationPayload;
-import com.space.munova.notification.dto.NotificationType;
-import com.space.munova.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,17 +15,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.space.munova.coupon.dto.CouponNotification.COUPON_ISSUED;
-
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CouponServiceImpl implements CouponService {
 
     private final CouponRepository couponRepository;
-    private final NotificationService notificationService;
     private final CouponDetailRepository couponDetailRepository;
-    private final CouponRedisRepository couponRedisRepository;
     private final CouponSearchQueryDslRepository couponSearchQueryDslRepository;
 
     /**
@@ -49,48 +40,29 @@ public class CouponServiceImpl implements CouponService {
      */
     @Override
     @Transactional
-    public IssueCouponResponse issueCoupon(IssueCouponRequest issueCouponRequest, Long memberId) {
-        // 쿠폰 수량 확인
+    public IssueCouponResponse issueCoupon(IssueCouponRequest issueCouponRequest) {
+        Long memberId = issueCouponRequest.memberId();
         Long couponDetailId = issueCouponRequest.couponDetailId();
 
         // 쿠폰 중복 발급 확인
-        if (couponRepository.existsByMemberIdAndCouponDetailId(memberId, couponDetailId)) {
+        if (couponRepository.existsByMemberIdAndCouponDetailIdWithLock(memberId, couponDetailId)) {
             throw CouponException.duplicateIssueException();
         }
 
-        CouponDetail couponDetail = couponDetailRepository.findById(couponDetailId)
+        CouponDetail couponDetail = couponDetailRepository.findByIdWithLock(couponDetailId)
                 .orElseThrow(CouponException::notFoundException);
 
         // 발행일자 이전에 발급 요청시 예외
         couponDetail.validatePublished();
 
-        // 쿠폰 재고 차감
-        Long couponRemain = couponRedisRepository.decreaseQuantity(couponDetailId);
-        if (couponRemain == null) {
-            throw CouponException.notFoundException();
-        }
-        if (couponRemain < 0) {
-            // 재고 소진
-            couponRedisRepository.delete(couponDetailId);
-            throw CouponException.soldOutException();
-        }
-
         // 쿠폰 발급
         Coupon coupon = Coupon.issuedCoupon(memberId, couponDetail);
-        Coupon saveCoupon = couponRepository.save(coupon);
+        couponRepository.save(coupon);
 
-        // 알림 전송
-        NotificationPayload notificationPayload = NotificationPayload.of(
-                memberId,
-                memberId,
-                NotificationType.COUPON,
-                COUPON_ISSUED,
-                couponDetail.getCouponName(),
-                TimeHelper.formatLocalDateTime(couponDetail.getExpiredAt())
-        );
-        notificationService.sendNotification(notificationPayload);
+        // 쿠폰 재고 차감
+        couponDetail.decreaseRemainQuantity();
 
-        return IssueCouponResponse.of(saveCoupon.getId(), saveCoupon.getStatus());
+        return IssueCouponResponse.of(coupon.getId(), coupon.getStatus());
     }
 
     /**

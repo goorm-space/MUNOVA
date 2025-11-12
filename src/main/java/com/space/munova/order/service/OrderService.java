@@ -13,5 +13,4 @@ public interface OrderService {
     PagingResponse<OrderSummaryDto> getOrderList(int page);
     GetOrderDetailResponse getOrderDetail(Long orderId);
     void saveOrderLog(Order order);
-    Order finalizeOrderWithCoupon(Order order, CreateOrderRequest request);
 }

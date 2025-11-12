@@ -38,14 +38,14 @@ public class OrderServiceImpl implements OrderService {
     private final ProductDetailService productDetailService;
     private final CouponService couponService;
     private final OrderItemService orderItemService;
+    private final RecommendService recommendService;
+    private final PaymentService paymentService;
 
     private final OrderItemRepository orderItemRepository;
     private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
-    private final RecommendService recommendService;
-
     private final OrderProductLogRepository orderProductLogRepository;
-    private final PaymentService paymentService;
+
 
     @Transactional
     @Override
@@ -148,7 +148,6 @@ public class OrderServiceImpl implements OrderService {
         return GetOrderDetailResponse.from(order, payment);
     }
 
-    @Override
     public Order finalizeOrderWithCoupon(Order order, CreateOrderRequest request) {
         long totalProductAmount = order.getOrderItems().stream()
                 .mapToLong(item -> item.getPriceSnapshot() * item.getQuantity())

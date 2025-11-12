@@ -9,7 +9,6 @@ import com.space.munova.coupon.repository.CouponDetailRepository;
 import com.space.munova.coupon.repository.CouponRepository;
 import com.space.munova.coupon.repository.CouponSearchQueryDslRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -45,6 +44,12 @@ public class CouponServiceImpl implements CouponService {
         Long memberId = issueCouponRequest.memberId();
         Long couponDetailId = issueCouponRequest.couponDetailId();
 
+        // 쿠폰 발급 중복체크
+        Long duplicateCount = couponRepository.findDuplicateIssuedCouponWithLock(couponDetailId, memberId);
+        if (duplicateCount > 0) {
+            throw CouponException.duplicateIssueException();
+        }
+
         CouponDetail couponDetail = couponDetailRepository.findByIdWithLock(couponDetailId)
                 .orElseThrow(CouponException::notFoundException);
 
@@ -52,7 +57,8 @@ public class CouponServiceImpl implements CouponService {
         couponDetail.validatePublished();
 
         // 쿠폰 발급
-        Coupon savedCoupon = issuedCoupon(memberId, couponDetail);
+        Coupon coupon = Coupon.issuedCoupon(memberId, couponDetail);
+        Coupon savedCoupon = couponRepository.save(coupon);
 
         // 쿠폰 재고 차감
         couponDetail.decreaseRemainQuantity();
@@ -85,20 +91,6 @@ public class CouponServiceImpl implements CouponService {
                 .orElseThrow(CouponException::notFoundException);
 
         coupon.updateCouponUsed();
-    }
-
-    /**
-     * 쿠폰 발급, 유니크 제약조건 예외
-     */
-    private Coupon issuedCoupon(Long memberId, CouponDetail couponDetail) {
-        Coupon coupon = Coupon.issuedCoupon(memberId, couponDetail);
-        Coupon savedCoupon;
-        try {
-            savedCoupon = couponRepository.save(coupon);
-        } catch (DataIntegrityViolationException e) {
-            throw CouponException.duplicateIssueException();
-        }
-        return savedCoupon;
     }
 
 }

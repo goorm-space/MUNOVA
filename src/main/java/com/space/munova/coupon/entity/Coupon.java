@@ -46,7 +46,7 @@ public class Coupon extends BaseEntity {
 
     // 쿠폰 사용
     // 최종금액(원가 - 할인가) 반환
-    public Long useCoupon(Long originalPrice) {
+    public Long verifyCoupon(Long originalPrice) {
         // 쿠폰 검증
         validateCoupon();
 
@@ -54,7 +54,7 @@ public class Coupon extends BaseEntity {
         return calculateFinalPrice(originalPrice);
     }
 
-    // 쿠폰 상태 변경
+    // 쿠폰 사용
     public void updateCouponUsed() {
         status = CouponStatus.USED;
         usedAt = LocalDateTime.now();

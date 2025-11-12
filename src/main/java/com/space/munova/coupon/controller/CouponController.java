@@ -48,11 +48,11 @@ public class CouponController {
      * 쿠폰 사용
      */
     @PatchMapping("/{couponId}")
-    public ResponseApi<UseCouponResponse> useCoupon(
+    public ResponseApi<UseCouponResponse> verifyCoupon(
             @PathVariable Long couponId,
             @Valid @RequestBody UseCouponRequest useCouponRequest
     ) {
-        UseCouponResponse useCouponResponse = couponService.useCoupon(couponId, useCouponRequest);
+        UseCouponResponse useCouponResponse = couponService.verifyCoupon(couponId, useCouponRequest);
         return ResponseApi.ok(useCouponResponse);
     }
 }

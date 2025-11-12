@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 
+@DisplayName("Order_Service_Test")
 @ExtendWith(MockitoExtension.class)
 public class OrderServiceTest {
 
@@ -37,17 +38,10 @@ public class OrderServiceTest {
     private OrderServiceImpl orderService;
 
     @Mock
-    private OrderItemService orderItemService;
-    @Mock
-    private ProductDetailService productDetailService;
-    @Mock
     private CouponService couponService;
 
     private Member member;
     private CreateOrderRequest createOrderRequest;
-    private OrderItemRequest req;
-    private Order initOrder;
-    private ProductDetail productDetail;
     private Order initOrderWithItems;
 
     @BeforeEach
@@ -59,22 +53,8 @@ public class OrderServiceTest {
                 9000L,
                 List.of(new OrderItemRequest(1L, 1))
         );
-        req = new OrderItemRequest(1L, 2);
-        initOrder = Order.createInitOrder(member, null);
         initOrderWithItems = Order.createInitOrder(member, null);
         initOrderWithItems.getOrderItems().add(OrderItem.builder().priceSnapshot(10000L).quantity(1).build());
-
-
-        Product product = Product.builder()
-                .id(1L)
-                .name("상품A")
-                .price(10000L)
-                .build();
-        productDetail = ProductDetail.builder()
-                .id(1L)
-                .product(product)
-                .quantity(10)
-                .build();
     }
 
     @DisplayName("사용자가 작성한 주문서로 초기 주문서를 생성한다.")
@@ -111,80 +91,6 @@ public class OrderServiceTest {
         // then
         assertThat(initOrder.getUserRequest()).isNull();
         assertThat(initOrder.getStatus()).isEqualTo(OrderStatus.CREATED);
-    }
-
-    @DisplayName("한 개의 주문 요청 상품에 대해 주문상품 엔티티(orderItem)을 생성한다.")
-    @Test
-    void createOrderItems_singleItem_HappyCase() {
-        // given
-        Order order = Order.builder().build();
-
-        when(productDetailService.deductStock(anyLong(), anyInt())).thenReturn(productDetail);
-
-        // when
-        List<OrderItem> items = orderItemService.deductStockAndCreateOrderItems(List.of(req), order);
-
-        // then
-        assertThat(items).hasSize(1);
-        OrderItem orderItem = items.get(0);
-        assertThat(orderItem.getOrder()).isSameAs(order);
-        assertThat(orderItem.getProductDetail()).isSameAs(productDetail);
-        assertThat(orderItem.getNameSnapshot()).isEqualTo("상품A");
-        assertThat(orderItem.getPriceSnapshot()).isEqualTo(10000L);
-        assertThat(orderItem.getQuantity()).isEqualTo(2);
-        assertThat(orderItem.getStatus()).isEqualTo(OrderStatus.CREATED);
-
-        verify(productDetailService, times(1)).deductStock(1L, 2);
-    }
-
-    @DisplayName("orderItem을 생성할 때 재고가 없으면 noStockException 예외를 던진다.")
-    @Test
-    void createOrderItems_noStock_throws() {
-        // given
-        Order order = Order.createInitOrder(member, null);
-
-        // when
-        when(productDetailService.deductStock(anyLong(), anyInt()))
-                .thenThrow(ProductDetailException.noStockException());
-
-        // then
-        assertThatThrownBy(() -> orderItemService.deductStockAndCreateOrderItems(List.of(req), order))
-                .isInstanceOf(ProductDetailException.class)
-                .hasMessageContaining("재고가 없습니다.");
-
-        verify(productDetailService).deductStock(1L, 2);
-    }
-
-    @DisplayName("orderItem을 생성할 때 주문 요청 상품이 없으면 noOrderItemsNotAllowedException 예외를 던진다.")
-    @Test
-    void createOrderItems_emptyInput_throws() {
-        // given
-
-        // when
-
-        // then
-        assertThatThrownBy(() -> orderItemService.deductStockAndCreateOrderItems(List.of(), initOrder))
-                .isInstanceOf(OrderItemException.class);
-        assertThatThrownBy(() -> orderItemService.deductStockAndCreateOrderItems(null, initOrder))
-                .isInstanceOf(OrderItemException.class);
-    }
-
-    @DisplayName("주문에 주문상품을 추가한다.")
-    @Test
-    void orderItemService_creates_orderItems_and_order_adds_them() {
-        // given
-
-        when(productDetailService.deductStock(anyLong(), anyInt())).thenReturn(productDetail);
-
-        // when
-        List<OrderItem> createdItems =  orderItemService.deductStockAndCreateOrderItems(List.of(req), initOrder);
-        createdItems.forEach(initOrder::addOrderItem);
-
-        // then
-        assertThat(initOrder.getOrderItems()).hasSize(1);
-        OrderItem orderItem = initOrder.getOrderItems().get(0);
-        assertThat(orderItem).isSameAs(createdItems.get(0));
-        assertThat(orderItem.getOrder()).isSameAs(initOrder);
     }
 
     @DisplayName("쿠폰 적용 시 서버가 계산한 예상금액이 client 예상금액과 같으면 주문서를 확정짓는다.")

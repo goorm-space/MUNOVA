@@ -61,19 +61,30 @@ public class CouponServiceImpl implements CouponService {
     }
 
     /**
+     * 쿠폰 확인
+     */
+    @Override
+    @Transactional
+    public UseCouponResponse calculateAmountWithCoupon(Long couponId, UseCouponRequest useCouponRequest) {
+        Coupon coupon = couponRepository.findWithCouponDetailById(couponId)
+                .orElseThrow(CouponException::notFoundException);
+
+        Long originalPrice = useCouponRequest.originalPrice();
+        Long finalPrice = coupon.verifyCoupon(originalPrice);
+
+        return UseCouponResponse.of(originalPrice, originalPrice - finalPrice, finalPrice);
+    }
+
+    /**
      * 쿠폰 사용
      */
     @Override
     @Transactional
-    public UseCouponResponse useCoupon(Long couponId, UseCouponRequest useCouponRequest) {
+    public void useCoupon(Long couponId) {
         Coupon coupon = couponRepository.findWithCouponDetailById(couponId)
                 .orElseThrow(CouponException::notFoundException);
 
-        // 쿠폰 사용
-        Long originalPrice = useCouponRequest.originalPrice();
-        Long finalPrice = coupon.useCoupon(originalPrice);
-
-        return UseCouponResponse.of(originalPrice, originalPrice - finalPrice, finalPrice);
+        coupon.updateCouponUsed();
     }
 
     /**

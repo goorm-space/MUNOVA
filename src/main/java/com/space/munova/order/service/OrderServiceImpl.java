@@ -4,9 +4,6 @@ import com.space.munova.auth.exception.AuthException;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.coupon.dto.UseCouponRequest;
 import com.space.munova.coupon.dto.UseCouponResponse;
-import com.space.munova.coupon.entity.Coupon;
-import com.space.munova.coupon.exception.CouponException;
-import com.space.munova.coupon.repository.CouponRepository;
 import com.space.munova.coupon.service.CouponService;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
@@ -22,16 +19,13 @@ import com.space.munova.order.repository.OrderRepository;
 import com.space.munova.payment.entity.Payment;
 import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.ProductDetailService;
-import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
-import org.aspectj.weaver.ast.Or;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -162,7 +156,7 @@ public class OrderServiceImpl implements OrderService {
 
         if (request.orderCouponId() != null) {
             UseCouponRequest couponRequest = UseCouponRequest.of(totalProductAmount);
-            UseCouponResponse couponResponse = couponService.verifyCoupon(request.orderCouponId(), couponRequest);
+            UseCouponResponse couponResponse = couponService.calculateAmountWithCoupon(request.orderCouponId(), couponRequest);
 
             if (couponResponse.finalPrice().longValue() != request.clientCalculatedAmount().longValue()) {
                 throw OrderException.amountMismatchException(

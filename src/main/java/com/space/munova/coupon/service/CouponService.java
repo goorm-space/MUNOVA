@@ -14,7 +14,7 @@ public interface CouponService {
     IssueCouponResponse issueCoupon(IssueCouponRequest issueCouponRequest);
 
     // 쿠폰 확인
-    UseCouponResponse verifyCoupon(Long couponId, UseCouponRequest useCouponRequest);
+    UseCouponResponse calculateAmountWithCoupon(Long couponId, UseCouponRequest useCouponRequest);
 
     // 쿠폰 사용
     void useCoupon(Long couponId);

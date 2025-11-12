@@ -52,7 +52,7 @@ public class CouponController {
             @PathVariable Long couponId,
             @Valid @RequestBody UseCouponRequest useCouponRequest
     ) {
-        UseCouponResponse useCouponResponse = couponService.verifyCoupon(couponId, useCouponRequest);
+        UseCouponResponse useCouponResponse = couponService.calculateAmountWithCoupon(couponId, useCouponRequest);
         return ResponseApi.ok(useCouponResponse);
     }
 }

@@ -65,7 +65,7 @@ public class CouponServiceImpl implements CouponService {
      */
     @Override
     @Transactional
-    public UseCouponResponse verifyCoupon(Long couponId, UseCouponRequest useCouponRequest) {
+    public UseCouponResponse calculateAmountWithCoupon(Long couponId, UseCouponRequest useCouponRequest) {
         Coupon coupon = couponRepository.findWithCouponDetailById(couponId)
                 .orElseThrow(CouponException::notFoundException);
 

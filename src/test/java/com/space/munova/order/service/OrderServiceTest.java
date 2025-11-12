@@ -23,7 +23,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -193,7 +192,7 @@ public class OrderServiceTest {
     void finalizeOrder_withCoupon_happyCase() {
         // given
         UseCouponResponse response = UseCouponResponse.of(10000L,1000L, 9000L);
-        when(couponService.verifyCoupon(eq(createOrderRequest.orderCouponId()), any(UseCouponRequest.class))).thenReturn(response);
+        when(couponService.calculateAmountWithCoupon(eq(createOrderRequest.orderCouponId()), any(UseCouponRequest.class))).thenReturn(response);
 
         // when
         Order result = orderService.finalizeOrderWithCoupon(initOrderWithItems, createOrderRequest);
@@ -203,7 +202,7 @@ public class OrderServiceTest {
         assertThat(result.getCouponId()).isEqualTo(createOrderRequest.orderCouponId());
         assertThat(result.getStatus()).isEqualTo(OrderStatus.PAYMENT_PENDING);
 
-        verify(couponService, times(1)).verifyCoupon(1L, new UseCouponRequest(10000L));
+        verify(couponService, times(1)).calculateAmountWithCoupon(1L, new UseCouponRequest(10000L));
     }
 
     @DisplayName("쿠폰 적용 시 서버가 계산한 예상금액이 client 예상금액과 다르면 예외를 던진다.")
@@ -211,7 +210,7 @@ public class OrderServiceTest {
     void finalizeOrder_withCoupon_amountMismatch_throws() {
         // given
         UseCouponResponse response = UseCouponResponse.of(10000L,0L, 10000L);
-        when(couponService.verifyCoupon(eq(createOrderRequest.orderCouponId()), any(UseCouponRequest.class))).thenReturn(response);
+        when(couponService.calculateAmountWithCoupon(eq(createOrderRequest.orderCouponId()), any(UseCouponRequest.class))).thenReturn(response);
 
         // when
 

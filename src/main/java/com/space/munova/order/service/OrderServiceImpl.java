@@ -96,11 +96,19 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Page<OrderSummaryDto> getOrdersByMember(Long memberId, OrderStatus status, Pageable pageable) {
-        Page<Order> orderPage = orderRepository.findAllByMember_IdAndStatus(memberId, status, pageable);
+    public PagingResponse<OrderSummaryDto> getOrderList(int page, Long memberId) {
+        if (page < 0) page = 0;
+
+        Pageable pageable = PageRequest.of(
+                page,
+                PAGE_SIZE,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        Page<Order> orderPage = orderRepository.findAllByMember_IdAndStatus(memberId, OrderStatus.PAID, pageable);
 
         if (orderPage.getContent().isEmpty()) {
-            return Page.empty(pageable);
+            return PagingResponse.from(Page.empty(pageable));
         }
 
         List<Long> orderIds = orderPage.getContent().stream()
@@ -113,19 +121,7 @@ public class OrderServiceImpl implements OrderService {
                 .map(OrderSummaryDto::from)
                 .toList();
 
-        return new PageImpl<>(orderDtos, pageable, orderPage.getTotalElements());
-    }
-
-    @Override
-    public PagingResponse<OrderSummaryDto> getOrderList(int page, Long memberId) {
-        Pageable pageable = PageRequest.of(
-                page,
-                PAGE_SIZE,
-                Sort.by(Sort.Direction.DESC, "createdAt")
-        );
-
-        Page<OrderSummaryDto> orders = getOrdersByMember(memberId, OrderStatus.PAID, pageable);
-        return PagingResponse.from(orders);
+        return PagingResponse.from(new PageImpl<>(orderDtos, pageable, orderPage.getTotalElements()));
     }
 
     @Override

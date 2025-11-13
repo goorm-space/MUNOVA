@@ -1,29 +1,26 @@
 package com.space.munova.order.service;
 
+import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.coupon.dto.UseCouponRequest;
 import com.space.munova.coupon.dto.UseCouponResponse;
 import com.space.munova.coupon.service.CouponService;
 import com.space.munova.member.entity.Member;
-import com.space.munova.order.dto.CreateOrderRequest;
-import com.space.munova.order.dto.OrderItemRequest;
-import com.space.munova.order.dto.OrderStatus;
+import com.space.munova.order.dto.*;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.exception.OrderException;
-import com.space.munova.order.exception.OrderItemException;
 import com.space.munova.order.repository.OrderRepository;
-import com.space.munova.product.application.ProductDetailService;
-import com.space.munova.product.application.exception.ProductDetailException;
-import com.space.munova.product.domain.Product;
-import com.space.munova.product.domain.ProductDetail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -157,27 +154,92 @@ public class OrderServiceTest {
                 .isInstanceOf(OrderException.class);
     }
 
-    @DisplayName("(HappyCase) member의 주문들을 가져와 상세 조인 후 DTO로 매핑해 페이지로 반환한다.")
+    @DisplayName("(HappyCase) 사용자가 결제한 주문 내역들을 조회한다.")
     @Test
-    void getOrdersByMember_whenOrdersExist_returnsMappedPage() {
+    void getOrderList_whenOrdersExist_returnsMappedPage() {
         // given
+        Long memberId = 1L;
+        OrderStatus status = OrderStatus.PAID;
+        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        // when
+        Order o1 = Order.builder().build();
+        Order o2 = Order.builder().build();
 
-        // then
+        Order spy1 = spy(o1);
+        Order spy2 = spy(o2);
+        when(spy1.getId()).thenReturn(1L);
+        when(spy2.getId()).thenReturn(2L);
 
+        Page<Order> firstPage = new PageImpl<>(List.of(spy1, spy2), pageable, 50L);
+        when(orderRepository.findAllByMember_IdAndStatus(anyLong(), any(OrderStatus.class), any(Pageable.class)))
+                .thenReturn(firstPage);
+
+        when(orderRepository.findAllWithDetailsByOrderIds(anyList()))
+                .thenReturn(List.of(spy1, spy2));
+
+        OrderSummaryDto dto1 = new OrderSummaryDto(1L, LocalDateTime.now(), List.of(OrderItemDto.builder().build()));
+        OrderSummaryDto dto2 = new OrderSummaryDto(2L, LocalDateTime.now(), List.of(OrderItemDto.builder().build()));
+        try (MockedStatic<OrderSummaryDto> mocked = mockStatic(OrderSummaryDto.class)) {
+            mocked.when(() -> OrderSummaryDto.from(spy1)).thenReturn(dto1);
+            mocked.when(() -> OrderSummaryDto.from(spy2)).thenReturn(dto2);
+
+            // when
+            PagingResponse<OrderSummaryDto> result = orderService.getOrderList(0, memberId);
+
+            // then
+            assertThat(result).isNotNull();
+            assertThat(result.content()).hasSize(2);
+            assertThat(result.content()).containsExactly(dto1, dto2);
+            assertThat(result.totalElements()).isEqualTo(50L);
+
+            verify(orderRepository, times(1)).findAllByMember_IdAndStatus(memberId, status, pageable);
+            verify(orderRepository, times(1)).findAllWithDetailsByOrderIds(List.of(1L, 2L));
+        }
     }
 
-    @DisplayName("(Empty) 사용자에 해당하는 주문 내역이 없으면 빈 페이지를 반환한다.")
+    @DisplayName("(Empty) 주문 내역이 없으면 빈 페이지를 반환한다.")
     @Test
-    void getOrdersByMember_whenNoOrders_returnsEmptyPage() {
+    void getOrderList_whenNoOrders_returnsEmptyPage() {
         // given
+        Long memberId = 1L;
+        OrderStatus status = OrderStatus.PAID;
+        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        when(orderRepository.findAllByMember_IdAndStatus(anyLong(), any(OrderStatus.class), any(Pageable.class)))
+                .thenReturn(Page.empty(pageable));
 
         // when
+        PagingResponse<OrderSummaryDto> result = orderService.getOrderList(0, memberId);
 
         // then
+        assertThat(result).isNotNull();
+        assertThat(result.content()).isEmpty();
+        assertThat(result.totalElements()).isEqualTo(0L);
 
+        verify(orderRepository, times(1)).findAllByMember_IdAndStatus(memberId, status, pageable);
+        verify(orderRepository, never()).findAllWithDetailsByOrderIds(anyList());
     }
 
+    @DisplayName("음수 페이지 값을 입력하면 0으로 보정하여 주문 목록을 조회한다.")
+    @Test
+    void getOrderList_whenPageUnderZero_returnsPageZero() {
+        // given
+        Long memberId = 1L;
+        OrderStatus status = OrderStatus.PAID;
+        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        when(orderRepository.findAllByMember_IdAndStatus(anyLong(), any(OrderStatus.class), any(Pageable.class)))
+                .thenReturn(Page.empty(pageable));
+
+        // when
+        PagingResponse<OrderSummaryDto> result = orderService.getOrderList(-5, memberId);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.page()).isEqualTo(0);
+
+        verify(orderRepository, times(1)).findAllByMember_IdAndStatus(memberId, status, pageable);
+        verify(orderRepository, never()).findAllWithDetailsByOrderIds(anyList());
+    }
 
 }

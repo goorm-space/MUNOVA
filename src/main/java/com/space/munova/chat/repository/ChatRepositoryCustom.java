@@ -7,7 +7,7 @@ import java.util.Optional;
 
 public interface ChatRepositoryCustom {
 
-    List<Chat> findByNameAndTags(String keyword, List<Long> categoryIds, Long memberId);
+    List<Chat> findByNameAndTags(String keyword, List<Long> categoryIds, Long memberId, Boolean isMine);
 
     Optional<Chat> findGroupChatDetailById(Long chatId);
 }

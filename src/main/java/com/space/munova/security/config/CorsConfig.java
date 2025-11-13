@@ -39,7 +39,8 @@ public class CorsConfig {
                 "Content-Type",
                 "Accept",
                 "X-Requested-With",
-                "Cache-Control"
+                "Cache-Control",
+                "X-Device-Id"
         ));
 
         // 응답에 포함될 헤더 설정

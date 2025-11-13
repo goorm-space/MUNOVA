@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final OrderService orderService;
-    private final PaymentService paymentService;
 
     /**
      * 주문 생성 후 결제에 필요한 응답 보내기
@@ -33,8 +32,8 @@ public class OrderController {
 
     @GetMapping
     public ResponseApi<PagingResponse<OrderSummaryDto>> getOrders(@RequestParam(value = "page", defaultValue = "0") int page) {
-        PagingResponse<OrderSummaryDto> response = orderService.getOrderList(page);
-        System.out.print(response.content());
+        Long memberId = JwtHelper.getMemberId();
+        PagingResponse<OrderSummaryDto> response = orderService.getOrderList(page, memberId);
 
         return ResponseApi.ok(response);
     }

@@ -49,8 +49,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional
     @Override
-    public Order createOrder(CreateOrderRequest request, Long userId) {
-        Member member = memberRepository.findById(userId)
+    public Order createOrder(CreateOrderRequest request, Long memberId) {
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(MemberException::notFoundException);
 
         // 초기 주문 생성
@@ -117,15 +117,14 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public PagingResponse<OrderSummaryDto> getOrderList(int page) {
-        Long userId = JwtHelper.getMemberId();
+    public PagingResponse<OrderSummaryDto> getOrderList(int page, Long memberId) {
         Pageable pageable = PageRequest.of(
                 page,
                 PAGE_SIZE,
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<OrderSummaryDto> orders = getOrdersByMember(userId, OrderStatus.PAID, pageable);
+        Page<OrderSummaryDto> orders = getOrdersByMember(memberId, OrderStatus.PAID, pageable);
         return PagingResponse.from(orders);
     }
 

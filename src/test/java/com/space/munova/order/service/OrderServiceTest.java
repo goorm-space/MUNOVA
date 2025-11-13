@@ -11,6 +11,7 @@ import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.exception.OrderException;
 import com.space.munova.order.exception.OrderItemException;
+import com.space.munova.order.repository.OrderRepository;
 import com.space.munova.product.application.ProductDetailService;
 import com.space.munova.product.application.exception.ProductDetailException;
 import com.space.munova.product.domain.Product;
@@ -39,6 +40,9 @@ public class OrderServiceTest {
 
     @Mock
     private CouponService couponService;
+
+    @Mock
+    private OrderRepository orderRepository;
 
     private Member member;
     private CreateOrderRequest createOrderRequest;
@@ -151,6 +155,28 @@ public class OrderServiceTest {
         // then
         assertThatThrownBy(() -> orderService.finalizeOrderWithCoupon(initOrderWithItems, request))
                 .isInstanceOf(OrderException.class);
+    }
+
+    @DisplayName("(HappyCase) member의 주문들을 가져와 상세 조인 후 DTO로 매핑해 페이지로 반환한다.")
+    @Test
+    void getOrdersByMember_whenOrdersExist_returnsMappedPage() {
+        // given
+
+        // when
+
+        // then
+
+    }
+
+    @DisplayName("(Empty) 사용자에 해당하는 주문 내역이 없으면 빈 페이지를 반환한다.")
+    @Test
+    void getOrdersByMember_whenNoOrders_returnsEmptyPage() {
+        // given
+
+        // when
+
+        // then
+
     }
 
 

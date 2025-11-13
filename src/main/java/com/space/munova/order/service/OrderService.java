@@ -10,7 +10,7 @@ public interface OrderService {
 
     Order createOrder(CreateOrderRequest request, Long memberId);
     Page<OrderSummaryDto> getOrdersByMember(Long memberId, OrderStatus orderStatus, Pageable pageable);
-    PagingResponse<OrderSummaryDto> getOrderList(int page);
+    PagingResponse<OrderSummaryDto> getOrderList(int page, Long memberId);
     GetOrderDetailResponse getOrderDetail(Long orderId);
     void saveOrderLog(Order order);
 }

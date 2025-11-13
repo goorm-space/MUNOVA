@@ -37,9 +37,8 @@ public class Order extends BaseEntity {
 
     private Long originPrice;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "coupon_id")
-    private Coupon coupon;
+    @Column(name = "coupon_id")
+    private Long couponId;
 
     private Long discountPrice;
 
@@ -52,15 +51,30 @@ public class Order extends BaseEntity {
     @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
 
+    public static Order createInitOrder(Member member, String userRequest) {
+        return Order.builder()
+                .member(member)
+                .orderNum(generateOrderNum())
+                .userRequest(userRequest)
+                .status(OrderStatus.CREATED)
+                .build();
+    }
+
+    public static String generateOrderNum() {
+        String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        return (date + uuid).toUpperCase();
+    }
+
     public void addOrderItem(OrderItem orderItem) {
         this.orderItems.add(orderItem);
     }
 
-    public void updateFinalOrder(Long originPrice, Long discountPrice, Long totalPrice, Coupon coupon, OrderStatus status) {
+    public void updateFinalOrder(Long originPrice, Long discountPrice, Long totalPrice, Long couponId, OrderStatus status) {
         this.originPrice = originPrice;
         this.discountPrice = discountPrice;
         this.totalPrice = totalPrice;
-        this.coupon = coupon;
+        this.couponId = couponId;
         this.status = status;
 
         if (this.orderItems != null) {
@@ -78,11 +92,5 @@ public class Order extends BaseEntity {
                 orderItem.updateStatus(status);
             }
         }
-    }
-
-    public static String generateOrderNum() {
-        String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-        return (date + uuid).toUpperCase();
     }
 }

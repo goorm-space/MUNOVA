@@ -64,7 +64,8 @@ public class AuthController {
             HttpServletResponse response,
             @RequestHeader(value = DEVICE_ID_HEADER_PREFIX) String deviceId
     ) {
-        authService.signOut(deviceId);
+        Long memberId = JwtHelper.getMemberId();
+        authService.signOut(deviceId, memberId);
         // 쿠키에서 refreshToken 삭제
         jwtHelper.deleteRefreshTokenFromCookie(response);
         return ResponseApi.ok();

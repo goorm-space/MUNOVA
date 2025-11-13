@@ -4,6 +4,7 @@ import com.space.munova.core.config.ResponseApi;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.coupon.dto.*;
 import com.space.munova.coupon.service.CouponService;
+import com.space.munova.security.jwt.JwtHelper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -37,7 +38,8 @@ public class CouponController {
      */
     @PostMapping("/{couponDetailId}")
     public ResponseApi<IssueCouponResponse> issueCoupon(@PathVariable Long couponDetailId) {
-        IssueCouponRequest issueCouponRequest = IssueCouponRequest.of(couponDetailId);
+        Long memberId = JwtHelper.getMemberId();
+        IssueCouponRequest issueCouponRequest = IssueCouponRequest.of(couponDetailId, memberId);
         IssueCouponResponse issueCouponResponse = couponService.issueCoupon(issueCouponRequest);
         return ResponseApi.ok(issueCouponResponse);
     }
@@ -46,11 +48,11 @@ public class CouponController {
      * 쿠폰 사용
      */
     @PatchMapping("/{couponId}")
-    public ResponseApi<UseCouponResponse> useCoupon(
+    public ResponseApi<UseCouponResponse> verifyCoupon(
             @PathVariable Long couponId,
             @Valid @RequestBody UseCouponRequest useCouponRequest
     ) {
-        UseCouponResponse useCouponResponse = couponService.useCoupon(couponId, useCouponRequest);
+        UseCouponResponse useCouponResponse = couponService.calculateAmountWithCoupon(couponId, useCouponRequest);
         return ResponseApi.ok(useCouponResponse);
     }
 }

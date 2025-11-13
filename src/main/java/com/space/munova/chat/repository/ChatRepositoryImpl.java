@@ -24,7 +24,7 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<Chat> findByNameAndTags(String keyword, List<Long> tagIds, Long memberId) {
+    public List<Chat> findByNameAndTags(String keyword, List<Long> tagIds, Long memberId, Boolean isMine) {
         QChat chat = QChat.chat;
         QChatTag chatTag = QChatTag.chatTag;
         QChatMember chatMember = QChatMember.chatMember;
@@ -32,12 +32,14 @@ public class ChatRepositoryImpl implements ChatRepositoryCustom {
         JPAQuery<Chat> query = queryFactory
                 .selectFrom(chat);
 
+        // tagsId가 있는 경우에만 Join
         if (tagIds != null && !tagIds.isEmpty()) {
             query.join(chat.chatTags, chatTag)
                     .on(tagsIn(tagIds));
         }
 
-        if (memberId != null) {
+        // 내가 참여하는 채팅방인지?
+        if (memberId != null && isMine) {
             query.join(chat.chatMembers, chatMember)
                     .on(chatMember.memberId.id.eq(memberId));
         }

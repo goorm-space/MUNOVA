@@ -7,8 +7,9 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.space.munova.core.utils.QuerydslHelper;
-import com.space.munova.coupon.dto.CouponDetailWithIssueStatus;
 import com.space.munova.coupon.dto.SearchCouponDetailParams;
+import com.space.munova.coupon.dto.SearchCouponDetailResponse;
+import com.space.munova.coupon.dto.SearchEventCouponResponse;
 import com.space.munova.coupon.entity.CouponDetail;
 import com.space.munova.coupon.entity.QCoupon;
 import com.space.munova.coupon.entity.QCouponDetail;
@@ -34,8 +35,9 @@ public class CouponDetailSearchQueryDslRepository {
     private static final QCouponDetail couponDetail = QCouponDetail.couponDetail;
 
     // 쿠폰 검색
-    public Page<CouponDetail> findByCouponDetailParams(Pageable pageable, Sort sort, SearchCouponDetailParams params) {
-
+    public Page<SearchCouponDetailResponse> findByCouponDetailParams(
+            Pageable pageable, Sort sort, SearchCouponDetailParams params
+    ) {
         // 카운트 쿼리
         Long totalSize = queryFactory
                 .select(couponDetail.count())
@@ -46,8 +48,17 @@ public class CouponDetailSearchQueryDslRepository {
         totalSize = Optional.ofNullable(totalSize).orElse(0L);
 
         // 조회 쿼리
-        List<CouponDetail> coupons = queryFactory
-                .select(couponDetail)
+        List<SearchCouponDetailResponse> coupons = queryFactory
+                .select(Projections.constructor(
+                        SearchCouponDetailResponse.class,
+                        couponDetail.id.as("couponDetailId"),
+                        couponDetail.quantity.as("quantity"),
+                        couponDetail.remainQuantity.as("remainQuantity"),
+                        couponDetail.couponName.as("couponName"),
+                        couponDetail.discountPolicy.as("discountPolicy"),
+                        couponDetail.publishedAt.as("publishedAt"),
+                        couponDetail.expiredAt.as("expiredAt")
+                ))
                 .from(couponDetail)
                 .where(publishIdEq(params.publishId()))
                 .orderBy(toOrderSpecifiers(sort))
@@ -59,7 +70,7 @@ public class CouponDetailSearchQueryDslRepository {
     }
 
     // 이벤트 쿠폰 검색
-    public Page<CouponDetailWithIssueStatus> findByEventCoupon(Pageable pageable, Sort sort, Long memberId) {
+    public Page<SearchEventCouponResponse> findByEventCoupon(Pageable pageable, Sort sort, Long memberId) {
         // 카운트 쿼리
         Long totalSize = queryFactory
                 .select(couponDetail.count())
@@ -73,12 +84,13 @@ public class CouponDetailSearchQueryDslRepository {
         totalSize = Optional.ofNullable(totalSize).orElse(0L);
 
         // 조회 쿼리
-        List<CouponDetailWithIssueStatus> coupons = queryFactory
+        List<SearchEventCouponResponse> coupons = queryFactory
                 .select(Projections.constructor(
-                        CouponDetailWithIssueStatus.class,
+                        SearchEventCouponResponse.class,
                         couponDetail.id.as("couponDetailId"),
-                        couponDetail.couponName.as("couponName"),
                         couponDetail.quantity.as("quantity"),
+                        couponDetail.remainQuantity.as("remainQuantity"),
+                        couponDetail.couponName.as("couponName"),
                         couponDetail.discountPolicy.as("discountPolicy"),
                         couponDetail.publishedAt.as("publishedAt"),
                         couponDetail.expiredAt.as("expiredAt"),

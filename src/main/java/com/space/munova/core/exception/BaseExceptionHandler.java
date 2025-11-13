@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -67,6 +68,19 @@ public class BaseExceptionHandler {
         log.error("{}: {}", HttpStatus.BAD_REQUEST, errorMessage);
 
         return ResponseApi.nok(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", errorMessage);
+    }
+
+    /**
+     * header 누락 예외 처리
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseApi<Object> handleMissingRequestHeaderException(MissingRequestHeaderException ex) {
+        String errorMessage = String.format("필수 헤더가 누락되었습니다: %s", ex.getHeaderName());
+        log.error("{}: {}", HttpStatus.BAD_REQUEST, ex.getMessage());
+
+        return ResponseApi.nok(HttpStatus.BAD_REQUEST, "HEADER_MISSING", errorMessage);
     }
 
     /**

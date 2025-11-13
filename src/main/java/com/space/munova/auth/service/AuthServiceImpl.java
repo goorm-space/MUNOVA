@@ -4,9 +4,9 @@ import com.space.munova.auth.dto.*;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
-import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,9 +33,7 @@ public class AuthServiceImpl implements AuthService {
                 encodedPassword,
                 signupRequest.address()
         );
-        Member savedMember = memberRepository.save(member);
-        log.info("새 일반 유저 가입: {}", member.getUsername());
-
+        Member savedMember = saveMember(member);
         return SignupResponse.of(savedMember.getId(), savedMember.getUsername());
     }
 
@@ -64,15 +62,27 @@ public class AuthServiceImpl implements AuthService {
     /**
      * 로그아웃
      */
-    public void signOut(String deviceId) {
-        Long memberId = JwtHelper.getMemberId();
-        String memberName = JwtHelper.getMemberName();
+    public void signOut(String deviceId, Long memberId) {
         // 토큰 삭제
         tokenService.clearRefreshToken(memberId, deviceId);
         // SecurityContextHolder 비우기
         tokenService.clearSecurityContext();
 
-        log.info("로그아웃 성공: {}", memberName);
+        log.info("로그아웃 성공: {}", memberId);
+    }
+
+    /**
+     * 회원가입 유저저장, 유니크 제약조건 예외
+     */
+    private Member saveMember(Member member) {
+        Member savedMember;
+        try {
+            savedMember = memberRepository.save(member);
+            log.info("새 일반 유저 가입: {}", member.getUsername());
+        } catch (DataIntegrityViolationException e) {
+            throw MemberException.duplicatedMemberName();
+        }
+        return savedMember;
     }
 
 }

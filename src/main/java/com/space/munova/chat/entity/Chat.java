@@ -1,10 +1,13 @@
 package com.space.munova.chat.entity;
 
 
+import com.space.munova.chat.dto.group.GroupChatUpdateRequestDto;
 import com.space.munova.chat.enums.ChatStatus;
 import com.space.munova.chat.enums.ChatType;
 import com.space.munova.chat.exception.ChatException;
 import com.space.munova.core.entity.BaseEntity;
+import com.space.munova.member.dto.MemberRole;
+import com.space.munova.product.domain.Product;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Builder
 @Getter
 @Entity
 @Table(name = "chat")
@@ -41,19 +45,26 @@ public class Chat extends BaseEntity {
 
     private LocalDateTime lastMessageTime;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    private Product productId;
+
+    @Builder.Default
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatTag> chatTags = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "chatId", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatMember> chatMembers = new ArrayList<>();
 
-    @Builder
-    public Chat(@NonNull String name, ChatStatus status, ChatType type, Integer curParticipant, Integer maxParticipant) {
-        this.name = name;
-        this.status = status;
-        this.type = type;
-        this.curParticipant = curParticipant;
-        this.maxParticipant = maxParticipant;
+    public static Chat createChat(String name, ChatStatus status, ChatType type, Product product, Integer curParticipant, Integer maxParticipant){
+        return Chat.builder()
+                .name(name)
+                .status(status)
+                .type(type)
+                .productId(product)
+                .curParticipant(curParticipant)
+                .maxParticipant(maxParticipant).build();
     }
 
     public void modifyLastMessageContent(String lastMessageContent, LocalDateTime lastMessageTime) {
@@ -65,26 +76,21 @@ public class Chat extends BaseEntity {
         this.lastMessageTime = lastMessageTime;
     }
 
-    public void updateChatStatusClosed(ChatStatus status) {
+    public void updateChatStatus(ChatStatus status) {
         if (status == this.status) {
             throw ChatException.chatClosedException("chatStatusClosed");
         }
         this.status = status;
     }
 
-    public void updateMaxParticipant(Integer newMaxParticipant) {
-        if (newMaxParticipant < curParticipant) {
+    public void updateInfo(GroupChatUpdateRequestDto groupChatUpdateDto) {
+        if (groupChatUpdateDto.maxParticipants() < curParticipant) {
             throw ChatException.invalidOperationException("Max participants : " + maxParticipant + "\n" +
                     "Requested : " + maxParticipant);
         }
-        if (newMaxParticipant == null) return;
-
-        this.maxParticipant = newMaxParticipant;
-    }
-
-    public void updateName(String newName) {
-        if (newName == null || newName.isBlank()) return;
-        this.name = newName;
+        if (groupChatUpdateDto.name() == null || groupChatUpdateDto.name().isBlank()) return;
+        this.maxParticipant = groupChatUpdateDto.maxParticipants();
+        this.name = groupChatUpdateDto.name();
     }
 
     public void incrementParticipant() {
@@ -101,6 +107,16 @@ public class Chat extends BaseEntity {
             throw ChatException.cannotDecrementParticipantsException();
         }
         this.curParticipant -= 1;
+    }
+
+    public void oneToOneChatCloseBySeller(MemberRole role) {
+        if(role != MemberRole.SELLER){
+            throw ChatException.unauthorizedAccessException("판매자만 채팅방을 닫을 수 있습니다.");
+        }
+        if(this.status == ChatStatus.CLOSED){
+            throw ChatException.chatClosedException("chatStatusClosed");
+        }
+        this.status = ChatStatus.CLOSED;
     }
 
 }

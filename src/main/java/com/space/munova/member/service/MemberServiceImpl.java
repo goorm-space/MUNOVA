@@ -45,7 +45,7 @@ public class MemberServiceImpl implements MemberService {
     @Transactional
     @RedisDistributeLock(key = "'MEMBER_UPDATE:' + #memberId")
     public UpdateMemberResponse updateMember(Long memberId, UpdateMemberRequest updateMemberRequest, String deviceId) {
-        Member member = memberRepository.findByIdWithLock(memberId)
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(MemberException::notFoundException);
 
         member.updateMember(

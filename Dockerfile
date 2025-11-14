@@ -9,6 +9,8 @@ COPY ./build/libs/MUNOVA-0.0.1-SNAPSHOT.jar /app/app.jar
 
 WORKDIR /app
 
+ENV SPRING_PROFILES_ACTIVE=docker
+
 # JVM 시간대
 ENV TZ=Asia/Seoul
 

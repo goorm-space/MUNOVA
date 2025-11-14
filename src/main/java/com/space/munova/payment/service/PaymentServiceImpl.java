@@ -3,6 +3,8 @@ package com.space.munova.payment.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.space.munova.coupon.repository.CouponRepository;
+import com.space.munova.coupon.service.CouponService;
 import com.space.munova.notification.dto.NotificationPayload;
 import com.space.munova.notification.dto.NotificationType;
 import com.space.munova.notification.service.NotificationService;
@@ -43,6 +45,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final TossApiClient tossApiClient;
     private final CartService cartService;
     private final NotificationService notificationService;
+    private final CouponService couponService;
 
     @Transactional
     @Override
@@ -64,8 +67,8 @@ public class PaymentServiceImpl implements PaymentService {
 
                 order.updateStatus(OrderStatus.PAID);
 
-                if (order.getCoupon() != null) {
-                    order.getCoupon().updateCouponUsed();
+                if (order.getCouponId() != null) {
+                    couponService.useCoupon(order.getCouponId());
                 }
 
                 Payment payment = Payment.builder()

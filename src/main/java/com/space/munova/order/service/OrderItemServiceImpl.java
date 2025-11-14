@@ -3,18 +3,22 @@ package com.space.munova.order.service;
 import com.space.munova.auth.exception.AuthException;
 import com.space.munova.order.dto.CancelOrderItemRequest;
 import com.space.munova.order.dto.CancelType;
+import com.space.munova.order.dto.OrderItemRequest;
 import com.space.munova.order.dto.OrderStatus;
+import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.exception.OrderItemException;
 import com.space.munova.order.repository.OrderItemRepository;
 import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.ProductDetailService;
+import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -26,6 +30,33 @@ public class OrderItemServiceImpl implements OrderItemService {
     private final ProductDetailService productDetailService;
     private final PaymentService paymentService;
     private final RecommendService recommendService;
+
+    @Override
+    public List<OrderItem> deductStockAndCreateOrderItems(List<OrderItemRequest> itemRequests, Order order) {
+        if (itemRequests == null || itemRequests.isEmpty()) {
+            throw OrderItemException.noOrderItemsNotAllowedException();
+        }
+
+        List<OrderItem> orderItems = new ArrayList<>();
+
+        for(OrderItemRequest orderItemRequest : itemRequests) {
+            ProductDetail detail = productDetailService.deductStock(orderItemRequest.productDetailId(), orderItemRequest.quantity());
+
+            // 2. Orderitem 엔티티 생성
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order)
+                    .productDetail(detail)
+                    .nameSnapshot(detail.getProduct().getName())
+                    .priceSnapshot(detail.getProduct().getPrice())
+                    .quantity(orderItemRequest.quantity())
+                    .status(OrderStatus.CREATED)
+                    .build();
+
+            orderItems.add(orderItem);
+        }
+
+        return orderItems;
+    }
 
     @Transactional
     @Override

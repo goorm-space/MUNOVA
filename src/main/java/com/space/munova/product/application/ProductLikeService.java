@@ -10,6 +10,7 @@ import com.space.munova.product.application.exception.LikeException;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.ProductLike;
 import com.space.munova.product.domain.Repository.ProductLikeRepository;
+import com.space.munova.recommend.infra.RedisStreamProducer;
 import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -34,6 +36,7 @@ public class ProductLikeService {
     private final ProductImageService productImageService;
     private final RecommendService recommendService;
     private final ApplicationEventPublisher eventPublisher;
+    private final RedisStreamProducer logProducer;
 
     @Transactional(readOnly = false)
     public void deleteProductLikeByProductId(Long productId, Long memberId) {
@@ -63,7 +66,15 @@ public class ProductLikeService {
             ///  사용자 좋아요 리스트 제거
             productLikeRepository.deleteAllByProductIdsAndMemberId(productId, memberId);
 
-            upsertUserAction(productId,false);
+            Map<String, Object> logData = Map.of(
+                    "event_type", "cancel_product_like",
+                    "service", "product",
+                    "member_id", memberId,
+                    "data", Map.of(
+                            "product_id", productId
+                    )
+            );
+            logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
 
             /// 좋아요 취소 메시지 발행
             ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
@@ -74,7 +85,15 @@ public class ProductLikeService {
             ProductLike productLike = ProductLike.createDefaultProductLike(product, member);
             productLikeRepository.save(productLike);
 
-            upsertUserAction(productId,true);
+            Map<String, Object> logData = Map.of(
+                    "event_type", "product_like",
+                    "service", "product",
+                    "member_id", memberId,
+                    "data", Map.of(
+                            "product_id", productId
+                    )
+            );
+            logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
 
             ///  좋아요 메시지 발행
             ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, false);

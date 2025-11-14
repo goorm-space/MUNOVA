@@ -25,9 +25,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -54,6 +56,9 @@ public class RecommendServiceImpl implements RecommendService {
     private final ProductRecommendationRepository productRecommendRepository;
     private final UserActionSummaryRepository summaryRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
 
     @Override
     public PagingResponse<RecommendationsUserResponseDto> getRecommendationsByMemberId(Long memberId, Pageable pageable) {
@@ -103,6 +108,12 @@ public class RecommendServiceImpl implements RecommendService {
     @Override
     @Transactional
     public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateUserProductRecommend( Long productId) {
+//        String url ="http://localhost:8001/api/recommend/user/"+productId;
+//        ResponseEntity<String> response=restTemplate.exchange(url, HttpMethod.PUT,null,String.class);
+//        ResponseApi<String> apiResponse = ResponseApi.ok(response.getBody());
+//
+//        return ResponseEntity.ok((ResponseApi) apiResponse);
+
         Long memberId = JwtHelper.getMemberId();
 
         userRecommendRepository.deleteByMemberId(memberId);
@@ -139,6 +150,12 @@ public class RecommendServiceImpl implements RecommendService {
     @Override
     @Transactional
     public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateSimilarProductRecommend(Long productId) {
+//        String url = "http://localhost:8001/recommend/" + productId;
+//        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, null, String.class);
+//        ResponseApi<String> apiResponse = ResponseApi.ok(response.getBody());
+//
+//        return ResponseEntity.ok((ResponseApi) apiResponse);
+//
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> RecommendException.productNotFound("id=" + productId));
 

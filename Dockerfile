@@ -5,9 +5,11 @@ LABEL maintainer="namoo36"
 LABEL version="1.0"
 
 # 빌드된 Spring Boot JAR 복사
-COPY ./build/libs/MUNOVA-0.0.1-SNAPSHOT.jar /app/app.jar
+COPY build/libs/*.jar /app/MUNOVA.jar
 
 WORKDIR /app
+
+ENV SPRING_PROFILES_ACTIVE=docker
 
 # JVM 시간대
 ENV TZ=Asia/Seoul
@@ -16,4 +18,4 @@ ENV TZ=Asia/Seoul
 EXPOSE 8080
 
 # 실행 명령
-CMD ["java", "-jar", "app.jar"]
+CMD ["java", "-jar", "/app/MUNOVA.jar", "--spring.profiles.active=docker"]

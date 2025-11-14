@@ -69,8 +69,6 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
             "AND p.likeCount > 0")
     int minusLikeCountInProductIds(Long productId);
 
-
-
     boolean existsByIdAndMemberIdAndIsDeletedFalse(Long productId , Long sellerId);
 
     @Query("SELECT p FROM Product p " +
@@ -105,4 +103,11 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
             "SET p.likeCount = p.likeCount + 1 " +
             "WHERE p.id = :productId")
     void plusLikeCountByProductId(Long productId);
+
+    @Query("SELECT p " +
+            "FROM Product p " +
+            "WHERE p.id iN :productIds " +
+            "AND p.member.id = :sellerId " +
+            "AND p.isDeleted = false")
+    List<Product> findAllByIdAndMemberId(List<Long> productIds, Long sellerId);
 }

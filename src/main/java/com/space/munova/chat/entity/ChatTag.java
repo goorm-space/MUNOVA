@@ -10,7 +10,7 @@ import lombok.*;
 @Getter
 @Table(name = "chat_tag")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ChatTag {
 
     @Id
@@ -29,7 +29,7 @@ public class ChatTag {
     @Enumerated(EnumType.STRING)
     private ProductCategory categoryType;
 
-    public static ChatTag of(Chat chat, Category productCategory) {
+    public static ChatTag createChatTag(Chat chat, Category productCategory) {
         return ChatTag.builder()
                 .chat(chat)
                 .productCategoryId(productCategory)

@@ -1,5 +1,8 @@
 package com.space.munova.common;
 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -9,6 +12,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 // 스레드풀 기반 동시 작업
 // - 범용 동시성 테스트 헬퍼 클래스
+@Slf4j
+@Getter
 public class ConcurrencyTestHelper {
 
     private final int threadCount;
@@ -94,14 +99,6 @@ public class ConcurrencyTestHelper {
 
     public int getFailureCount() {
         return failureCount.get();
-    }
-
-    public List<Exception> getExceptions() {
-        return exceptions;
-    }
-
-    public int getThreadCount() {
-        return threadCount;
     }
 
     // 동시성 작업

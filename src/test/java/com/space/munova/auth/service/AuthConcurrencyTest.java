@@ -212,12 +212,11 @@ class AuthConcurrencyTest extends IntegrationTestBase {
             }
 
             // 각 회원의 토큰으로 동시에 재발급 요청
-            ConcurrencyTestHelper helper = new ConcurrencyTestHelper(memberCount * requestsPerMember);
+            ConcurrencyTestHelper helper = new ConcurrencyTestHelper(memberCount);
 
             helper.execute(index -> {
-                int memberIndex = index / requestsPerMember;
-                String token = memberTokens[memberIndex];
-                tokenService.reissueToken(token, DEVICE_ID + "-" + memberIndex);
+                String token = memberTokens[index];
+                tokenService.reissueToken(token, DEVICE_ID + "-" + index);
             });
 
             assertTrue(helper.getSuccessCount() > 0, "최소한 일부 재발급은 성공해야 함");

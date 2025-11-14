@@ -1,5 +1,6 @@
 package com.space.munova.recommend.infra;
 
+/*
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -81,3 +82,4 @@ public class RedisBatchScheduler {
         }
     }
 }
+ */

@@ -3,9 +3,11 @@ package com.space.munova.order.dto;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.product.domain.ProductImage;
 import com.space.munova.product.domain.enums.ProductImageType;
+import lombok.Builder;
 
 import java.util.stream.Collectors;
 
+@Builder
 public record OrderItemDto(
         Long orderItemId,
         String brandName,

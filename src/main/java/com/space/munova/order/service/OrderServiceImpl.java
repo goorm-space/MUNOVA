@@ -38,19 +38,19 @@ public class OrderServiceImpl implements OrderService {
     private final ProductDetailService productDetailService;
     private final CouponService couponService;
     private final OrderItemService orderItemService;
+    private final RecommendService recommendService;
+    private final PaymentService paymentService;
 
     private final OrderItemRepository orderItemRepository;
     private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
-    private final RecommendService recommendService;
-
     private final OrderProductLogRepository orderProductLogRepository;
-    private final PaymentService paymentService;
+
 
     @Transactional
     @Override
-    public Order createOrder(CreateOrderRequest request, Long userId) {
-        Member member = memberRepository.findById(userId)
+    public Order createOrder(CreateOrderRequest request, Long memberId) {
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(MemberException::notFoundException);
 
         // 초기 주문 생성
@@ -96,11 +96,17 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Page<OrderSummaryDto> getOrdersByMember(Long memberId, OrderStatus status, Pageable pageable) {
-        Page<Order> orderPage = orderRepository.findAllByMember_IdAndStatus(memberId, status, pageable);
+    public PagingResponse<OrderSummaryDto> getOrderList(int page, Long memberId) {
+        Pageable pageable = PageRequest.of(
+                page,
+                PAGE_SIZE,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        Page<Order> orderPage = orderRepository.findAllByMember_IdAndStatus(memberId, OrderStatus.PAID, pageable);
 
         if (orderPage.getContent().isEmpty()) {
-            return Page.empty(pageable);
+            return PagingResponse.from(Page.empty(pageable));
         }
 
         List<Long> orderIds = orderPage.getContent().stream()
@@ -113,32 +119,18 @@ public class OrderServiceImpl implements OrderService {
                 .map(OrderSummaryDto::from)
                 .toList();
 
-        return new PageImpl<>(orderDtos, pageable, orderPage.getTotalElements());
+        return PagingResponse.from(new PageImpl<>(orderDtos, pageable, orderPage.getTotalElements()));
     }
 
     @Override
-    public PagingResponse<OrderSummaryDto> getOrderList(int page) {
-        Long userId = JwtHelper.getMemberId();
-        Pageable pageable = PageRequest.of(
-                page,
-                PAGE_SIZE,
-                Sort.by(Sort.Direction.DESC, "createdAt")
-        );
-
-        Page<OrderSummaryDto> orders = getOrdersByMember(userId, OrderStatus.PAID, pageable);
-        return PagingResponse.from(orders);
-    }
-
-    @Override
-    public GetOrderDetailResponse getOrderDetail(Long orderId) {
-        Long userId = JwtHelper.getMemberId();
+    public GetOrderDetailResponse getOrderDetail(Long orderId, Long memberId) {
 
         Order order = orderRepository.findOrderDetailsById(orderId)
                 .orElseThrow(OrderException::notFoundException);
 
-        if (!userId.equals(order.getMember().getId())) {
+        if (!memberId.equals(order.getMember().getId())) {
             throw AuthException.unauthorizedException(
-                    "접근 시도한 userId:", userId.toString(),
+                    "접근 시도한 userId:", memberId.toString(),
                     "orderId:", orderId.toString()
             );
         }
@@ -148,7 +140,6 @@ public class OrderServiceImpl implements OrderService {
         return GetOrderDetailResponse.from(order, payment);
     }
 
-    @Override
     public Order finalizeOrderWithCoupon(Order order, CreateOrderRequest request) {
         long totalProductAmount = order.getOrderItems().stream()
                 .mapToLong(item -> item.getPriceSnapshot() * item.getQuantity())

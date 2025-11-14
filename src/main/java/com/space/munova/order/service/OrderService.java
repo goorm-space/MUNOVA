@@ -9,9 +9,7 @@ import org.springframework.data.domain.Pageable;
 public interface OrderService {
 
     Order createOrder(CreateOrderRequest request, Long memberId);
-    Page<OrderSummaryDto> getOrdersByMember(Long memberId, OrderStatus orderStatus, Pageable pageable);
-    PagingResponse<OrderSummaryDto> getOrderList(int page);
-    GetOrderDetailResponse getOrderDetail(Long orderId);
+    PagingResponse<OrderSummaryDto> getOrderList(int page, Long memberId);
+    GetOrderDetailResponse getOrderDetail(Long orderId, Long memberId);
     void saveOrderLog(Order order);
-    Order finalizeOrderWithCoupon(Order order, CreateOrderRequest request);
 }

@@ -97,8 +97,6 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public PagingResponse<OrderSummaryDto> getOrderList(int page, Long memberId) {
-        if (page < 0) page = 0;
-
         Pageable pageable = PageRequest.of(
                 page,
                 PAGE_SIZE,
@@ -125,15 +123,14 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public GetOrderDetailResponse getOrderDetail(Long orderId) {
-        Long userId = JwtHelper.getMemberId();
+    public GetOrderDetailResponse getOrderDetail(Long orderId, Long memberId) {
 
         Order order = orderRepository.findOrderDetailsById(orderId)
                 .orElseThrow(OrderException::notFoundException);
 
-        if (!userId.equals(order.getMember().getId())) {
+        if (!memberId.equals(order.getMember().getId())) {
             throw AuthException.unauthorizedException(
-                    "접근 시도한 userId:", userId.toString(),
+                    "접근 시도한 userId:", memberId.toString(),
                     "orderId:", orderId.toString()
             );
         }

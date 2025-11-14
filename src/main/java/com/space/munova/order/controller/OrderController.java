@@ -1,11 +1,16 @@
 package com.space.munova.order.controller;
 
+import com.space.munova.auth.exception.AuthException;
 import com.space.munova.core.config.ResponseApi;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.order.dto.*;
 import com.space.munova.order.entity.Order;
+import com.space.munova.order.exception.OrderException;
+import com.space.munova.order.exception.OrderItemException;
 import com.space.munova.order.service.OrderService;
+import com.space.munova.payment.exception.PaymentException;
 import com.space.munova.payment.service.PaymentService;
+import com.space.munova.product.application.exception.ProductDetailException;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -23,16 +28,22 @@ public class OrderController {
     @PostMapping
     public ResponseApi<PaymentPrepareResponse> createOrder(@RequestBody CreateOrderRequest request) {
         Long memberId = JwtHelper.getMemberId();
-        Order order = orderService.createOrder(request, memberId);
-        orderService.saveOrderLog(order);
-        PaymentPrepareResponse response = PaymentPrepareResponse.from(order);
 
-        return ResponseApi.created(response);
+        try {
+            Order order = orderService.createOrder(request, memberId);
+            orderService.saveOrderLog(order);
+            PaymentPrepareResponse response = PaymentPrepareResponse.from(order);
+            return ResponseApi.created(response);
+        } catch (AuthException | OrderException | OrderItemException | ProductDetailException e) {
+            return ResponseApi.nok(e.getStatusCode(), e.getCode(), e.getMessage());
+        }
     }
 
     @GetMapping
     public ResponseApi<PagingResponse<OrderSummaryDto>> getOrders(@RequestParam(value = "page", defaultValue = "0") int page) {
         Long memberId = JwtHelper.getMemberId();
+        if (page < 0) page = 0;
+
         PagingResponse<OrderSummaryDto> response = orderService.getOrderList(page, memberId);
 
         return ResponseApi.ok(response);
@@ -40,8 +51,14 @@ public class OrderController {
 
     @GetMapping("/{orderId}")
     public ResponseApi<?> getOrderDetail(@PathVariable("orderId") Long orderId) {
-        GetOrderDetailResponse response = orderService.getOrderDetail(orderId);
+        Long memberId = JwtHelper.getMemberId();
 
-        return ResponseApi.ok(response);
+        try {
+            GetOrderDetailResponse response = orderService.getOrderDetail(orderId, memberId);
+            return ResponseApi.ok(response);
+        } catch (OrderException | AuthException | PaymentException e) {
+            return ResponseApi.nok(e.getStatusCode(), e.getCode(), e.getMessage());
+        }
+
     }
 }

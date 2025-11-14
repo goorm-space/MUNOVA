@@ -37,7 +37,6 @@ public class Order extends BaseEntity {
 
     private Long originPrice;
 
-    @Column(name = "coupon_id")
     private Long couponId;
 
     private Long discountPrice;

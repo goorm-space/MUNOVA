@@ -62,7 +62,7 @@ public class OrderItemServiceTest {
                 .build();
     }
 
-    @DisplayName("한 개의 주문 요청 상품에 대해 주문상품 엔티티(orderItem)을 생성한다.")
+    @DisplayName("[주문서 생성] (HappyCase) 한 개의 주문 요청 상품에 대해 주문상품 엔티티(orderItem)을 생성한다.")
     @Test
     void createOrderItems_singleItem_HappyCase() {
         // given
@@ -86,7 +86,7 @@ public class OrderItemServiceTest {
         verify(productDetailService, times(1)).deductStock(1L, 2);
     }
 
-    @DisplayName("orderItem을 생성할 때 재고가 없으면 noStockException 예외를 던진다.")
+    @DisplayName("[주문서 생성] orderItem을 생성할 때 재고가 없으면 noStockException 예외를 던진다.")
     @Test
     void createOrderItems_noStock_throws() {
         // given
@@ -104,7 +104,7 @@ public class OrderItemServiceTest {
         verify(productDetailService).deductStock(1L, 2);
     }
 
-    @DisplayName("orderItem을 생성할 때 주문 요청 상품이 없으면 noOrderItemsNotAllowedException 예외를 던진다.")
+    @DisplayName("[주문서 생성] orderItem을 생성할 때 주문 요청 상품이 없으면 noOrderItemsNotAllowedException 예외를 던진다.")
     @Test
     void createOrderItems_emptyInput_throws() {
         // given
@@ -118,7 +118,7 @@ public class OrderItemServiceTest {
                 .isInstanceOf(OrderItemException.class);
     }
 
-    @DisplayName("주문에 주문상품을 추가한다.")
+    @DisplayName("[주문서 생성] 주문에 주문상품을 추가한다.")
     @Test
     void orderItemService_creates_orderItems_and_order_adds_them() {
         // given

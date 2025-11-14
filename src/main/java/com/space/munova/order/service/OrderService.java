@@ -10,6 +10,6 @@ public interface OrderService {
 
     Order createOrder(CreateOrderRequest request, Long memberId);
     PagingResponse<OrderSummaryDto> getOrderList(int page, Long memberId);
-    GetOrderDetailResponse getOrderDetail(Long orderId);
+    GetOrderDetailResponse getOrderDetail(Long orderId, Long memberId);
     void saveOrderLog(Order order);
 }

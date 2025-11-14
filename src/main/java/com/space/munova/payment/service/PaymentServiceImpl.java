@@ -72,7 +72,7 @@ public class PaymentServiceImpl implements PaymentService {
                 }
 
                 Payment payment = Payment.builder()
-                        .order(order)
+                        .orderId(order.getId())
                         .tossPaymentKey(response.paymentKey())
                         .status(response.status())
                         .method(response.method())
@@ -98,7 +98,6 @@ public class PaymentServiceImpl implements PaymentService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException("JSON 변환 오류 발생", e);
         }
-
     }
 
     @Override

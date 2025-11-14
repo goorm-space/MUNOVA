@@ -28,9 +28,7 @@ public class Payment extends BaseEntity {
     @Column(name = "payment_id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false)
-    private Order order;
+    private Long orderId;
 
     private String tossPaymentKey;
 

@@ -1,5 +1,6 @@
 package com.space.munova.order.service;
 
+import com.space.munova.auth.exception.AuthException;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.coupon.dto.UseCouponRequest;
 import com.space.munova.coupon.dto.UseCouponResponse;
@@ -10,6 +11,10 @@ import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.exception.OrderException;
 import com.space.munova.order.repository.OrderRepository;
+import com.space.munova.payment.entity.Payment;
+import com.space.munova.payment.entity.PaymentMethod;
+import com.space.munova.payment.exception.PaymentException;
+import com.space.munova.payment.service.PaymentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,13 +27,14 @@ import org.springframework.data.domain.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 
-@DisplayName("Order_Service_Test")
+@DisplayName("Order_Service")
 @ExtendWith(MockitoExtension.class)
 public class OrderServiceTest {
 
@@ -37,6 +43,8 @@ public class OrderServiceTest {
 
     @Mock
     private CouponService couponService;
+    @Mock
+    private PaymentService paymentService;
 
     @Mock
     private OrderRepository orderRepository;
@@ -47,7 +55,7 @@ public class OrderServiceTest {
 
     @BeforeEach
     void setUp() {
-        member = mock(Member.class);
+        member = Member.builder().id(1L).build();
         createOrderRequest = new CreateOrderRequest(
                 1L,
                 "문 앞에 배송해주세요",
@@ -58,7 +66,7 @@ public class OrderServiceTest {
         initOrderWithItems.getOrderItems().add(OrderItem.builder().priceSnapshot(10000L).quantity(1).build());
     }
 
-    @DisplayName("사용자가 작성한 주문서로 초기 주문서를 생성한다.")
+    @DisplayName("[주문서 초기 생성] (HappyCase) 사용자가 작성한 주문서로 초기 주문서를 생성한다.")
     @Test
     void createInitOrder_happyCase() {
         // given
@@ -81,7 +89,7 @@ public class OrderServiceTest {
         assertThat(initOrder.getTotalPrice()).isNull();
     }
 
-    @DisplayName("배송 요청사항(userRequest)가 null이어도 초기 주문을 생성할 수 있다.")
+    @DisplayName("[주문서 초기 생성] 배송 요청사항(userRequest)가 null이어도 초기 주문을 생성할 수 있다.")
     @Test
     void createInitOrder_nullUserRequest() {
         // given
@@ -94,7 +102,7 @@ public class OrderServiceTest {
         assertThat(initOrder.getStatus()).isEqualTo(OrderStatus.CREATED);
     }
 
-    @DisplayName("쿠폰 적용 시 서버가 계산한 예상금액이 client 예상금액과 같으면 주문서를 확정짓는다.")
+    @DisplayName("[주문서 생성] (HappyCase) 쿠폰 적용 시 서버가 계산한 예상금액이 client 예상금액과 같으면 주문서를 확정짓는다.")
     @Test
     void finalizeOrder_withCoupon_happyCase() {
         // given
@@ -112,7 +120,7 @@ public class OrderServiceTest {
         verify(couponService, times(1)).calculateAmountWithCoupon(1L, new UseCouponRequest(10000L));
     }
 
-    @DisplayName("쿠폰 적용 시 서버가 계산한 예상금액이 client 예상금액과 다르면 예외를 던진다.")
+    @DisplayName("[주문서 생성] 쿠폰 적용 시 서버가 계산한 예상금액이 client 예상금액과 다르면 예외를 던진다.")
     @Test
     void finalizeOrder_withCoupon_amountMismatch_throws() {
         // given
@@ -126,7 +134,7 @@ public class OrderServiceTest {
                 .isInstanceOf(OrderException.class);
     }
 
-    @DisplayName("쿠폰 적용을 안해도 주문서를 확정 지을 수 있다.")
+    @DisplayName("[주문서 생성] (HappyCase) 쿠폰 적용을 안해도 주문서를 확정 지을 수 있다.")
     @Test
     void finalizeOrder_withoutCoupon_happyCase() {
         // given
@@ -141,7 +149,7 @@ public class OrderServiceTest {
         assertThat(result.getStatus()).isEqualTo(OrderStatus.PAYMENT_PENDING);
     }
 
-    @DisplayName("쿠폰 적용 안할 시 서버와 client 예상 금액이 다르면 예외를 던진다.")
+    @DisplayName("[주문서 생성] 쿠폰 적용 안할 시 서버와 client 예상 금액이 다르면 예외를 던진다.")
     @Test
     void finalizeOrder_withoutCoupon_amountMismatch_throws() {
         // given
@@ -154,9 +162,9 @@ public class OrderServiceTest {
                 .isInstanceOf(OrderException.class);
     }
 
-    @DisplayName("(HappyCase) 사용자가 결제한 주문 내역들을 조회한다.")
+    @DisplayName("[전체 조회] (HappyCase) 사용자가 결제한 주문 내역들을 조회한다.")
     @Test
-    void getOrderList_whenOrdersExist_returnsMappedPage() {
+    void getOrderList_whenOrdersExist_happyCase() {
         // given
         Long memberId = 1L;
         OrderStatus status = OrderStatus.PAID;
@@ -197,9 +205,9 @@ public class OrderServiceTest {
         }
     }
 
-    @DisplayName("(Empty) 주문 내역이 없으면 빈 페이지를 반환한다.")
+    @DisplayName("[전체 조회] (HappyCase) 주문 내역이 없으면 빈 페이지를 반환한다.")
     @Test
-    void getOrderList_whenNoOrders_returnsEmptyPage() {
+    void getOrderList_whenNoOrders_happyCase() {
         // given
         Long memberId = 1L;
         OrderStatus status = OrderStatus.PAID;
@@ -220,26 +228,100 @@ public class OrderServiceTest {
         verify(orderRepository, never()).findAllWithDetailsByOrderIds(anyList());
     }
 
-    @DisplayName("음수 페이지 값을 입력하면 0으로 보정하여 주문 목록을 조회한다.")
+    @DisplayName("[상세 조회] (HappyCase) 주문내역 존재 + 사용자 일치하면, 주문 상세 내역을 조회할 수 있다.")
     @Test
-    void getOrderList_whenPageUnderZero_returnsPageZero() {
+    void getOrderDetail_happyCase() {
         // given
         Long memberId = 1L;
-        OrderStatus status = OrderStatus.PAID;
-        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Long orderId = 1L;
 
-        when(orderRepository.findAllByMember_IdAndStatus(anyLong(), any(OrderStatus.class), any(Pageable.class)))
-                .thenReturn(Page.empty(pageable));
+        Order order = Order.builder()
+                .id(orderId)
+                .member(member)
+                .totalPrice(15000L)
+                .status(OrderStatus.PAID)
+                .build();
+
+        Payment payment = Payment.builder()
+                .id(1L)
+                .orderId(orderId)
+                .method(PaymentMethod.카드)
+                .build();
+
+        when(orderRepository.findOrderDetailsById(orderId)).thenReturn(Optional.of(order));
+        when(paymentService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
         // when
-        PagingResponse<OrderSummaryDto> result = orderService.getOrderList(-5, memberId);
+        GetOrderDetailResponse resp = orderService.getOrderDetail(orderId, memberId);
 
         // then
-        assertThat(result).isNotNull();
-        assertThat(result.page()).isEqualTo(0);
+        assertThat(member.getId()).isEqualTo(memberId);
+        assertThat(resp).isNotNull();
+        assertThat(resp.orderId()).isEqualTo(orderId);
+        assertThat(resp.totalPrice()).isEqualTo(order.getTotalPrice());
+        assertThat(resp.paymentMethod()).isEqualTo(payment.getMethod());
 
-        verify(orderRepository, times(1)).findAllByMember_IdAndStatus(memberId, status, pageable);
-        verify(orderRepository, never()).findAllWithDetailsByOrderIds(anyList());
+        verify(orderRepository, times(1)).findOrderDetailsById(orderId);
+        verify(paymentService, times(1)).getPaymentByOrderId(orderId);
+    }
+
+    @DisplayName("[상세 조회] orderId에 해당하는 주문이 없으면 예외를 발생한다.")
+    @Test
+    void getOrderDetail_whenOrderNotFound_throwsOrderNotFound() {
+        // given
+        Long orderId = 100L;
+        when(orderRepository.findOrderDetailsById(orderId)).thenReturn(Optional.empty());
+
+        // when
+
+        // then
+        assertThatThrownBy(() -> orderService.getOrderDetail(orderId, member.getId()))
+                .isInstanceOf(OrderException.class);
+
+        verify(orderRepository, times(1)).findOrderDetailsById(orderId);
+        verifyNoInteractions(paymentService);
+    }
+
+    @DisplayName("[상세 조회] 요청한 사용자가 주문 소유자가 아니면 예외를 발생한다.")
+    @Test
+    void getOrderDetail_whenNotOwner_throwsAuthException() {
+        // given
+        Long orderId = 1L;
+        Long requestMemberId = 100L;
+
+        Order order = Order.builder().id(orderId).member(member).build();
+
+        when(orderRepository.findOrderDetailsById(orderId)).thenReturn(Optional.of(order));
+
+        // when
+
+        // then
+        assertThatThrownBy(() -> orderService.getOrderDetail(orderId, requestMemberId))
+                .isInstanceOf(AuthException.class);
+
+        verify(orderRepository, times(1)).findOrderDetailsById(orderId);
+        verifyNoInteractions(paymentService);
+    }
+
+    @DisplayName("[상세 조회] orderId에 해당하는 결제내역이 없으면 예외를 발생한다.")
+    @Test
+    void getOrderDetail_whenPaymentServiceThrows_propagatesException() {
+        // given
+        Long orderId = 1L;
+
+        Order order = Order.builder().id(orderId).member(member).build();
+
+        when(orderRepository.findOrderDetailsById(orderId)).thenReturn(Optional.of(order));
+        when(paymentService.getPaymentByOrderId(orderId)).thenThrow(PaymentException.class);
+
+        // when
+
+        // then
+        assertThatThrownBy(() -> orderService.getOrderDetail(orderId, member.getId()))
+                .isInstanceOf(PaymentException.class);
+
+        verify(orderRepository, times(1)).findOrderDetailsById(orderId);
+        verify(paymentService, times(1)).getPaymentByOrderId(orderId);
     }
 
 }

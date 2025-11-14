@@ -43,7 +43,6 @@ public class ProductImageService {
 
         if(mainImgByProductId.isPresent()) { ///  이미지정보 있을경우
             ProductImage mainImg = mainImgByProductId.get();
-            // 버킷에서 제거
             s3Service.deleteFile(mainImg.getImgUrl());
             // 이미지 업데이트
             mainImg.updateProductImage(imgUrl);
@@ -87,7 +86,7 @@ public class ProductImageService {
 
         List<ProductImage> productImages = productImageRepository.findByProductId(productId);
 
-        return  seperatedImagesByImageType(productImages);
+        return ProductImageDto.fromProductImages(productImages);
     }
 
     public void deleteImagesByProductIds(List<Long> productIds) {
@@ -96,29 +95,12 @@ public class ProductImageService {
         productImageRepository.findByProductIds(productIds)
                 .forEach(productImage -> {
                     imgUrls.add(productImage.getImgUrl());
-                    productImage.isDeleted();
+                    productImage.deleteImage();
                 });
 
         ///  실제 파일 제거
         s3Service.deleteFiles(imgUrls);
     }
 
-    private ProductImageDto seperatedImagesByImageType(List<ProductImage> productImages) {
-        String mainImgUrl = "";
-        Long mainImgId = 0L;
-        List<ProductSideImgInfoDto> sideImgInfoList = new ArrayList<>();
-        for(ProductImage img : productImages) {
-            if(img.getImageType().equals(ProductImageType.MAIN)) {
-                mainImgId = img.getId();
-                mainImgUrl = img.getImgUrl();
-            } else if(img.getImageType().equals(ProductImageType.SIDE)) {
-                String sideImgUrl = img.getImgUrl();
-                Long sideImgId = img.getId();
-                ProductSideImgInfoDto sideImgInfo = new ProductSideImgInfoDto(sideImgId, sideImgUrl);
-                sideImgInfoList.add(sideImgInfo);
-            }
-        }
-        return new ProductImageDto(mainImgId, mainImgUrl, sideImgInfoList);
-    }
 
 }

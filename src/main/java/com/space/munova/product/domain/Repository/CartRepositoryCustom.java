@@ -8,6 +8,10 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface CartRepositoryCustom {
-    Page<ProductInfoForCartDto> findCartItemInfoByMemberId(Long memberId, Pageable pageable);
+
+
+    List<ProductInfoForCartDto> findCartItemInfoByDetailIds(List<Long> detailIds);
+
+    Page<Long> findDistinctDetailIdsByMemberId(Long memberId, Pageable pageable);
 }
 

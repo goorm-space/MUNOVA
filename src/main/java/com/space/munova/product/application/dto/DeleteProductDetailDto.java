@@ -1,4 +1,4 @@
-package com.space.munova.product.application;
+package com.space.munova.product.application.dto;
 
 import java.util.List;
 

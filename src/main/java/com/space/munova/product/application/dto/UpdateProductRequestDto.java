@@ -1,6 +1,5 @@
 package com.space.munova.product.application.dto;
 
-import com.space.munova.product.application.DeleteProductDetailDto;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;

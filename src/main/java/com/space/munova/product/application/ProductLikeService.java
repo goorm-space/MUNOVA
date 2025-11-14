@@ -39,8 +39,7 @@ public class ProductLikeService {
     private final RedisStreamProducer logProducer;
 
     @Transactional(readOnly = false)
-    public void deleteProductLikeByProductId(Long productId) {
-        Long memberId = JwtHelper.getMemberId();
+    public void deleteProductLikeByProductId(Long productId, Long memberId) {
 
         ///  멤버의 좋아요리스트 제거후 영향받은 로우카운드 리턴받음.
         int rowCount = productLikeRepository.deleteAllByProductIdsAndMemberId(productId, memberId);
@@ -55,9 +54,7 @@ public class ProductLikeService {
     }
 
     @Transactional(readOnly = false)
-    public void addLike(Long productId) {
-
-        Long memberId = JwtHelper.getMemberId();
+    public void addLike(Long productId, Long memberId) {
 
         Member member = memberRepository.findById(memberId).orElseThrow(MemberException::invalidMemberException);
         Product product = productService.findByIdAndIsDeletedFalse(productId);
@@ -102,20 +99,12 @@ public class ProductLikeService {
             ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, false);
             eventPublisher.publishEvent(eventDto);
         }
-
-
-
     }
 
-    public PagingResponse<FindProductResponseDto> findLikeProducts(Pageable pageable) {
-        Long memberId = JwtHelper.getMemberId();
+    public PagingResponse<FindProductResponseDto> findLikeProducts(Pageable pageable, Long memberId) {
 
         Page<FindProductResponseDto> likeProductList = productLikeRepository.findLikeProductByMemberId(pageable, memberId);
         return PagingResponse.from(likeProductList);
-    }
-
-    private void upsertUserAction(Long productId, Boolean liked){
-        recommendService.updateUserAction(productId, 0, liked, null, null);
     }
 
     @Transactional(readOnly = false)
@@ -123,4 +112,10 @@ public class ProductLikeService {
 
         productLikeRepository.deleteAllByProductIds(productIds);
     }
+
+    private void upsertUserAction(Long productId, Boolean liked){
+        recommendService.updateUserAction(productId, 0, liked, null, null);
+    }
+
+
 }

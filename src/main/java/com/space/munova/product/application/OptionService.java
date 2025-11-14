@@ -1,5 +1,6 @@
 package com.space.munova.product.application;
 
+import com.space.munova.product.application.exception.OptionException;
 import com.space.munova.product.application.exception.ProductException;
 import com.space.munova.product.domain.Option;
 import com.space.munova.product.domain.ProductOptionMapping;
@@ -22,7 +23,7 @@ public class OptionService {
 
     public Option findByCategoryAndName(OptionCategory optionCategory, String optionName) {
         return OptionRepository.findByOptionTypeAndOptionName(optionCategory, optionName)
-                .orElseThrow(() -> new IllegalArgumentException("option not found"));
+                .orElseThrow(() -> OptionException.badRequset("요청한 옵션을 찾을 수 없습니다."));
     }
 
     public Option saveOption(Option option) {
@@ -31,6 +32,6 @@ public class OptionService {
 
     public Option findById(Long colorId) {
         return OptionRepository.findById(colorId)
-                .orElseThrow(() -> ProductException.badRequestException("color not found"));
+                .orElseThrow(() -> OptionException.badRequset("요청한 옵션을 찾을 수 없습니다."));
     }
 }

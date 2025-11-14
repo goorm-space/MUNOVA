@@ -2,6 +2,8 @@ package com.space.munova.product.domain.Repository;
 
 import com.space.munova.member.entity.Member;
 import com.space.munova.product.domain.Cart;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -57,10 +59,6 @@ public interface CartRepository extends JpaRepository<Cart, Long>, CartRepositor
     @Query("SELECT c.productDetail.product.id FROM Cart c WHERE c.id IN :cartIds")
     List<Long> findProductIdsByCartIds(@Param("cartIds") List<Long> cartIds);
 
-//    @Query("SELECT new com.space.munova.product.application.dto.cart.CartItemBasicInfoDto() " +
-//            "FROM Cart c " +
-//            "JOIN " +
-//            "WHERE c.member.id = :memberId " +
-//            "AND c.isDeleted = false")
-//    List<CartItemBasicInfoDto> findCartItemInfoByMemberId(Long memberId);
+
+
 }

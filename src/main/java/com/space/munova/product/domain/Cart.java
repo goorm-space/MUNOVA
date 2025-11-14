@@ -2,7 +2,9 @@ package com.space.munova.product.domain;
 
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.entity.Member;
+import com.space.munova.product.application.exception.CartException;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
@@ -33,6 +35,11 @@ public class Cart extends BaseEntity {
 
 
     public static Cart createDefaultCart(Member member, ProductDetail productDetail, int quantity) {
+
+        if(quantity <= 0) {
+            throw  CartException.badRequestCartException("최소 수량은 1이상 입니다.");
+        }
+
         return Cart.builder()
                 .member(member)
                 .productDetail(productDetail)
@@ -42,21 +49,46 @@ public class Cart extends BaseEntity {
 
     ///  장바구니 옵션 변경
     public void updateCart(ProductDetail productDetail, int quantity) {
-        if(quantity > productDetail.getQuantity()) {
-            throw new IllegalArgumentException("수정할 수량은 상품의 수량을 초과할 수 없습니다.");
-        }
-        if(quantity < 1) {
-            throw new IllegalArgumentException("수량은 1 보다 작을 수 없습니다.");
-        }
+        
+        checkDeletedCart();
+
+        productDetail.checkDeletedProductDetail();
+
+        productDetail.compareInputQauntityAndDetaliQuantity(quantity);
+
+        validInputQuantity(quantity);
+
         this.productDetail = productDetail;
         this.quantity = quantity;
     }
 
     /// 장바구니 수량 변경
     public void updateQuantity(int quantity) {
-        if(quantity < 0 || quantity > this.productDetail.getQuantity()) {
-            throw new IllegalArgumentException("수량은 0 이상이어야 하고, 상품의 수량을 초과하여 입력할 수 없습니다.");
-        }
+
+        checkExistItem(quantity);
+        validInputQuantity(quantity);
+        this.productDetail.compareInputQauntityAndDetaliQuantity(quantity);
+
         this.quantity = quantity;
     }
+
+    public void checkDeletedCart() {
+        if(this.isDeleted) {
+            throw CartException.badRequestCartException("제거된 상품입니다.");
+        }
+    }
+
+    public void checkExistItem(int quantity) {
+        if(this.quantity == quantity) {
+            throw CartException.badRequestCartException("이미 장바구니에 담긴 상품입니다.");
+        }
+    }
+    
+    public void validInputQuantity(int quantity) {
+        if(quantity < 1) {
+            throw CartException.badRequestCartException("입력 수량은 1보다 작을 수 없습니다.");
+        }
+    }
+
+
 }

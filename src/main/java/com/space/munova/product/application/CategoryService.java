@@ -18,6 +18,7 @@ public class CategoryService {
         return categoryRepository.findById(id).orElseThrow(ProductException::notFoundCategoryException);
     }
 
+    ///  카테고리 디비 조회쿼리 -> 사용x (서버내 이넘으로 캐싱된 카테고리 사용)
     public List<ProductCategoryResponseDto> findAllProductCategories() {
         return categoryRepository
                     .findAll()

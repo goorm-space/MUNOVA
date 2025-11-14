@@ -60,10 +60,7 @@ public class ProductService {
 
     /// 상품 등록 메서드
     @Transactional
-    public void saveProduct(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, AddProductRequestDto reqDto)  {
-
-        ///멤버서비스에서 member객체를가져온다.
-        Long sellerId = JwtHelper.getMemberId();
+    public void saveProduct(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, AddProductRequestDto reqDto, Long sellerId)  {
 
         Member seller = memberRepository.findById(sellerId).orElseThrow(MemberException::notFoundException);
 
@@ -72,7 +69,6 @@ public class ProductService {
 
         //카테고리 조회.
         Category category = categoryService.findById(reqDto.categoryId());
-
 
         // 상품생성
         try {
@@ -85,7 +81,8 @@ public class ProductService {
             Product savedProduct = productRepository.save(product);
 
             // 이미지 저장.
-            saveImages(mainImgFile, sideImgFile, savedProduct);
+            productImageService.saveMainImg(mainImgFile, savedProduct);
+            productImageService.saveSideImg(sideImgFile, savedProduct);
 
             // 상품 디테일 옵션 저장.
             productDetailService.saveProductDetailAndOption(savedProduct, reqDto.shoeOptionDtos());
@@ -99,25 +96,19 @@ public class ProductService {
     }
 
 
-
     public ProductDetailResponseDto findProductDetails(Long productId) {
-
-        ProductDetailResponseDto productDetailResponseDto = createProductDetailResponseDto(productId);
-        return productDetailResponseDto;
+        return getProductDetailResponseDto(productId);
     }
 
-
-    public ProductDetailResponseDto findProductDetailsBySeller(Long productId) {
-        Long sellerId = JwtHelper.getMemberId();
+    public ProductDetailResponseDto findProductDetailsBySeller(Long productId, Long sellerId) {
 
         /// 판매자가 등록한상품이 아닐경우 에러 터트림.
-        checkRegisteredProductBySeller(productId, sellerId);
+        if(!productRepository.existsByIdAndMemberIdAndIsDeletedFalse(productId, sellerId)){
+            throw ProductException.badRequestException("등록한 상품을 찾을 수 없습니다.");
+        }
 
-        ProductDetailResponseDto productDetailResponseDto = createProductDetailResponseDto(productId);
-        return productDetailResponseDto;
+        return getProductDetailResponseDto(productId);
     }
-
-
 
 
     @Transactional(readOnly = false)
@@ -149,25 +140,23 @@ public class ProductService {
     /*
     * 상품 제거 메서드 (관련 테이블 모두 논리삭제) - 상품, 상품좋아요, 상품디테일, 상품이미지, 장바구니, 상품옵션매핑
     * */
+
     ///  현재 프로덕트를 삭제할때 카트와 좋아요를 한트랜잭션에 묶고 있지만 이후에 트랜잭션을 분리해야함.
     ///  상품 , 좋아요, 장바구니는 각각 어그리거트 루트가 다르다.
     @Transactional(readOnly = false)
-    public void deleteProduct(List<Long> productIds) {
+    public void deleteProduct(List<Long> productIds, Long sellerId) {
 
-        Long sellerId = JwtHelper.getMemberId();
-        List<Product> allById = productRepository.findAllById(productIds);
 
-        List<Product> filteredProduct = filterProduct(allById, productIds, sellerId);
-        List<Long> filteredProductIds = createDeleteProductIds(filteredProduct);
+        List<Product> productBySeller = productRepository.findAllByIdAndMemberId(productIds, sellerId);
+
+        List<Long> filteredProductIds = productBySeller.stream().map(Product::getId).toList();
 
         productImageService.deleteImagesByProductIds(filteredProductIds);
 
         /// 삭제된 디테일 아이디 값반환.
         List<Long> deletedDetailIds = productDetailService.deleteProductDetailByProductId(filteredProductIds);
 
-        ///  더티체킹
-        //deleteProducts(filteredProduct);
-        productRepository.deleteAllByProductIds(productIds);
+        productRepository.deleteAllByProductIds(filteredProductIds);
 
         /// 비동기로 장바구니, 좋아요에 상품 삭제 메시지 발행
         ProductDeleteEventForCartDto deleteCartMessage = new ProductDeleteEventForCartDto(deletedDetailIds, true);
@@ -176,7 +165,6 @@ public class ProductService {
         eventPublisher.publishEvent(deleteLikeMessage);
         ///  장바구니 제거 메세지 발행
         eventPublisher.publishEvent(deleteCartMessage);
-
     }
 
 
@@ -190,8 +178,6 @@ public class ProductService {
 
     @Transactional
     public void saveSearchLog(Long categoryId, String keyword) {
-
-
         Long memberId = JwtHelper.getMemberId();
 
         ProductSearchLog log = ProductSearchLog.builder()
@@ -199,6 +185,7 @@ public class ProductService {
                 .searchDetail(keyword != null ? keyword : "")
                 .searchCategoryId(categoryId)
                 .build();
+
         productSearchLogRepository.save(log);
 
     }
@@ -223,64 +210,54 @@ public class ProductService {
     }
 
 
-    public PagingResponse<FindProductResponseDto> findProductBySeller(Pageable pageable) {
-        Long memberId = JwtHelper.getMemberId();
+    public PagingResponse<FindProductResponseDto> findProductBySeller(Pageable pageable, Long sellerId) {
 
-        Page<FindProductResponseDto> retVal = productRepository.findProductBySeller(pageable, memberId);
+
+        Page<FindProductResponseDto> retVal = productRepository.findProductBySeller(pageable, sellerId);
 
         return PagingResponse.from(retVal);
     }
 
     @Transactional(readOnly = false)
-    public void updateProductInfo(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, UpdateProductRequestDto reqDto) throws IOException {
-        Long sellerId = JwtHelper.getMemberId();
-
+    public void updateProductInfo(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, UpdateProductRequestDto reqDto, Long sellerId) throws IOException {
 
         Product product = productRepository.findByIdAndMemberIdAndIsDeletedFalse(reqDto.productId(), sellerId)
                 .orElseThrow(() -> ProductException.badRequestException("등록한 상품을 찾을 수 없습니다."));
-
 
         // 상품수정
         try {
             product.updateProduct(reqDto.ProductName(), reqDto.info(), reqDto.price());
 
-            //productImageService.deleteImagesByImgIds(reqDto.deletedImgIds(), reqDto.productId());
-
             /// 이미지 수정
-            updateImages(mainImgFile, sideImgFile, reqDto, product);
-
-            /// 상품 상세 업데이트
-            List<ShoeOptionDto> addShoeOptionDtos = reqDto.addShoeOptionDto() == null ? new ArrayList<>() :  reqDto.addShoeOptionDto().shoeOptionDtos();
-            List<UpdateQuantityDto> updateQuantityDtos = reqDto.updateQuantityDto() == null ?  new ArrayList<>() :  reqDto.updateQuantityDto();
-            List<Long> deleteDetailIds = reqDto.deleteProductDetailDto() == null ? new ArrayList<>() :  reqDto.deleteProductDetailDto().detailId();
-
-            /// 삭제아이템과 업데이트아이템이 겹칠경우 업데이트아이템에서 삭제된아이템제거
-            if(!updateQuantityDtos.isEmpty() && !deleteDetailIds.isEmpty()) {
-                for (UpdateQuantityDto dto : updateQuantityDtos) {
-                    for (Long deleteDetailId : deleteDetailIds) {
-                        if(dto.detailId().equals(deleteDetailId)) {
-                            updateQuantityDtos.remove(dto);
-                        }
-                    }
-                }
-
-
+            /// 메인이미지가 넘어왔을경우 메인이미지 업데이트
+            if(mainImgFile != null &&  !mainImgFile.isEmpty())  {
+                productImageService.updateMainImg(mainImgFile, product);
             }
 
-            if(!addShoeOptionDtos.isEmpty()) {
+            /// 사이드 이미지가 넘어왔을경우 업데이틑
+            if(sideImgFile != null &&  !sideImgFile.isEmpty())  {
+                productImageService.saveSideImg(sideImgFile, product);
+            }
+
+            productImageService.deleteImagesByImgIds(reqDto.deletedImgIds(), product.getId());
+
+            ProductDetailUpdateDtos productDetailUpdateDtos = ProductDetailUpdateDtos.from(reqDto);
+
+            /// 삭제아이템과 업데이트아이템이 겹칠경우 업데이트아이템에서 삭제된아이템제거
+            productDetailUpdateDtos.removeDeletedItemsFromUpdateList();
+
+            if(!productDetailUpdateDtos.addShoeOptionDtos().isEmpty()) {
                 productDetailService.saveProductDetailAndOption(product, reqDto.addShoeOptionDto().shoeOptionDtos());
             }
 
-            if(!updateQuantityDtos.isEmpty()) {
-                productDetailService.updateQuantity(updateQuantityDtos);
+            if(!productDetailUpdateDtos.updateQuantityDtos().isEmpty()) {
+                productDetailService.updateQuantity(productDetailUpdateDtos.updateQuantityDtos());
             }
 
-            if(!deleteDetailIds.isEmpty()) {
-                productDetailService.deleteProductDetailByIds(deleteDetailIds);
+            if(!productDetailUpdateDtos.deleteDetailIds().isEmpty()) {
+                productDetailService.deleteProductDetailByIds(productDetailUpdateDtos.deleteDetailIds());
             }
 
-            // 상품 디테일 옵션 저장.
-        //    productDetailService.saveProductDetailAndOption(product, reqDto.shoeOptionDtos());
         } catch (IllegalArgumentException e) {
             log.error(e.getMessage());
             throw ProductException.badRequestException(e.getMessage());
@@ -289,45 +266,11 @@ public class ProductService {
             throw new RuntimeException();
         }
 
-
     }
-
-
-
 
 
     public List<ProductOptionResponseDto> findOptions() {
         return productOptionService.findOptions();
-    }
-
-    private ProductDetailResponseDto createProductDetailResponseDto(Long productId) {
-        ProductInfoDto productInfoDto = productRepository.findProductInfoById(productId).orElseThrow(() -> ProductException.notFoundProductException("Not found Product Information By productId"));
-        List<ProductDetailInfoDto> productDetailInfoDtoByProductId = productDetailService.findProductDetailInfoDtoByProductId(productId);
-        ProductImageDto productImageDto = productImageService.findProductImageDtoByProductId(productId);
-        ProductDetailResponseDto productDetailResponseDto = new ProductDetailResponseDto(productInfoDto, productImageDto, productDetailInfoDtoByProductId);
-        return productDetailResponseDto;
-    }
-
-
-    private void checkRegisteredProductBySeller(Long productId, Long sellerId) {
-        if(!productRepository.existsByIdAndMemberIdAndIsDeletedFalse(productId, sellerId)){
-            throw ProductException.badRequestException("등록한 상품을 찾을 수 없습니다.");
-        }
-    }
-
-    private void updateImages(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, Product product) throws IOException {
-        if(mainImgFile != null) {
-            productImageService.updateMainImg(mainImgFile, product);
-        }
-        if(!sideImgFile.isEmpty()) {
-            productImageService.saveSideImg(sideImgFile, product);
-        }
-    }
-
-
-    private void saveImages(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, Product savedProduct) throws IOException {
-        productImageService.saveMainImg(mainImgFile, savedProduct);
-        productImageService.saveSideImg(sideImgFile, savedProduct);
     }
 
 
@@ -338,52 +281,50 @@ public class ProductService {
         );
     }
 
-    private void updateImages(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, UpdateProductRequestDto reqDto, Product product) throws IOException {
-        /// 메인이미지가 넘어왔을경우 메인이미지 업데이트
-        if(mainImgFile != null &&  !mainImgFile.isEmpty())  {
-            productImageService.updateMainImg(mainImgFile, product);
-        }
-
-        /// 삭제된 사이드 이미지 갯수가 1개이상일경우 업데이트
-        if(sideImgFile != null &&  !sideImgFile.isEmpty())  {
-            productImageService.saveSideImg(sideImgFile, product);
-        }
-
-        productImageService.deleteImagesByImgIds(reqDto.deletedImgIds(), product.getId());
-    }
-
-
-
-    private List<Product> filterProduct(List<Product> productList, List<Long> productIds, Long sellerId) {
-
-        List<Product> retVal = new ArrayList<>();
-        for (Product product : productList) {
-            if(!product.getMember().getId().equals(sellerId)) {
-                throw ProductException.unauthorizedAccessException();
-            }
-            retVal.add(product);
-        }
-
-        return retVal;
-    }
-
-    private List<Long> createDeleteProductIds(List<Product> filteredProduct) {
-        List<Long> filteredProductIds = new ArrayList<>();
-        for (Product product : filteredProduct) {
-            filteredProductIds.add(product.getId());
-        }
-        return filteredProductIds;
-    }
-
-
-    private void deleteProducts(List<Product> filteredProduct) {
-        for(Product product : filteredProduct) {
-            product.deleteProduct();
-        }
-    }
 
     @Transactional(readOnly = false)
     public void plusLikeCountByProductId(Long productId) {
         productRepository.plusLikeCountByProductId(productId);
     }
+
+    private ProductDetailResponseDto getProductDetailResponseDto(Long productId) {
+
+        ProductInfoDto productInfoDto = productRepository.findProductInfoById(productId)
+                .orElseThrow(() -> ProductException.notFoundProductException("상품 정보를 찾지 못했습니다."));
+
+        ProductImageDto productImageDto = productImageService.findProductImageDtoByProductId(productId);
+
+        List<ProductDetailInfoDto> productDetailInfoDtoByProductId = productDetailService.findProductDetailInfoDtoByProductId(productId);
+
+        return new ProductDetailResponseDto(productInfoDto, productImageDto, productDetailInfoDtoByProductId);
+    }
+
+    private record ProductDetailUpdateDtos(List<ShoeOptionDto> addShoeOptionDtos
+            , List<UpdateQuantityDto> updateQuantityDtos
+            , List<Long> deleteDetailIds) {
+
+        public static ProductDetailUpdateDtos from(UpdateProductRequestDto reqDto) {
+            List<ShoeOptionDto> addShoeOptionDtos = reqDto.addShoeOptionDto() == null
+                    ? new ArrayList<>()
+                    : reqDto.addShoeOptionDto().shoeOptionDtos();
+            List<UpdateQuantityDto> updateQuantityDtos = reqDto.updateQuantityDto() == null
+                    ? new ArrayList<>()
+                    : reqDto.updateQuantityDto();
+            List<Long> deleteDetailIds = reqDto.deleteProductDetailDto() == null
+                    ? new ArrayList<>()
+                    : reqDto.deleteProductDetailDto().detailId();
+
+            return new ProductDetailUpdateDtos(addShoeOptionDtos, updateQuantityDtos, deleteDetailIds);
+        }
+
+        public void removeDeletedItemsFromUpdateList() {
+            if(this.updateQuantityDtos.isEmpty() || this.deleteDetailIds.isEmpty()) {
+                return;
+            }
+
+            updateQuantityDtos.removeIf(dto -> deleteDetailIds.contains(dto.detailId()));
+        }
+
+    }
+
 }

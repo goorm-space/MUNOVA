@@ -6,11 +6,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -20,8 +18,6 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import java.util.List;
-
 @Configuration
 public class RedisConfig {
     @Value("${spring.data.redis.host}")
@@ -30,8 +26,6 @@ public class RedisConfig {
     private int port;
     @Value("${spring.data.redis.password}")
     private String password;
-    @Value("${spring.data.redis.cluster.nodes}")
-    private List<String> clusterNodes;
 
     private RedisStandaloneConfiguration redisStandaloneConfiguration() {
         RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
@@ -91,6 +85,7 @@ public class RedisConfig {
         return redisTemplate;
     }
 
+    /*
     @Bean(name = "clusterRedisConnectionFactory")
     public RedisConnectionFactory clusterRedisConnectionFactory() {
         RedisClusterConfiguration clusterConfig = new RedisClusterConfiguration(clusterNodes);
@@ -116,4 +111,5 @@ public class RedisConfig {
 
         return template;
     }
+     */
 }

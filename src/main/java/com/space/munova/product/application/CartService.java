@@ -9,6 +9,7 @@ import com.space.munova.product.application.exception.CartException;
 import com.space.munova.product.domain.Cart;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.Repository.CartRepository;
+import com.space.munova.recommend.infra.RedisStreamProducer;
 import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class CartService {
     private final ProductDetailService productDetailService;
     private final ProductImageService productImageService;
     private final RecommendService recommendService;
+    private final RedisStreamProducer logProducer;
 
     @Transactional(readOnly = false)
     public void deleteByProductDetailIds(List<Long> productDetailIds) {
@@ -58,7 +60,16 @@ public class CartService {
         upsertCart(reqDto, memberId, productDetail, member);
 
         Long productId=productDetailService.findProductIdByDetailId(reqDto.productDetailId());
-        recommendService.updateUserAction(productId,0,null,true,null);
+        Map<String, Object> logData = Map.of(
+                "event_type", "product_add_cart",
+                "service", "product",
+                "member_id", memberId,
+                "data", Map.of(
+                        "product_id", productId,
+                        "quantity", productDetail.getQuantity()
+                )
+        );
+        logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
     }
 
 

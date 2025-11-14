@@ -1,5 +1,5 @@
 package com.space.munova.chat.enums;
 
 public enum ChatStatus {
-    OPENED  , CLOSED
+    OPENED  , CLOSED, DELETED
 }

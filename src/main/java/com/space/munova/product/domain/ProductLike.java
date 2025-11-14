@@ -2,6 +2,7 @@ package com.space.munova.product.domain;
 
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.entity.Member;
+import com.space.munova.product.application.exception.ProductException;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -31,6 +32,11 @@ public class ProductLike extends BaseEntity {
     private Product product;
 
     public static ProductLike createDefaultProductLike(Product product, Member member) {
+
+        if(product == null || member == null){
+            throw ProductException.badRequestException();
+        }
+
         return  ProductLike.builder()
                 .product(product)
                 .member(member)

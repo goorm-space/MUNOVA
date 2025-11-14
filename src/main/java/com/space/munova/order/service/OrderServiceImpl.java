@@ -4,9 +4,6 @@ import com.space.munova.auth.exception.AuthException;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.coupon.dto.UseCouponRequest;
 import com.space.munova.coupon.dto.UseCouponResponse;
-import com.space.munova.coupon.entity.Coupon;
-import com.space.munova.coupon.exception.CouponException;
-import com.space.munova.coupon.repository.CouponRepository;
 import com.space.munova.coupon.service.CouponService;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
@@ -22,16 +19,13 @@ import com.space.munova.order.repository.OrderRepository;
 import com.space.munova.payment.entity.Payment;
 import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.ProductDetailService;
-import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
-import org.aspectj.weaver.ast.Or;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -43,6 +37,7 @@ public class OrderServiceImpl implements OrderService {
 
     private final ProductDetailService productDetailService;
     private final CouponService couponService;
+    private final OrderItemService orderItemService;
 
     private final OrderItemRepository orderItemRepository;
     private final OrderRepository orderRepository;
@@ -50,30 +45,23 @@ public class OrderServiceImpl implements OrderService {
     private final RecommendService recommendService;
 
     private final OrderProductLogRepository orderProductLogRepository;
-    private final CouponRepository couponRepository;
     private final PaymentService paymentService;
 
     @Transactional
     @Override
-    public Order createOrder(CreateOrderRequest request) {
-        Long userId = JwtHelper.getMemberId();
+    public Order createOrder(CreateOrderRequest request, Long userId) {
         Member member = memberRepository.findById(userId)
                 .orElseThrow(MemberException::notFoundException);
 
         // 초기 주문 생성
-        Order order = Order.builder()
-                .member(member)
-                .orderNum(Order.generateOrderNum())
-                .userRequest(request.userRequest())
-                .status(OrderStatus.CREATED)
-                .build();
+        Order order = Order.createInitOrder(member, request.userRequest());
 
         // --- 1. 재고 감소
-        List<OrderItem> orderItems = deductStockAndCreateOrderItems(request.orderItems(), order);
+        List<OrderItem> orderItems = orderItemService.deductStockAndCreateOrderItems(request.orderItems(), order);
         orderItems.forEach(order::addOrderItem);
 
         // --- 2. 쿠폰 적용
-        Order finalOrder = applyCouponAndOrder(order, request);
+        Order finalOrder = finalizeOrderWithCoupon(order, request);
 
         orderRepository.save(finalOrder);
 
@@ -160,36 +148,15 @@ public class OrderServiceImpl implements OrderService {
         return GetOrderDetailResponse.from(order, payment);
     }
 
-    private List<OrderItem> deductStockAndCreateOrderItems(List<OrderItemRequest> itemRequests, Order order) {
-        List<OrderItem> orderItems = new ArrayList<>();
-
-        for (OrderItemRequest itemReq : itemRequests) {
-            ProductDetail detail = productDetailService.deductStock(itemReq.productDetailId(), itemReq.quantity());
-
-            // 2. Orderitem 엔티티 생성
-            OrderItem orderItem = OrderItem.builder()
-                    .order(order)
-                    .productDetail(detail)
-                    .nameSnapshot(detail.getProduct().getName())
-                    .priceSnapshot(detail.getProduct().getPrice())
-                    .quantity(itemReq.quantity())
-                    .status(OrderStatus.CREATED)
-                    .build();
-
-            orderItems.add(orderItem);
-        }
-
-        return orderItems;
-    }
-
-    private Order applyCouponAndOrder(Order order, CreateOrderRequest request) {
+    @Override
+    public Order finalizeOrderWithCoupon(Order order, CreateOrderRequest request) {
         long totalProductAmount = order.getOrderItems().stream()
                 .mapToLong(item -> item.getPriceSnapshot() * item.getQuantity())
                 .sum();
 
         if (request.orderCouponId() != null) {
             UseCouponRequest couponRequest = UseCouponRequest.of(totalProductAmount);
-            UseCouponResponse couponResponse = couponService.useCoupon(request.orderCouponId(), couponRequest);
+            UseCouponResponse couponResponse = couponService.calculateAmountWithCoupon(request.orderCouponId(), couponRequest);
 
             if (couponResponse.finalPrice().longValue() != request.clientCalculatedAmount().longValue()) {
                 throw OrderException.amountMismatchException(
@@ -197,17 +164,19 @@ public class OrderServiceImpl implements OrderService {
                 );
             }
 
-            Coupon coupon = couponRepository.findWithCouponDetailById(request.orderCouponId())
-                    .orElseThrow(CouponException::notFoundException);
-
             order.updateFinalOrder(
                     couponResponse.originalPrice(),
                     couponResponse.discountPrice(),
                     couponResponse.finalPrice(),
-                    coupon,
+                    request.orderCouponId(),
                     OrderStatus.PAYMENT_PENDING
             );
         } else {
+            if (totalProductAmount != request.clientCalculatedAmount()) {
+                throw OrderException.amountMismatchException(
+                        String.format("client: %d, server: %d", request.clientCalculatedAmount(), totalProductAmount)
+                );
+            }
             order.updateFinalOrder(
                     totalProductAmount,
                     0L,

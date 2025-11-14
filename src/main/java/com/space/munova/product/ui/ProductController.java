@@ -6,6 +6,7 @@ import com.space.munova.coupon.dto.SearchCouponResponse;
 import com.space.munova.product.application.ProductService;
 import com.space.munova.product.application.dto.*;
 import com.space.munova.recommend.service.RecommendService;
+import com.space.munova.security.jwt.JwtHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nullable;
@@ -30,14 +31,13 @@ import java.util.List;
 class ProductController {
 
     private final ProductService productService;
-    private final RecommendService recommendService;
 
     @PatchMapping(value = "/api/seller/product", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<Void>> updateProduct(@RequestPart(name = "mainImgFile", required = false) MultipartFile mainImgFile,
                                                            @RequestPart(name = "sideImgFile", required = false) List<MultipartFile> sideImgFile,
                                                            @RequestPart(name = "updateProductInfo") @Valid UpdateProductRequestDto reqDto) throws IOException {
-
-        productService.updateProductInfo(mainImgFile, sideImgFile, reqDto);
+        Long memberId = JwtHelper.getMemberId();
+        productService.updateProductInfo(mainImgFile, sideImgFile, reqDto, memberId);
         return ResponseEntity.ok().body(ResponseApi.ok());
     }
 
@@ -46,7 +46,8 @@ class ProductController {
     @GetMapping("/api/seller/product/{productId}/edit")
     public ResponseEntity<ResponseApi<ProductDetailResponseDto>> editProductView(@PathVariable("productId") Long productId){
 
-        ProductDetailResponseDto respDto = productService.findProductDetailsBySeller(productId);
+        Long memberId = JwtHelper.getMemberId();
+        ProductDetailResponseDto respDto = productService.findProductDetailsBySeller(productId, memberId);
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
 
@@ -64,7 +65,8 @@ class ProductController {
     @GetMapping("/api/seller/product")
     public ResponseEntity<PagingResponse<FindProductResponseDto>> findProductBySeller(@PageableDefault Pageable pageable) {
 
-        PagingResponse<FindProductResponseDto> respDto = productService.findProductBySeller(pageable);
+        Long memberId = JwtHelper.getMemberId();
+        PagingResponse<FindProductResponseDto> respDto = productService.findProductBySeller(pageable, memberId);
         return ResponseEntity.ok().body(respDto);
     }
 
@@ -75,8 +77,8 @@ class ProductController {
                                                          @RequestPart(name = "sideImgFile", required = false) List<MultipartFile> sideImgFile,
                                                          @RequestPart(name = "addProductInforms") @Valid AddProductRequestDto reqDto) throws IOException {
 
-
-        productService.saveProduct(mainImgFile, sideImgFile, reqDto);
+        Long memberId = JwtHelper.getMemberId();
+        productService.saveProduct(mainImgFile, sideImgFile, reqDto, memberId);
         return ResponseEntity.ok().body(ResponseApi.ok());
     }
 
@@ -153,7 +155,8 @@ class ProductController {
     @DeleteMapping("/api/seller/product")
     @Operation(summary = "상품 삭제", description = "단건, 복수건 상품 삭제")
     public ResponseEntity<ResponseApi<Void>> deleteProduct(@RequestParam("productIds") List<Long> productIds) {
-        productService.deleteProduct(productIds);
+        Long memberId = JwtHelper.getMemberId();
+        productService.deleteProduct(productIds, memberId);
         return ResponseEntity.ok().body(ResponseApi.ok());
     }
 

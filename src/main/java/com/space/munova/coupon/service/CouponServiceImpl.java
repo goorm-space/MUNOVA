@@ -9,7 +9,6 @@ import com.space.munova.coupon.repository.CouponDetailRepository;
 import com.space.munova.coupon.repository.CouponRepository;
 import com.space.munova.coupon.repository.CouponSearchQueryDslRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -45,6 +44,12 @@ public class CouponServiceImpl implements CouponService {
         Long memberId = issueCouponRequest.memberId();
         Long couponDetailId = issueCouponRequest.couponDetailId();
 
+        // 쿠폰 발급 중복체크
+        Long duplicateCount = couponRepository.findDuplicateIssuedCouponWithLock(couponDetailId, memberId);
+        if (duplicateCount > 0) {
+            throw CouponException.duplicateIssueException();
+        }
+
         CouponDetail couponDetail = couponDetailRepository.findByIdWithLock(couponDetailId)
                 .orElseThrow(CouponException::notFoundException);
 
@@ -52,7 +57,8 @@ public class CouponServiceImpl implements CouponService {
         couponDetail.validatePublished();
 
         // 쿠폰 발급
-        Coupon savedCoupon = issuedCoupon(memberId, couponDetail);
+        Coupon coupon = Coupon.issuedCoupon(memberId, couponDetail);
+        Coupon savedCoupon = couponRepository.save(coupon);
 
         // 쿠폰 재고 차감
         couponDetail.decreaseRemainQuantity();
@@ -61,33 +67,30 @@ public class CouponServiceImpl implements CouponService {
     }
 
     /**
-     * 쿠폰 사용
+     * 쿠폰 확인
      */
     @Override
     @Transactional
-    public UseCouponResponse useCoupon(Long couponId, UseCouponRequest useCouponRequest) {
+    public UseCouponResponse calculateAmountWithCoupon(Long couponId, UseCouponRequest useCouponRequest) {
         Coupon coupon = couponRepository.findWithCouponDetailById(couponId)
                 .orElseThrow(CouponException::notFoundException);
 
-        // 쿠폰 사용
         Long originalPrice = useCouponRequest.originalPrice();
-        Long finalPrice = coupon.useCoupon(originalPrice);
+        Long finalPrice = coupon.verifyCoupon(originalPrice);
 
         return UseCouponResponse.of(originalPrice, originalPrice - finalPrice, finalPrice);
     }
 
     /**
-     * 쿠폰 발급, 유니크 제약조건 예외
+     * 쿠폰 사용
      */
-    private Coupon issuedCoupon(Long memberId, CouponDetail couponDetail) {
-        Coupon coupon = Coupon.issuedCoupon(memberId, couponDetail);
-        Coupon savedCoupon;
-        try {
-            savedCoupon = couponRepository.save(coupon);
-        } catch (DataIntegrityViolationException e) {
-            throw CouponException.duplicateIssueException();
-        }
-        return savedCoupon;
+    @Override
+    @Transactional
+    public void useCoupon(Long couponId) {
+        Coupon coupon = couponRepository.findWithCouponDetailById(couponId)
+                .orElseThrow(CouponException::notFoundException);
+
+        coupon.updateCouponUsed();
     }
 
 }

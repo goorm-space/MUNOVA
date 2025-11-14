@@ -4,17 +4,16 @@ import com.space.munova.chat.enums.MessageType;
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.entity.Member;
 import jakarta.persistence.*;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
 
+@Builder
 @Getter
 @Entity
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Table(name = "message")
 public class Message extends BaseEntity {
     @Id
@@ -35,12 +34,13 @@ public class Message extends BaseEntity {
     @JoinColumn(name = "user_id")
     private Member userId;
 
-    @Builder
-    public Message(String content, MessageType type, Chat chatId, Member userId) {
-        this.content = content;
-        this.type = type;
-        this.chatId = chatId;
-        this.userId = userId;
+    public static Message createMessage(String content, MessageType type, Chat chat, Member userId) {
+        return Message.builder()
+                .content(content)
+                .type(type)
+                .chatId(chat)
+                .userId(userId)
+                .build();
     }
 
 }

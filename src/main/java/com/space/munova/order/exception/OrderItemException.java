@@ -17,4 +17,8 @@ public class OrderItemException extends BaseException {
     public static OrderItemException cancellationNotAllowedException(String... detailMessage) {
         return new OrderItemException("ORDER_ITEM_02", "주문을 취소할 수 없습니다.", HttpStatus.CONFLICT, detailMessage);
     }
+
+    public static OrderItemException noOrderItemsNotAllowedException(String... detailMessage) {
+        return new OrderItemException("ORDER_ITEM_03", "주문 상품이 없습니다. 상품을 추가해주세요.", HttpStatus.BAD_REQUEST, detailMessage);
+    }
 }

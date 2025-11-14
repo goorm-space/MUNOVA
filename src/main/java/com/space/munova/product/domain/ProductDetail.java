@@ -2,6 +2,7 @@ package com.space.munova.product.domain;
 
 
 import com.space.munova.core.entity.BaseEntity;
+import com.space.munova.product.application.exception.CartException;
 import com.space.munova.product.application.exception.ProductDetailException;
 import jakarta.persistence.*;
 import lombok.*;
@@ -38,13 +39,13 @@ public class ProductDetail extends BaseEntity {
     public static ProductDetail createDefaultProductDetail(Product product, Integer quantity) {
 
         if(quantity == null) {
-            throw new IllegalArgumentException("quantity cannot be null");
+            throw new IllegalArgumentException("수량은 null일 수 없습니다.");
         }
         if(product == null) {
-            throw new IllegalArgumentException("product cannot be null");
+            throw new IllegalArgumentException("상품은 null일 수 없습니다.");
         }
         if(quantity < 1) {
-            throw new IllegalArgumentException("quantity cannot be less than 1");
+            throw new IllegalArgumentException("수량은 1보다 작을 수 없습니다.");
         }
 
         return ProductDetail.builder()
@@ -66,5 +67,26 @@ public class ProductDetail extends BaseEntity {
         }
 
         this.quantity += quantity;
+    }
+
+    public void validAddToCart(int quantity) {
+        if(this.quantity == quantity) {
+            throw CartException.badRequestCartException("상품의 수량을 초과하여 상품을 담을 수 없습니다.");
+        }
+        if(this.isDeleted) {
+            throw CartException.badRequestCartException("제거된 상품은 장바구니에 추가할 수 없습니다.");
+        }
+    }
+
+    public void checkDeletedProductDetail() {
+        if(this.isDeleted) {
+            throw ProductDetailException.isDeletedProduct();
+        }
+    }
+
+    public void compareInputQauntityAndDetaliQuantity(int inputQauntity) {
+        if(this.quantity < inputQauntity) {
+            throw ProductDetailException.badRequest("상품 수량을 초과하여 수량을 입력할 수 없습니다.");
+        }
     }
 }

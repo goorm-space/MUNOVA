@@ -6,6 +6,7 @@ import com.space.munova.chat.dto.message.ChatMessageViewDto;
 import com.space.munova.chat.entity.Chat;
 import com.space.munova.chat.entity.Message;
 import com.space.munova.chat.enums.ChatStatus;
+import com.space.munova.chat.enums.ChatType;
 import com.space.munova.chat.exception.ChatException;
 import com.space.munova.chat.repository.ChatMemberRepository;
 import com.space.munova.chat.repository.ChatRepository;
@@ -36,8 +37,6 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     @Transactional
     public ChatMessageResponseDto createChatMessage(ChatMessageRequestDto chatMessageRequest, Long chatId) {
 
-        log.info("Creating chat message: {}", chatMessageRequest);
-
         Member member = memberRepository.findById(chatMessageRequest.senderId())
                 .orElseThrow(() -> MemberException.notFoundException("memberId : " + chatMessageRequest.senderId()));
 
@@ -51,12 +50,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         }
 
         // 메시지를 repository에 저장 + 현재 시간
-        Message message = messageRepository.save(Message.builder()
-                .chatId(chat)
-                .userId(member)
-                .content(chatMessageRequest.content())
-                .type(chatMessageRequest.messageType())
-                .build());
+        Message message = messageRepository.save(Message.createMessage(chatMessageRequest.content(), chatMessageRequest.messageType(), chat, member));
 
         // 가장 최신 메시지 id, 최근 대화 시간 업데이트
         chat.modifyLastMessageContent(message.getContent(), message.getCreatedAt());
@@ -73,7 +67,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         Long memberId = JwtHelper.getMemberId();
 
         // 채팅방 확인, OPENED 확인
-        Chat chat = chatRepository.findOpenedChatById(chatId)
+        Chat chat = chatRepository.findChatByIdAndType(chatId, ChatType.ONE_ON_ONE)
                 .orElseThrow(() -> ChatException.invalidChatRoomException("chatId=" + chatId));
 
         // 참여자 권한 확인

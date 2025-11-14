@@ -29,8 +29,21 @@ public class CartRepositoryImpl implements CartRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
 
+
+    ///  페이징해서 가져올 장바구니 상품디테일 ID
     @Override
-    public Page<ProductInfoForCartDto> findCartItemInfoByMemberId(Long memberId, Pageable pageable) {
+    public Page<Long> findDistinctDetailIdsByMemberId(Long memberId, Pageable pageable) {
+
+        List<Long> detailIds = queryFactory
+                .select(productDetail.id)
+                .from(cart)
+                .join(cart.productDetail, productDetail)
+                .where(cart.member.id.eq(memberId)
+                        .and(cart.isDeleted.eq(false)))
+                .orderBy(cart.createdAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
 
         Long count = queryFactory
                 .select(cart.count())
@@ -39,7 +52,19 @@ public class CartRepositoryImpl implements CartRepositoryCustom {
                         .and(cart.isDeleted.eq(false)))
                 .fetchOne();
 
-        List<ProductInfoForCartDto> val = queryFactory
+        return new PageImpl<>(detailIds, pageable, count != null ? count : 0L);
+    }
+
+
+
+    @Override
+    public List<ProductInfoForCartDto> findCartItemInfoByDetailIds(List<Long> detailIds) {
+
+        if (detailIds == null || detailIds.isEmpty()) {
+            return new ArrayList<>(); // IN 절이 비어있으면  빈 리스트 반환
+        }
+
+        return queryFactory
                 .select(Projections.constructor(ProductInfoForCartDto.class,
                         product.id.as("productId"),
                         cart.id.as("cartId"),
@@ -68,14 +93,11 @@ public class CartRepositoryImpl implements CartRepositoryCustom {
                 .on(productDetail.id.eq(productOptionMapping.productDetail.id))
                 .leftJoin(option)
                 .on(productOptionMapping.option.id.eq(option.id))
-                .where(cart.member.id.eq(memberId)
-                        .and(cart.isDeleted.eq(false)))
+                .where(
+                        cart.productDetail.id.in(detailIds)
+                                .and(cart.isDeleted.eq(false))
+                )
                 .orderBy(cart.createdAt.desc())
-                .limit(pageable.getPageSize())
-                .offset(pageable.getOffset())
                 .fetch();
-
-        return new PageImpl<>(val, pageable, count != null ? count : 0L);
     }
-
 }

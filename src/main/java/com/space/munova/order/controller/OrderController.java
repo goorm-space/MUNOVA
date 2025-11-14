@@ -5,8 +5,8 @@ import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.order.dto.*;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.service.OrderService;
-import com.space.munova.payment.entity.Payment;
 import com.space.munova.payment.service.PaymentService;
+import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +23,8 @@ public class OrderController {
      */
     @PostMapping
     public ResponseApi<PaymentPrepareResponse> createOrder(@RequestBody CreateOrderRequest request) {
-        Order order = orderService.createOrder(request);
+        Long memberId = JwtHelper.getMemberId();
+        Order order = orderService.createOrder(request, memberId);
         orderService.saveOrderLog(order);
         PaymentPrepareResponse response = PaymentPrepareResponse.from(order);
 

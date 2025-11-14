@@ -4,6 +4,7 @@
 
     import com.space.munova.core.entity.BaseEntity;
     import com.space.munova.member.entity.Member;
+    import com.space.munova.product.application.exception.ProductException;
     import jakarta.persistence.*;
     import lombok.*;
     import org.hibernate.annotations.ColumnDefault;
@@ -72,28 +73,28 @@
                                                    ) {
 
             if(brand == null) {
-                throw new IllegalArgumentException("brand cannot be null");
+                throw new IllegalArgumentException("브랜드는 null일 수 없습니다.");
             }
             if(category == null) {
-                throw new IllegalArgumentException("category cannot be null");
+                throw new IllegalArgumentException("카테고리는 null일 수 없습니다.");
             }
             if(price == null){
-                throw new IllegalArgumentException("price cannot be null");
+                throw new IllegalArgumentException("가격은 null일 수 없습니다.");
             }
             if(price < 0) {
-                throw new IllegalArgumentException("price cannot be negative");
+                throw new IllegalArgumentException("가격은 음수일 수 없습니다.");
             }
             if(info == null ||  info.isEmpty() || info.length() < 10) {
-                throw new IllegalArgumentException("product information must be at least 10 characters long.");
+                throw new IllegalArgumentException("상품 정보는 최소 10자 이상이어야 합니다.");
             }
             if(info.length() > 65535) {
-                throw new IllegalArgumentException("Product information is too long. A maximum of 65535 characters is allowed.");
+                throw new IllegalArgumentException("상품 정보는 최대 65535자까지 입력 가능합니다.");
             }
             if(name == null || name.isEmpty()) {
-                throw new IllegalArgumentException("name cannot be null or empty");
+                throw new IllegalArgumentException("상품명은 null이거나 비어있을 수 없습니다.");
             }
             if(member == null) {
-                throw new IllegalArgumentException("member cannot be null");
+                throw new IllegalArgumentException("회원은 null일 수 없습니다.");
             }
 
             return Product.builder()
@@ -112,7 +113,19 @@
                                   Long price) {
 
             if(price < 0) {
-                throw new IllegalArgumentException("가격은 0보다 작을수 없습니다.");
+                throw ProductException.badRequestException("가격은 0보다 작을수 없습니다.");
+            }
+            if(name == null || name.isEmpty()) {
+                throw ProductException.badRequestException("상품명은 null이거나 비어있을 수 없습니다.");
+            }
+            if(info == null || info.isEmpty()) {
+                throw ProductException.badRequestException("상품정보는 null이거나 비어있을 수 없습니다.");
+            }
+            if(info.length() < 10) {
+                throw ProductException.badRequestException("상품정보는 최소 10자 이상이어야 합니다.");
+            }
+            if(info.length() > 65535) {
+                throw ProductException.badRequestException("상품정보는 최대 65535자까지 입력 가능합니다.");
             }
             this.name = name;
             this.info = info;
@@ -127,7 +140,7 @@
         /// 좋아요 감소
         public void minusLike() {
             if(this.likeCount <= 0) {
-                throw new IllegalArgumentException("like count cannot be negative");
+                throw ProductException.badRequestException("좋아요 수는 음수일 수 없습니다.");
             }
             this.likeCount -= 1;
         }
@@ -139,8 +152,11 @@
 
         /// 판매량 감소
         public void minusSalesCount(int salesCount) {
+            if(salesCount < 0) {
+                throw ProductException.badRequestException("차감할 판매량은 음수일 수 없습니다.");
+            }
             if(this.salesCount - salesCount < 0) {
-                throw new IllegalArgumentException("salesCount cannot be negative");
+                throw ProductException.badRequestException("판매량은 음수일 수 없습니다.");
             }
 
             this.salesCount -= salesCount;

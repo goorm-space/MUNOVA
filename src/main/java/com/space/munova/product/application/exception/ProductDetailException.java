@@ -22,4 +22,13 @@ public class ProductDetailException extends BaseException {
     public static ProductDetailException stockInsufficientException(String... detailMessage) {
         return new ProductDetailException("STOCK_02", "요청 수량이 재고보다 많습니다.", HttpStatus.CONFLICT, detailMessage);
     }
+
+    public static ProductDetailException isDeletedProduct(String... detailMessage) {
+        return new ProductDetailException("PRODUCT_DETAIL_02", "제거된 상품입니다.", HttpStatus.BAD_REQUEST, detailMessage);
+    }
+
+    public static ProductDetailException badRequest(String... detailMessage) {
+        return new ProductDetailException("PRODUCT_DETAIL_02", "유효하지 않은 요청 : ", HttpStatus.BAD_REQUEST, detailMessage);
+    }
+
 }

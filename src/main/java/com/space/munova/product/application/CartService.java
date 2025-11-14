@@ -32,7 +32,6 @@ public class CartService {
     private final CartRepository cartRepository;
     private final MemberRepository memberRepository;
     private final ProductDetailService productDetailService;
-    private final ProductImageService productImageService;
     private final RecommendService recommendService;
 
     @Transactional(readOnly = false)
@@ -42,35 +41,52 @@ public class CartService {
 
     ///  카트 생성 메서드
     @Transactional(readOnly = false)
-    public void addCartItem(AddCartItemRequestDto reqDto) {
+    public void addCartItem(AddCartItemRequestDto reqDto, Long memberId) {
 
-        Long memberId = JwtHelper.getMemberId();
+
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(MemberException::notFoundException);
-
         ProductDetail productDetail = productDetailService.findById((reqDto.productDetailId()));
 
         ///  상품 디테일 수량 및 제거여부 검증
-        validProductDetail(reqDto, productDetail);
+        productDetail.validAddToCart(reqDto.quantity());
 
-        /// 멤버의 장바구니에 담긴상품일경우 업데이트
-        /// 담기지 않은 상품일경우 저장.
-        upsertCart(reqDto, memberId, productDetail, member);
 
-        Long productId=productDetailService.findProductIdByDetailId(reqDto.productDetailId());
+        ///  사용자의 장바구니에 상품디테일이 있는지 확인.
+        boolean isExist = cartRepository.existsByMemberIdAndProductDetailId(memberId, productDetail.getId());
+
+        if(isExist) { ///  있으면 수량확인후 업데이트
+
+            Cart cart = cartRepository.findByProductDetailIdAndMemberId(productDetail.getId(), memberId)
+                    .orElseThrow(CartException::badRequestCartException);
+            cart.updateQuantity(reqDto.quantity());
+
+        } else { /// 없으면 저장.
+
+            Cart cart = Cart.createDefaultCart(member, productDetail, reqDto.quantity());
+            cartRepository.save(cart);
+        }
+
+        Long productId = productDetailService.findProductIdByDetailId(reqDto.productDetailId());
         recommendService.updateUserAction(productId,0,null,true,null);
     }
 
 
+    @Transactional(readOnly = false)
+    public void updateCartByMemeber(UpdateCartRequestDto reqDto, Long memberId) {
+
+        Cart cartItem = cartRepository.findByIdAndMemberIdAndIsDeletedFalse(reqDto.cartId(), memberId).orElseThrow(CartException::badRequestCartException);
+        ProductDetail productDetail = productDetailService.findById(reqDto.detailId());
+        /// 더티체킹으로 카트 아이템 업데이트
+        cartItem.updateCart(productDetail, reqDto.quantity());
+    }
 
     /// 유저의 장바구니 카트 상품제거
     @Transactional(readOnly = false)
-    public void deleteByCartIds(List<Long> cartIds) {
+    public void deleteByCartIds(List<Long> cartIds,  Long memberId) {
 
-        Long memberId = JwtHelper.getMemberId();
         upsertUserAction(cartIds);
         cartRepository.deleteByCartIdsAndMemberId(cartIds,memberId);
-
     }
 
     private void upsertUserAction(List<Long> cartIds) {
@@ -81,124 +97,38 @@ public class CartService {
     }
 
 
-    /// 장바구니 추가 상품 검증로직
-    private void validProductDetail(AddCartItemRequestDto reqDto, ProductDetail productDetail) {
-        if(productDetail.getQuantity() < reqDto.quantity()) {
-            throw CartException.badRequestCartException("상품의 수량을 초과하여 상품을 담을 수 없습니다.");
+    public PagingResponse<FindCartInfoResponseDto> findCartItemByMember(Pageable pageable, Long memberId) {
+
+
+        ///  해당 페이지에 보여줄 상품디테일 아이디 (리밋 오프셋을통해 가져올 정보를 확인)
+        Page<Long> detailIdsPage = cartRepository.findDistinctDetailIdsByMemberId(memberId, pageable);
+
+        if (detailIdsPage.isEmpty()) {
+            return PagingResponse.from(Page.empty());
         }
-        if(productDetail.isDeleted()) {
-            throw CartException.badRequestCartException("제거된 상품은 장바구니에 추가할 수 없습니다.");
-        }
-    }
+        List<Long> detailIds = detailIdsPage.getContent();
 
+        /// 가져올 아이디 정보들을  가지고 다시 조회. -> 리밋 오프셋으로 상품정보가 한 페이지 안에 하나의 상품정보가 다 못담겨질수있기때문에
+        ///  detailIdsPage 과 나눠서 다시조회.
+        List<ProductInfoForCartDto> productInfoList = cartRepository.findCartItemInfoByDetailIds(detailIds);
 
-    private void upsertCart(AddCartItemRequestDto reqDto, Long memberId, ProductDetail productDetail, Member member) {
-        if(cartRepository.existsByMemberIdAndProductDetailId(memberId, productDetail.getId())) {
-
-            Cart cart = cartRepository.findByProductDetailIdAndMemberId(productDetail.getId(), memberId)
-                    .orElseThrow(CartException::badRequestCartException);
-
-            ///  장바구니에 담긴 상품의 디테일이 같고 수량도 같다면 담긴상품
-            if(cart.getQuantity() == reqDto.quantity()) {
-                throw CartException.badRequestCartException("이미 장바구니에 담긴 상품입니다.");
-            }
-            ///  디테일이 같고 요청 수량과 저장된 수량이 다르다면 업데이트
-            cart.updateQuantity(reqDto.quantity());
-
-        } else {
-
-            Cart cart = Cart.createDefaultCart(member, productDetail, reqDto.quantity());
-            cartRepository.save(cart);
-        }
-    }
-
-    public PagingResponse<FindCartInfoResponseDto> findCartItemByMember(Pageable pageable) {
-        Long memberId = JwtHelper.getMemberId();
-        Page<ProductInfoForCartDto> productInfoForCartDtos =
-                cartRepository.findCartItemInfoByMemberId(memberId, pageable);
-
-        // detailId로 그룹핑
         Map<Long, List<ProductInfoForCartDto>> groupedByDetail =
-                productInfoForCartDtos.stream()
+                productInfoList.stream()
                         .collect(Collectors.groupingBy(
                                 ProductInfoForCartDto::detailId,
                                 LinkedHashMap::new, // 순서 보장
                                 Collectors.toList()
                         ));
 
-        // 맵들을 순회하면서 기본정보와 옵션리스트를 가진 FindCartInfoResponseDto리스트를 만들어 반환.
-        List<FindCartInfoResponseDto> val = groupedByDetail.values().stream()
-                .map(this::convertToResponseDto)
+        List<FindCartInfoResponseDto> content = detailIds.stream()
+                .map(groupedByDetail::get)
+                .map(FindCartInfoResponseDto::from)
                 .collect(Collectors.toList());
 
-        Page<FindCartInfoResponseDto> retVal =
-                new PageImpl<>(val, productInfoForCartDtos.getPageable(), productInfoForCartDtos.getTotalElements());
+        Page<FindCartInfoResponseDto> resultPage =
+                new PageImpl<>(content, detailIdsPage.getPageable(), detailIdsPage.getTotalElements());
 
-        return PagingResponse.from(retVal);
-    }
-
-    /// 기존에 가져온 상품정보는 옵션을 포함한 정보들이다.
-    /// 따라서 상품의 기본정보(상품아이디, 디테일아이디, 이미지등등)은 CartItemBasicInfoDto로 변환한다.
-    /// 옵션은 여러가지가 올수 있다. 사이즈, 컬러 등등
-    /// 따라서 리스트로 변환하여 응답데이터로 변환한다.
-    private FindCartInfoResponseDto convertToResponseDto(List<ProductInfoForCartDto> productGroup) {
-        ProductInfoForCartDto first = productGroup.get(0);
-
-        // 기본 정보 생성
-        CartItemBasicInfoDto basicInfo = new CartItemBasicInfoDto(
-                first.productId(),
-                first.cartId(),
-                first.detailId(),
-                first.productName(),
-                first.productPrice(),
-                first.productQuantity(),
-                first.cartItemQuantity(),
-                first.mainImgSrc(),
-                first.brandName()
-        );
-
-        // 옵션 정보 생성
-        List<CartItemOptionInfoDto> options = productGroup.stream()
-                .filter(p -> p.optionId() != null) // null이 아닌 옵션만
-                .map(p -> new CartItemOptionInfoDto(
-                        p.optionId(),
-                        p.optionType().name(),
-                        p.optionName()
-                ))
-                .collect(Collectors.toList());
-
-        return new FindCartInfoResponseDto(basicInfo, options);
-    }
-
-    @Transactional(readOnly = false)
-    public void updateCartByMemeber(UpdateCartRequestDto reqDto) {
-        Long memberId = JwtHelper.getMemberId();
-        Cart cartItem = cartRepository.findByIdAndMemberIdAndIsDeletedFalse(reqDto.cartId(), memberId).orElseThrow(CartException::badRequestCartException);
-        ProductDetail productDetail = productDetailService.findById(reqDto.detailId());
-
-        /// 더티체킹으로 카트 아이템 업데이트
-        try{
-
-            if(cartItem.isDeleted()) {
-                throw new IllegalArgumentException("제거된 장바구니 상품입니다.");
-            }
-
-            if(productDetail.isDeleted()) {
-                throw new IllegalArgumentException("제거된 상품입니다.");
-            }
-
-            cartItem.updateCart(productDetail, reqDto.quantity());
-
-        }catch (Exception e){
-           throw CartException.badRequestCartException(e.getMessage());
-        }
-    }
-
-    public List<ProductDetail> findProductIdsByCartIds(List<Long> cartIds) {
-        List<Cart> carts = cartRepository.findAllById(cartIds);
-        return carts.stream()
-                .map(Cart::getProductDetail)
-                .toList();
+        return PagingResponse.from(resultPage);
     }
 
     @Transactional
@@ -207,4 +137,6 @@ public class CartService {
 
         cartRepository.deleteByProductDetailIdsAndMemberId(productDetailIds,memberId);
     }
+
+
 }

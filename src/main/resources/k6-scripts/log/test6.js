@@ -4,15 +4,15 @@ import { sleep, check } from 'k6';
 
 // --- 액세스 토큰 (예시용, 실제 테스트 시 여러 사용자 토큰 리스트로 교체 가능)
 const TOKENS = [
-    'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI1IiwiYXV0aG9yaXRpZXMiOiJVU0VSIiwidXNlcm5hbWUiOiJyZWRpczEiLCJpYXQiOjE3NjMwMjIzMzQsImV4cCI6MTc2MzIwMjMzNH0.ZTqlLd1QOh5zazeMm_O0iR28woi_AX6ygko4Z1sb8pwZUPYmPvvkgejx2n5oXm3w5j7TR3wHBQbTAV_dqLtDjA',
-    'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2IiwiYXV0aG9yaXRpZXMiOiJVU0VSIiwidXNlcm5hbWUiOiJyZWRpczIiLCJpYXQiOjE3NjMwMjIzNTIsImV4cCI6MTc2MzIwMjM1Mn0.TFdiOjupvxEzfFrPKYdg_aQl8SXDKyTNosiQ71fw2blCzG_pWURTxPZ5jWQheMJF1tc20IkY_R6rGdLdyzKaMQ', // 예시
-    'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI3IiwiYXV0aG9yaXRpZXMiOiJVU0VSIiwidXNlcm5hbWUiOiJyZWRpczMiLCJpYXQiOjE3NjMwMjIzNjQsImV4cCI6MTc2MzIwMjM2NH0.qrvGbPBgKjDzKtttX8KttEK5V-jgBOxGWO_rsCusvjPcGPXqGvO6jl3aff3de9c443pK-5xghWXVul2hmEa-Cg'  // 예시
+    'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI1IiwiYXV0aG9yaXRpZXMiOiJVU0VSIiwidXNlcm5hbWUiOiJyZWRpczEiLCJpYXQiOjE3NjMxMzkwNTgsImV4cCI6MTc2MzMxOTA1OH0.PXUy3LtSFSfQQA9__-TqvtHzz44De72dc5sdwTxVbKtiANx47Ee6dA1OPYBcHSM1oMqEH7QZ7j4ogFDM2sUXXQ',
+    'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2IiwiYXV0aG9yaXRpZXMiOiJVU0VSIiwidXNlcm5hbWUiOiJyZWRpczIiLCJpYXQiOjE3NjMxMzkwODksImV4cCI6MTc2MzMxOTA4OX0.iAe0FTjWw9xDB6bMpPrH4hiuEXsiX--DD5U-wmAYgSlpN-EtQaYQakKRPLhqtVSDpZqi7uzzV_gyta19YgAD2A', // 예시
+    'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI3IiwiYXV0aG9yaXRpZXMiOiJVU0VSIiwidXNlcm5hbWUiOiJyZWRpczMiLCJpYXQiOjE3NjMxMzkwOTgsImV4cCI6MTc2MzMxOTA5OH0.OO7I5fP6vIvrL3ediddc_T-1FSWrcYpoXpy49yYWuZx_Nt9EkPsgkJ3esGP3GV499IO6NxkzidgWG9OFrCrLKg'  // 예시
 ];
 
 // --- 부하 설정
 export const options = {
     vus: 10000,        // 가상의 사용자 (동시 접속자)
-    duration: '10s',   // 테스트 지속 시간
+    duration: '1s',   // 테스트 지속 시간
     thresholds: {
         http_req_failed: ['rate<0.05'],    // 실패율 5% 이하 목표
         http_req_duration: ['p(95)<2000'], // 95% 요청 2초 이내

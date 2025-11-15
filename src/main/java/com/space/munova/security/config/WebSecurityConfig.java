@@ -41,6 +41,7 @@ public class WebSecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+                        .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/admin/**").hasAuthority(MemberRole.ADMIN.getAuthority())
                         .requestMatchers("/api/seller/**").hasAuthority(MemberRole.SELLER.getAuthority())
                         .requestMatchers("/api/**").authenticated()

@@ -41,18 +41,9 @@ public class AuthController {
             @RequestHeader(value = DEVICE_ID_HEADER_PREFIX) String deviceId
     ) {
         SignInGenerateToken signInGenerateToken = authService.signIn(signInRequest, deviceId);
-        // refreshToken 쿠키 저장
-        jwtHelper.saveRefreshTokenToCookie(response, signInGenerateToken.refreshToken());
-        response.setHeader(DEVICE_ID_HEADER_PREFIX, deviceId);
+        jwtHelper.saveRefreshTokenToCookie(response, signInGenerateToken.refreshToken(), deviceId);
 
-        SignInResponse signInResponse = SignInResponse.of(
-                signInGenerateToken.memberId(),
-                signInRequest.username(),
-                signInGenerateToken.accessToken(),
-                signInGenerateToken.refreshToken(),
-                signInGenerateToken.role()
-
-        );
+        SignInResponse signInResponse = SignInResponse.from(signInGenerateToken);
         return ResponseApi.ok(signInResponse);
     }
 
@@ -66,7 +57,7 @@ public class AuthController {
     ) {
         Long memberId = JwtHelper.getMemberId();
         authService.signOut(deviceId, memberId);
-        // 쿠키에서 refreshToken 삭제
+
         jwtHelper.deleteRefreshTokenFromCookie(response);
         return ResponseApi.ok();
     }
@@ -81,8 +72,7 @@ public class AuthController {
             HttpServletResponse response
     ) {
         GenerateTokens generateTokens = tokenService.reissueToken(refreshToken, deviceId);
-        // refreshToken 쿠키 저장
-        jwtHelper.saveRefreshTokenToCookie(response, generateTokens.refreshToken());
+        jwtHelper.saveRefreshTokenToCookie(response, generateTokens.refreshToken(), deviceId);
 
         TokenReissueResponse tokenReissueResponse =
                 TokenReissueResponse.of(generateTokens.accessToken());

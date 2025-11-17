@@ -26,9 +26,12 @@ public class AuthController {
      * 회원가입
      */
     @PostMapping("/auth/signup")
-    public ResponseApi<Void> signup(@Valid @RequestBody SignupRequest signUpRequest) {
-        authService.signup(signUpRequest);
-        return ResponseApi.ok();
+    public ResponseApi<SignupResponse> signup(
+            @Valid @RequestBody SignupRequest signUpRequest,
+            HttpServletResponse response
+    ) {
+        SignupResponse signupResponse = authService.signup(signUpRequest);
+        return ResponseApi.created(response, signupResponse);
     }
 
     /**

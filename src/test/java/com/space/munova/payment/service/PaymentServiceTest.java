@@ -77,7 +77,6 @@ public class PaymentServiceTest {
     private Order order;
     private String tossRawJson;
     private CancelOrderItemRequest cancelOrderItemRequest;
-    private Payment payment;
 
     @BeforeEach
     void setUp() {
@@ -93,8 +92,6 @@ public class PaymentServiceTest {
         tossRawJson = "{\"some\":\"json\"}";
 
         cancelOrderItemRequest = new CancelOrderItemRequest(CancelType.ORDER_CANCEL, CancelReason.ORDER_MISTAKE, 10000L);
-
-        payment = mock(Payment.class);
     }
 
     @DisplayName("[결제 승인] (HappyCase) TossPayment 결제 승인")

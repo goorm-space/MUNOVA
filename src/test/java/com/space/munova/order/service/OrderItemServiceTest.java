@@ -205,6 +205,26 @@ public class OrderItemServiceTest {
                 .isInstanceOf(OrderItemException.class);
     }
 
+    @Test
+    @DisplayName("[주문 취소] CancelType에 따른 orderStatus가 일치하지 않으면 예외처리한다.")
+    void cancelOrderItem_CancelTypeAndOrderStatusMisMatch() {
+        // given
+        CancelOrderItemRequest request = new CancelOrderItemRequest(CancelType.ORDER_CANCEL, null, null);
 
+        when(member.getId()).thenReturn(1L);
+
+        when(order.getMember()).thenReturn(member);
+
+        when(orderItem.getOrder()).thenReturn(order);
+        when(orderItem.getStatus()).thenReturn(OrderStatus.CANCELED);
+
+        when(orderItemRepository.findById(1L)).thenReturn(Optional.of(orderItem));
+
+        // doNothing()으로 외부 호출 stub 처리
+
+        // when & then
+        assertThatThrownBy(() -> orderItemService.cancelOrderItem(1L, request, 1L))
+                .isInstanceOf(OrderItemException.class);
+    }
 
 }

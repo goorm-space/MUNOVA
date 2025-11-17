@@ -143,8 +143,7 @@ public class CartService {
     }
 
     @Transactional
-    public void deleteByProductDetailIdsAndMemberId(List<Long> productDetailIds) {
-        Long memberId = JwtHelper.getMemberId();
+    public void deleteByProductDetailIdsAndMemberId(List<Long> productDetailIds, Long memberId) {
 
         cartRepository.deleteByProductDetailIdsAndMemberId(productDetailIds,memberId);
     }

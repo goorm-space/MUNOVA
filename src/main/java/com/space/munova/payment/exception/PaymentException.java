@@ -25,4 +25,12 @@ public class PaymentException extends BaseException {
     public static PaymentException illegalPaymentStateException(String... detailMessage) {
         return new PaymentException("PAYMENT_03", "승인된 결제만 취소/환불 정보를 업데이트 할 수 있습니다.", HttpStatus.BAD_REQUEST, detailMessage);
     }
+
+    public static PaymentException paymentStatusException(String... detailMessage) {
+        return new PaymentException("PAYMENT_04", "결제에 실패했습니다.", HttpStatus.BAD_REQUEST, detailMessage);
+    }
+
+    public static PaymentException jsonParsingException(String... detailMessage) {
+        return new PaymentException("PAYMENT_05", "결제 응답을 JSON 변환하는 데 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR, detailMessage);
+    }
 }

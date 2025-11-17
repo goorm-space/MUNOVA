@@ -28,19 +28,19 @@ public class Refund extends BaseEntity {
     @Column(name = "refund_id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_id", nullable = false)
-    private Payment payment;
+    private Long paymentId;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_item_id", nullable = false)
-    private OrderItem orderItem;
+    private Long orderItemId;
+
+    private String paymentKey;
 
     @Column(length = 64)
     private String transactionKey;
 
+    @Column(nullable = false)
     private String cancelReason;
 
+    @Column(nullable = false)
     private Long cancelAmount;
 
     private String cancelStatus;

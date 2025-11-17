@@ -61,7 +61,7 @@ public class ProductDetail extends BaseEntity {
         this.quantity -= quantity;
     }
 
-    public void restoreStock(int quantity) {
+    public void increaseStock(int quantity) {
         if (this.quantity == null) {
             this.quantity = 0;
         }

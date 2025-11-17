@@ -102,7 +102,7 @@ class ProductDetailTest {
 
     @Test
     @DisplayName("재고 복구 성공")
-    void restoreStock_Success() {
+    void increaseStock_Success() {
         // Given
         Product product = createProduct();
         ProductDetail productDetail = ProductDetail.builder()
@@ -111,7 +111,7 @@ class ProductDetailTest {
                 .build();
 
         // When
-        productDetail.restoreStock(5);
+        productDetail.increaseStock(5);
 
         // Then: 비즈니스 로직 검증
         assertEquals(15, productDetail.getQuantity());
@@ -119,7 +119,7 @@ class ProductDetailTest {
 
     @Test
     @DisplayName("재고 복구 성공 - 재고가 null인 경우")
-    void restoreStock_WhenQuantityIsNull() {
+    void increaseStock_WhenQuantityIsNull() {
         // Given
         Product product = createProduct();
         ProductDetail productDetail = ProductDetail.builder()
@@ -128,7 +128,7 @@ class ProductDetailTest {
                 .build();
 
         // When
-        productDetail.restoreStock(5);
+        productDetail.increaseStock(5);
 
         // Then: 비즈니스 로직 검증 - null이면 0으로 초기화 후 추가
         assertEquals(5, productDetail.getQuantity());

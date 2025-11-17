@@ -60,17 +60,15 @@ public class OrderItemServiceImpl implements OrderItemService {
 
     @Transactional
     @Override
-    public void cancelOrderItem(Long orderItemId, CancelOrderItemRequest request) {
+    public void cancelOrderItem(Long orderItemId, CancelOrderItemRequest request, Long memberId) {
         OrderItem orderItem = orderItemRepository.findById(orderItemId)
                 .orElseThrow(OrderItemException::notFoundException);
 
-        Long userId = JwtHelper.getMemberId();
+        validateCancellation(memberId, orderItem, request.cancelType());
 
-        validateCancellation(userId, orderItem, request.cancelType());
+        paymentService.cancelPaymentAndSaveRefund(orderItem.getId(), orderItem.getOrder().getId(), request);
 
-        paymentService.cancelPaymentAndSaveRefund(orderItem, orderItem.getOrder().getId(), request);
-
-        restoreProductDetailStock(orderItem);
+        increaseProductDetailStock(orderItem);
 
         if (request.cancelType().equals(CancelType.ORDER_CANCEL)) {
             orderItem.updateStatus(OrderStatus.CANCELED);
@@ -121,11 +119,11 @@ public class OrderItemServiceImpl implements OrderItemService {
     /**
      * OrderItem에 해당하는 상품 재고 복구
      */
-    private void restoreProductDetailStock(OrderItem orderItem) {
+    private void increaseProductDetailStock(OrderItem orderItem) {
         Long productDetailId = orderItem.getProductDetail().getId();
         int cancelQuantity = orderItem.getQuantity();
 
-        productDetailService.restoreProductDetailStock(productDetailId, cancelQuantity);
+        productDetailService.increaseProductDetailStock(productDetailId, cancelQuantity);
 
     }
 }

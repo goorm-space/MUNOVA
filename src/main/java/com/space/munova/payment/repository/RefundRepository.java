@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface RefundRepository extends JpaRepository<Refund, Long> {
     Optional<Refund> findByTransactionKey(String transactionKey);
+    boolean existsByPaymentKey(String paymentKey);
 }

@@ -131,23 +131,23 @@ class ProductController {
     @GetMapping("/api/product/{productId}")
     @Operation(summary = "상품상세 조회", description = "상품상세조회")
     public ResponseEntity<ResponseApi<ProductDetailResponseDto>> findProductDetailLogin(@PathVariable(name = "productId") Long productId) {
-        ProductDetailResponseDto respDto = productService.findProductDetails(productId);
+//        ProductDetailResponseDto respDto = productService.findProductDetails(productId);
         /// 상품 상세조회 시 로그
         productService.saveProductClickLog(productId);
         /// 조회수 카운트 증가.
         productService.updateProductViewCountLogin(productId);
-        return ResponseEntity.ok().body(ResponseApi.ok(respDto));
+        return ResponseEntity.ok().body(ResponseApi.ok());
     }
 
     /// 상품상세 조회
     @GetMapping("/product/{productId}")
     @Operation(summary = "상품상세 조회", description = "상품상세조회")
     public ResponseEntity<ResponseApi<ProductDetailResponseDto>> findProductDetail(@PathVariable(name = "productId") Long productId) {
-        ProductDetailResponseDto respDto = productService.findProductDetails(productId);
+//        ProductDetailResponseDto respDto = productService.findProductDetails(productId);
 
         /// 조회수 카운트 증가.
         productService.updateProductViewCount(productId);
-        return ResponseEntity.ok().body(ResponseApi.ok(respDto));
+        return ResponseEntity.ok().body(ResponseApi.ok());
     }
 
 

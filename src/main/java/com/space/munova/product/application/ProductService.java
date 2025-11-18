@@ -10,9 +10,7 @@ import com.space.munova.product.application.event.ProductDeleteEvenForLikeDto;
 import com.space.munova.product.application.event.ProductDeleteEventForCartDto;
 import com.space.munova.product.application.exception.ProductException;
 import com.space.munova.product.domain.*;
-import com.space.munova.product.domain.Repository.ProductClickLogRepository;
 import com.space.munova.product.domain.Repository.ProductRepository;
-import com.space.munova.product.domain.Repository.ProductSearchLogRepository;
 import com.space.munova.product.domain.enums.ProductCategory;
 import com.space.munova.recommend.infra.RedisStreamProducer;
 import com.space.munova.recommend.service.RecommendService;
@@ -38,7 +36,6 @@ import java.util.Map;
 @Transactional(readOnly = true)
 public class ProductService {
 
-    private final ProductClickLogRepository productClickLogRepository;
     private final ProductRepository productRepository;
     private final ProductImageService productImageService;
     private final ProductDetailService productDetailService;
@@ -46,7 +43,6 @@ public class ProductService {
     private final CategoryService categoryService;
     private final MemberRepository memberRepository;
     private final ProductOptionService productOptionService;
-    private final ProductSearchLogRepository productSearchLogRepository;
     private final RecommendService recommendService;
     private final RedisStreamProducer logProducer;
 
@@ -96,9 +92,9 @@ public class ProductService {
     }
 
 
-    public ProductDetailResponseDto findProductDetails(Long productId) {
-        return getProductDetailResponseDto(productId);
-    }
+//    public ProductDetailResponseDto findProductDetails(Long productId) {
+//        return getProductDetailResponseDto(productId);
+//    }
 
     public ProductDetailResponseDto findProductDetailsBySeller(Long productId, Long sellerId) {
 
@@ -179,15 +175,16 @@ public class ProductService {
     @Transactional
     public void saveSearchLog(Long categoryId, String keyword) {
         Long memberId = JwtHelper.getMemberId();
-
-        ProductSearchLog log = ProductSearchLog.builder()
-                .memberId(memberId)
-                .searchDetail(keyword != null ? keyword : "")
-                .searchCategoryId(categoryId)
-                .build();
-
-        productSearchLogRepository.save(log);
-
+        Map<String, Object> logData = Map.of(
+                "event_type", "product_search",
+                "service", "product",
+                "member_id", memberId,
+                "data", Map.of(
+                        "category_id", categoryId != null ? categoryId : "",
+                        "keyword", keyword != null ? keyword : ""
+                )
+        );
+        logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
     }
 
     // 상품옵션 조회

@@ -11,10 +11,8 @@ import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.order.dto.*;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
-import com.space.munova.order.entity.OrderProductLog;
 import com.space.munova.order.exception.OrderException;
 import com.space.munova.order.repository.OrderItemRepository;
-import com.space.munova.order.repository.OrderProductLogRepository;
 import com.space.munova.order.repository.OrderRepository;
 import com.space.munova.payment.entity.Payment;
 import com.space.munova.payment.service.PaymentService;
@@ -44,7 +42,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemRepository orderItemRepository;
     private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
-    private final OrderProductLogRepository orderProductLogRepository;
 
 
     @Transactional
@@ -80,19 +77,8 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(readOnly = false)
     @Override
     public void saveOrderLog(Order order){
-        Long memberId = order.getMember().getId();
-        for(OrderItem item : order.getOrderItems()) {
-            Long productId=item.getProductDetail().getProduct().getId();
-            Integer quantity=item.getQuantity();
-            OrderProductLog log=OrderProductLog.builder()
-                    .memberId(memberId)
-                    .productId(productId)
-                    .quantity(quantity)
-                    .price(item.getPriceSnapshot())
-                    .orderStatus(item.getStatus())
-                    .build();
-            orderProductLogRepository.save(log);
-        }
+        // 주문 로그는 Redis Stream으로 전송 (추천 서버 파이프라인)
+        // DB 테이블 저장 제거됨 - order_product_log 테이블 사용 안 함
     }
 
     @Override

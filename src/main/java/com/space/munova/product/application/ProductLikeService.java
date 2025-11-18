@@ -77,8 +77,8 @@ public class ProductLikeService {
             logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
 
             /// 좋아요 취소 메시지 발행
-            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
-            eventPublisher.publishEvent(eventDto);
+//            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
+//            eventPublisher.publishEvent(eventDto);
 
         } else {
             /// 사용자 좋아요 리스트 추가
@@ -96,8 +96,8 @@ public class ProductLikeService {
             logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
 
             ///  좋아요 메시지 발행
-            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, false);
-            eventPublisher.publishEvent(eventDto);
+//            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, false);
+//            eventPublisher.publishEvent(eventDto);
         }
     }
 

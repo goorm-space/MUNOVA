@@ -46,28 +46,28 @@ public class CartService {
     public void addCartItem(AddCartItemRequestDto reqDto, Long memberId) {
 
 
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(MemberException::notFoundException);
+//        Member member = memberRepository.findById(memberId)
+//                .orElseThrow(MemberException::notFoundException);
         ProductDetail productDetail = productDetailService.findById((reqDto.productDetailId()));
 
         ///  상품 디테일 수량 및 제거여부 검증
-        productDetail.validAddToCart(reqDto.quantity());
+//        productDetail.validAddToCart(reqDto.quantity());
 
 
         ///  사용자의 장바구니에 상품디테일이 있는지 확인.
-        boolean isExist = cartRepository.existsByMemberIdAndProductDetailId(memberId, productDetail.getId());
+//        boolean isExist = cartRepository.existsByMemberIdAndProductDetailId(memberId, productDetail.getId());
 
-        if(isExist) { ///  있으면 수량확인후 업데이트
-
-            Cart cart = cartRepository.findByProductDetailIdAndMemberId(productDetail.getId(), memberId)
-                    .orElseThrow(CartException::badRequestCartException);
-            cart.updateQuantity(reqDto.quantity());
-
-        } else { /// 없으면 저장.
-
-            Cart cart = Cart.createDefaultCart(member, productDetail, reqDto.quantity());
-            cartRepository.save(cart);
-        }
+//        if(isExist) { ///  있으면 수량확인후 업데이트
+//
+//            Cart cart = cartRepository.findByProductDetailIdAndMemberId(productDetail.getId(), memberId)
+//                    .orElseThrow(CartException::badRequestCartException);
+//            cart.updateQuantity(reqDto.quantity());
+//
+//        } else { /// 없으면 저장.
+//
+//            Cart cart = Cart.createDefaultCart(member, productDetail, reqDto.quantity());
+//            cartRepository.save(cart);
+//        }
 
         Long productId=productDetailService.findProductIdByDetailId(reqDto.productDetailId());
         Map<String, Object> logData = Map.of(

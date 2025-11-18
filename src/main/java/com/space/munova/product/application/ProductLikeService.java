@@ -50,21 +50,25 @@ public class ProductLikeService {
         ///  삭제메시지 발행
         ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
         eventPublisher.publishEvent(eventDto);
-        upsertUserAction(productId,false);
+        upsertUserAction(productId, false);
     }
 
     @Transactional(readOnly = false)
     public void addLike(Long productId, Long memberId) {
-
+        // DB 쿼리 주석처리 (Redis Stream 파이프라인 테스트용)
+        /*
         Member member = memberRepository.findById(memberId).orElseThrow(MemberException::invalidMemberException);
         Product product = productService.findByIdAndIsDeletedFalse(productId);
-
         boolean isLiked = productLikeRepository.existsByProductIdAndMemberIdAndIsDeletedFalse(productId, memberId);
+        */
+
+        // 좋아요 상태는 항상 false로 가정 (DB 쿼리 없이 Redis Stream만 전송)
+        boolean isLiked = false;
 
         /// 좋아요 한 상풍인데 또 좋아요 눌렀을 경우 disLike
         if(isLiked) {
             ///  사용자 좋아요 리스트 제거
-            productLikeRepository.deleteAllByProductIdsAndMemberId(productId, memberId);
+            // productLikeRepository.deleteAllByProductIdsAndMemberId(productId, memberId);
 
             Map<String, Object> logData = Map.of(
                     "event_type", "cancel_product_like",
@@ -82,8 +86,8 @@ public class ProductLikeService {
 
         } else {
             /// 사용자 좋아요 리스트 추가
-            ProductLike productLike = ProductLike.createDefaultProductLike(product, member);
-            productLikeRepository.save(productLike);
+            // ProductLike productLike = ProductLike.createDefaultProductLike(product, member);
+            // productLikeRepository.save(productLike);
 
             Map<String, Object> logData = Map.of(
                     "event_type", "product_like",

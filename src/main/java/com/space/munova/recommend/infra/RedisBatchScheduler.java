@@ -68,13 +68,8 @@ public class RedisBatchScheduler {
     // 50ms 간격으로 배치 전송
     @Scheduled(fixedDelay = 50)
     public void flushBatchToRedis() {
-        List<Map<String, Object>> batch = new ArrayList<>(BATCH_SIZE);
-
-        //버퍼에서 로그 가져옴 (최적화된 poll() 메서드 사용)
-        while (!logBuffer.isEmpty() && batch.size() < BATCH_SIZE) {
-            Map<String, Object> polled = logBuffer.poll();
-            if (polled != null) batch.add(polled);
-        }
+        // drainTo() 사용 (한 번에 여러 개 제거, 더 효율적)
+        List<Map<String, Object>> batch = logBuffer.pollBatch(BATCH_SIZE);
 
         if (batch.isEmpty()) return;
 
@@ -93,23 +88,15 @@ public class RedisBatchScheduler {
                         );
                     }
 
-                    // RedisStreamProducer에서 설정한 stream_key 사용 (우선순위)
-                    // 없으면 memberId 기반으로 bucket 분산
+                    // memberId 기반으로 user_action_stream_0~9로 분산
                     String streamKey;
-                    Object streamKeyObj = logData.get("stream_key");
-                    if (streamKeyObj != null) {
-                        // stream_key가 있으면 그대로 사용 (예: "product_action_stream")
-                        streamKey = String.valueOf(streamKeyObj);
+                    Object memberIdObj = logData.get("member_id");
+                    if (memberIdObj != null) {
+                        long memberId = Long.parseLong(String.valueOf(memberIdObj));
+                        int bucket = (int) (memberId % STREAM_BUCKETS); // 0~9
+                        streamKey = "user_action_stream_" + bucket;
                     } else {
-                        // stream_key가 없으면 memberId 기반 bucket 분산
-                        Object memberIdObj = logData.get("member_id");
-                        if (memberIdObj != null) {
-                            long memberId = Long.parseLong(String.valueOf(memberIdObj));
-                            int bucket = (int) (memberId % STREAM_BUCKETS); // 예: 0~9
-                            streamKey = "user_action_stream_" + bucket;
-                        } else {
-                            streamKey = "user_action_stream_unknown";
-                        }
+                        streamKey = "user_action_stream_unknown";
                     }
                     
                     MapRecord<byte[], byte[], byte[]> record =

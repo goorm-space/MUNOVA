@@ -44,39 +44,35 @@ public class CartService {
     ///  카트 생성 메서드
     @Transactional(readOnly = false)
     public void addCartItem(AddCartItemRequestDto reqDto, Long memberId) {
-
-
-//        Member member = memberRepository.findById(memberId)
-//                .orElseThrow(MemberException::notFoundException);
+         /*
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(MemberException::notFoundException);
         ProductDetail productDetail = productDetailService.findById((reqDto.productDetailId()));
-
-        ///  상품 디테일 수량 및 제거여부 검증
-//        productDetail.validAddToCart(reqDto.quantity());
-
-
-        ///  사용자의 장바구니에 상품디테일이 있는지 확인.
-//        boolean isExist = cartRepository.existsByMemberIdAndProductDetailId(memberId, productDetail.getId());
-
-//        if(isExist) { ///  있으면 수량확인후 업데이트
-//
-//            Cart cart = cartRepository.findByProductDetailIdAndMemberId(productDetail.getId(), memberId)
-//                    .orElseThrow(CartException::badRequestCartException);
-//            cart.updateQuantity(reqDto.quantity());
-//
-//        } else { /// 없으면 저장.
-//
-//            Cart cart = Cart.createDefaultCart(member, productDetail, reqDto.quantity());
-//            cartRepository.save(cart);
-//        }
-
+        productDetail.validAddToCart(reqDto.quantity());
+        boolean isExist = cartRepository.existsByMemberIdAndProductDetailId(memberId, productDetail.getId());
+        if(isExist) {
+            Cart cart = cartRepository.findByProductDetailIdAndMemberId(productDetail.getId(), memberId)
+                    .orElseThrow(CartException::badRequestCartException);
+            cart.updateQuantity(reqDto.quantity());
+        } else {
+            Cart cart = Cart.createDefaultCart(member, productDetail, reqDto.quantity());
+            cartRepository.save(cart);
+        }
         Long productId=productDetailService.findProductIdByDetailId(reqDto.productDetailId());
+        */
+        // DB 쿼리 주석처리 (Redis Stream 파이프라인 테스트용)
+
+        // 테스트용 하드코딩 값 (DB 쿼리 없이 Redis Stream만 전송)
+        Long productId = 1L; // 테스트용 상품 ID
+        int quantity = reqDto.quantity(); // 요청에서 받은 수량 사용
+
         Map<String, Object> logData = Map.of(
                 "event_type", "product_add_cart",
                 "service", "product",
                 "member_id", memberId,
                 "data", Map.of(
                         "product_id", productId,
-                        "quantity", productDetail.getQuantity()
+                        "quantity", quantity
                 )
         );
         logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);

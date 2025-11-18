@@ -299,6 +299,9 @@ public class RecommendServiceImpl implements RecommendService {
     // 유저 행동 발생 시 호출
     public void updateUserAction( Long productId, Integer clicked, Boolean liked, Boolean inCart, Boolean purchased) {
         Long memberId = JwtHelper.getMemberId();
+        
+        // DB 쿼리 부분 주석처리 (Redis Stream 파이프라인 테스트용)
+        /*
         UserActionSummary summary = summaryRepository.findByMemberIdAndProductId(memberId, productId)
                 .orElse(UserActionSummary.builder()
                         .memberId(memberId)
@@ -329,6 +332,7 @@ public class RecommendServiceImpl implements RecommendService {
         // Redis 캐시에 저장 (TTL 10분)
         String cacheKey = "user:action:" + memberId + ":" + productId;
         redisTemplate.opsForValue().set(cacheKey, summary, 10, TimeUnit.MINUTES);
+        */
     }
 
     private boolean isNameSimilar(String name1, String name2) {

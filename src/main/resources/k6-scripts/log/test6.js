@@ -12,7 +12,7 @@ const TOKENS = [
 // --- 부하 설정
 export const options = {
     vus: 10000,        // 가상의 사용자 (동시 접속자)
-    duration: '3s',   // 테스트 지속 시간
+    duration: '10s',   // 테스트 지속 시간
     thresholds: {
         http_req_failed: ['rate<0.05'],    // 실패율 5% 이하 목표
         http_req_duration: ['p(95)<2000'], // 95% 요청 2초 이내

@@ -1,11 +1,13 @@
 #!/bin/bash
 # Redis Stream 내부 메시지만 삭제 (Stream은 유지)
 # Redis Cluster 모드에서 작동하도록 최적화
+# user_action_stream_0~9만 사용 (memberId 기반 분산)
 
 set -e  # 에러 발생 시 중단
 
 echo "═══════════════════════════════════════════════════════════════"
 echo "🗑️  Redis Stream 메시지 삭제 시작 (Stream은 유지)"
+echo "   user_action_stream_0~9만 삭제"
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
 

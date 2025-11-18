@@ -114,7 +114,8 @@ public class ProductService {
     }
     @Transactional(readOnly = false)
     public void updateProductViewCountLogin(Long productId) {
-        productRepository.updateProductViewCount(productId);
+        // DB 쿼리 주석처리 (Redis Stream 파이프라인 테스트용)
+        // productRepository.updateProductViewCount(productId);
         recommendService.updateUserAction(productId, 1, null, null, null);
     }
 

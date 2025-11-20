@@ -21,4 +21,12 @@ public class OrderItemException extends BaseException {
     public static OrderItemException noOrderItemsNotAllowedException(String... detailMessage) {
         return new OrderItemException("ORDER_ITEM_03", "주문 상품이 없습니다. 상품을 추가해주세요.", HttpStatus.BAD_REQUEST, detailMessage);
     }
+
+    public static OrderItemException invalidItemId(String... detailMessage) {
+        return new OrderItemException("ORDER_ITEM_04", "주문 항목 ID가 유효하지 않습니다.", HttpStatus.BAD_REQUEST, detailMessage);
+    }
+
+    public static OrderItemException invalidQuantity(String... detailMessage) {
+        return new OrderItemException("ORDER_ITEM_05", "주문 수량은 1 이상이어야 합니다.",  HttpStatus.BAD_REQUEST, detailMessage);
+    }
 }

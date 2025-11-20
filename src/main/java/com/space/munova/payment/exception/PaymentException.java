@@ -18,19 +18,15 @@ public class PaymentException extends BaseException {
         return new PaymentException("PAYMENT_02", "해당 주문에 대한 결제 내역이 없습니다.", HttpStatus.BAD_REQUEST, detailMessage);
     }
 
-    public static PaymentException tossApiCallFailedException(String... detailMessage) {
-        return new PaymentException("TOSS_API_01", "TOSS API 응답을 실패했습니다.", HttpStatus.BAD_GATEWAY, detailMessage);
-    }
-
     public static PaymentException illegalPaymentStateException(String... detailMessage) {
-        return new PaymentException("PAYMENT_03", "승인된 결제만 취소/환불 정보를 업데이트 할 수 있습니다.", HttpStatus.BAD_REQUEST, detailMessage);
+        return new PaymentException("PAYMENT_03", "취소/환불 정보를 업데이트 할 수 없는 상태입니다.", HttpStatus.BAD_REQUEST, detailMessage);
     }
 
     public static PaymentException paymentStatusException(String... detailMessage) {
-        return new PaymentException("PAYMENT_04", "결제에 실패했습니다.", HttpStatus.BAD_REQUEST, detailMessage);
+        return new PaymentException("PAYMENT_04", "결제/취소가 정상적으로 처리되지 않았습니다.", HttpStatus.NOT_ACCEPTABLE, detailMessage);
     }
 
-    public static PaymentException jsonParsingException(String... detailMessage) {
-        return new PaymentException("PAYMENT_05", "결제 응답을 JSON 변환하는 데 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR, detailMessage);
+    public static PaymentException invalidTossResponse(String... detailMessage) {
+        return new PaymentException("PAYMENT_05", "토스페이먼츠 응답 오류입니다.", HttpStatus.NOT_ACCEPTABLE, detailMessage);
     }
 }

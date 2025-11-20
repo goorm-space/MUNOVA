@@ -101,7 +101,7 @@ public class ProductDetailService {
     }
 
     @Transactional
-    public void increaseProductDetailStock(Long productDetailId, int cancelQuantity) {
+    public void increaseStock(Long productDetailId, int cancelQuantity) {
         ProductDetail productDetail = getProductDetailWithPessimisticLock(productDetailId);
 
         productDetail.increaseStock(cancelQuantity);

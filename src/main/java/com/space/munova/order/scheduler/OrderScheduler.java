@@ -22,11 +22,6 @@ public class OrderScheduler {
     private final OrderRepository orderRepository;
     private final ProductDetailService productDetailService;
 
-    @Scheduled(fixedRate = 10000)
-    public void fixedRate() {
-        log.info("Fixed Rate: 10초");
-    }
-
     @Scheduled(cron = "0 */5 * * * *")
     @Transactional
     public void rollbackStockWhenPaymentPending() {
@@ -54,7 +49,7 @@ public class OrderScheduler {
                     Long productDetailId = item.getProductDetail().getId();
                     int quantity = item.getQuantity();
 
-                    productDetailService.increaseProductDetailStock(productDetailId, quantity);
+                    productDetailService.increaseStock(productDetailId, quantity);
                     log.info("스케줄러: 상품 재고 복원 productId={} quantity={}", productDetailId, quantity);
                 }
 

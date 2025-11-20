@@ -1,15 +1,14 @@
 package com.space.munova.payment.entity;
 
 import com.space.munova.core.entity.BaseEntity;
-import com.space.munova.order.entity.OrderItem;
-import com.space.munova.payment.dto.CancelReason;
+import com.space.munova.payment.dto.CancelDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "refund")
@@ -18,10 +17,6 @@ import java.time.ZonedDateTime;
 @AllArgsConstructor
 @Builder
 public class Refund extends BaseEntity {
-
-    public enum RefundStatus {
-        DONE
-    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,7 +38,27 @@ public class Refund extends BaseEntity {
     @Column(nullable = false)
     private Long cancelAmount;
 
-    private String cancelStatus;
+    private Instant canceledAt;
 
-    private ZonedDateTime canceledAt;
+    public static Refund create(Long paymentId, Long orderItemId, String paymentKey, CancelDto cancel) {
+        return Refund.builder()
+                .paymentId(paymentId)
+                .orderItemId(orderItemId)
+                .paymentKey(paymentKey)
+                .transactionKey(cancel.transactionKey())
+                .cancelReason(cancel.cancelReason())
+                .cancelAmount(cancel.cancelAmount())
+                .canceledAt(cancel.canceledAt().toInstant())
+                .build();
+    }
+
+    public static Refund createWhenRollBack(String paymentKey, CancelDto cancel) {
+        return Refund.builder()
+                .paymentKey(paymentKey)
+                .transactionKey(cancel.transactionKey())
+                .cancelReason(cancel.cancelReason())
+                .cancelAmount(cancel.cancelAmount())
+                .canceledAt(cancel.canceledAt().toInstant())
+                .build();
+    }
 }

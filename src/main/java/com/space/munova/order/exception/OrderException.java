@@ -17,4 +17,8 @@ public final class OrderException extends BaseException {
     public static OrderException amountMismatchException(String... detailMessage) {
         return new OrderException("ORDER_02", "클라이언트와 서버 간 주문 금액이 일치하지 않습니다.",  HttpStatus.BAD_REQUEST, detailMessage);
     }
+
+    public static OrderException invalidClientCalculatedAmount(String... detailMessage) {
+        return new OrderException("ORDER_03", "클라이언트 요청 금액이 올바르지 않습니다.", HttpStatus.BAD_REQUEST, detailMessage);
+    }
 }

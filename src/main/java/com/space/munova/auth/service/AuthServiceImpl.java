@@ -5,6 +5,7 @@ import com.space.munova.auth.dto.SignInGenerateToken;
 import com.space.munova.auth.dto.SignInRequest;
 import com.space.munova.auth.dto.SignupRequest;
 import com.space.munova.auth.event.dto.SignupEvent;
+import com.space.munova.auth.exception.AuthException;
 import com.space.munova.core.annotation.RedisDistributeLock;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
@@ -74,6 +75,15 @@ public class AuthServiceImpl implements AuthService {
         tokenService.clearSecurityContext();
 
         log.info("로그아웃 성공: {}", memberId);
+    }
+
+    public void verifyAuthorization(Long actualOwnerId, Long currentMemberId) {
+        if (!currentMemberId.equals(actualOwnerId)) {
+            throw AuthException.unauthorizedException(
+                    "접근 시도한 memberId:", currentMemberId.toString(),
+                    "실소유자 id:", actualOwnerId.toString()
+            );
+        }
     }
 
 }

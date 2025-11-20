@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
 }
 
 group = 'com.space'
@@ -29,6 +30,88 @@ ext {
     WEBMVC_VERSION = "2.8.13"
     QUERYDSL_VERSION = "5.0.0"
     REDISSON_VERSION = "3.42.0"
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    finalizedBy 'jacocoTestReport'
+}
+
+jacoco {
+    toolVersion = "0.8.13"
+    reportsDirectory = layout.buildDirectory.dir('reports/jacoco')
+}
+
+jacocoTestReport {
+    dependsOn test // tests are required to run before generating the report
+
+    reports {
+        xml.required = true
+        csv.required = false
+        html.required = true
+    }
+
+    def QDomainList = []
+    for (qPattern in '**/QA'..'**/QZ') { // QClass 대응
+        QDomainList.add(qPattern + '*')
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    '**/dto/**',
+                    '**/event/**',
+                    '**/*InitData*',
+                    '**/*Application*',
+                    '**/exception/**',
+                    '**/service/alarm/**',
+                    '**/aop/**',
+                    '**/config/**',
+                    '**/MemberRole*'
+            ] + QDomainList)
+        }))
+    }
+
+    finalizedBy 'jacocoTestCoverageVerification'
+}
+
+jacocoTestCoverageVerification {
+    def QDomainList = []
+    for (qPattern in '*.QA'..'*.QZ') { // QClass 대응
+        QDomainList.add(qPattern + '*')
+    }
+
+    violationRules {
+        rule {
+            enabled = true // 규칙 활성화 여부
+            element = 'CLASS' // 커버리지를 체크할 단위 설정
+
+            // 코드 커버리지를 측정할 때 사용되는 지표
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.80
+            }
+
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.80
+            }
+
+            excludes = [
+                    '**.dto.**',
+                    '**.event.**',
+                    '**.*InitData*',
+                    '**.*Application*',
+                    '**.exception.**',
+                    '**.service.alarm.**',
+                    '**.aop.**',
+                    '**.config.**',
+                    '**.MemberRole*'
+            ] + QDomainList
+        }
+    }
 }
 
 dependencies {
@@ -76,9 +159,6 @@ dependencies {
     testImplementation 'org.projectlombok:lombok'
 }
 
-tasks.named('test') {
-    useJUnitPlatform()
-}
 
 /**
  * querydsl 빌드 옵션

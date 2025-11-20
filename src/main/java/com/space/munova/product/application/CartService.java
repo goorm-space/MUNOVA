@@ -4,6 +4,7 @@ import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
+import com.space.munova.order.entity.OrderItem;
 import com.space.munova.product.application.dto.cart.*;
 import com.space.munova.product.application.exception.CartException;
 import com.space.munova.product.domain.Cart;
@@ -11,7 +12,6 @@ import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.Repository.CartRepository;
 import com.space.munova.recommend.infra.RedisStreamProducer;
 import com.space.munova.recommend.service.RecommendService;
-import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -143,7 +143,10 @@ public class CartService {
     }
 
     @Transactional
-    public void deleteByProductDetailIdsAndMemberId(List<Long> productDetailIds, Long memberId) {
+    public void deleteByOrderItemsAndMemberId(List<OrderItem> orderItems, Long memberId) {
+        List<Long> productDetailIds = orderItems.stream()
+                .map(orderItem -> orderItem.getProductDetail().getId())
+                .toList();
 
         cartRepository.deleteByProductDetailIdsAndMemberId(productDetailIds,memberId);
     }

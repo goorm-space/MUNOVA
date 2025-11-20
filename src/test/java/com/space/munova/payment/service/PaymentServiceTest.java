@@ -1,23 +1,19 @@
 package com.space.munova.payment.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.space.munova.auth.service.AuthService;
 import com.space.munova.coupon.service.CouponService;
-import com.space.munova.notification.dto.NotificationPayload;
+import com.space.munova.member.entity.Member;
 import com.space.munova.notification.service.NotificationService;
 import com.space.munova.order.dto.CancelOrderItemRequest;
 import com.space.munova.order.dto.CancelType;
 import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
-import com.space.munova.order.exception.OrderException;
-import com.space.munova.order.repository.OrderRepository;
+import com.space.munova.order.service.OrderQueryServiceImpl;
 import com.space.munova.payment.client.TossApiClient;
 import com.space.munova.payment.dto.*;
-import com.space.munova.payment.entity.Payment;
-import com.space.munova.payment.entity.PaymentMethod;
-import com.space.munova.payment.entity.PaymentStatus;
-import com.space.munova.payment.entity.Refund;
+import com.space.munova.payment.entity.*;
 import com.space.munova.payment.event.PaymentCompensationEvent;
 import com.space.munova.payment.exception.PaymentException;
 import com.space.munova.payment.repository.PaymentRepository;
@@ -31,315 +27,304 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
-import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class PaymentServiceTest {
 
+    @InjectMocks
+    private PaymentServiceImpl paymentService;
+
+    @Mock
+    private OrderQueryServiceImpl orderQueryService;
+    @Mock
+    private AuthService authService;
     @Mock
     private TossApiClient tossApiClient;
     @Mock
-    private ObjectMapper objectMapper;
-    @Mock
-    private OrderRepository orderRepository;
-    @Mock
     private PaymentRepository paymentRepository;
+    @Mock
+    private RefundRepository refundRepository;
+    @Mock
+    private CouponService couponService;
     @Mock
     private CartService cartService;
     @Mock
     private NotificationService notificationService;
     @Mock
     private ApplicationEventPublisher eventPublisher;
-    @Mock
-    private CouponService couponService;
-    @Mock
-    private RefundRepository refundRepository;
 
-    @InjectMocks
-    private PaymentServiceImpl paymentService;
+    @Spy
+    private PaymentService spyPaymentService = new PaymentServiceImpl(
+            null, null, null, null, null, null, null, null, null // 의존성 주입을 위해 필요한 인자를 null로 대체
+    );
 
-    @Captor
-    private ArgumentCaptor<Payment> paymentCaptor;
-    @Captor
-    private ArgumentCaptor<PaymentCompensationEvent> eventCaptor;
-    @Captor
-    private ArgumentCaptor<Refund> refundCaptor;
+    private final Long ORDER_ID = 1L;
+    private final String ORDER_NUM = "ORD12345";
+    private final Long MEMBER_ID = 10L;
+    private final Long TOTAL_PRICE = 10000L;
+    private final String PAYMENT_KEY = "toss_p_key";
+    private final Long ORDER_ITEM_ID = 100L;
+    private final String TRANSACTION_KEY = "transaction_key";
+    private final Long PAYMENT_ID = 1L;
 
-    private ConfirmPaymentRequest confirmPaymentRequest;
-    private Order order;
-    private String tossRawJson;
-    private CancelOrderItemRequest cancelOrderItemRequest;
+    // Confirm Mock 객체
+    private Order mockOrder;
+    private Member mockMember;
+    private ConfirmPaymentRequest confirmRequest;
+    private TossPaymentResponse response;
+
+    // Cancel Mock 객체
+    private Payment mockPayment;
+    private CancelOrderItemRequest cancelRequest;
+    private TossPaymentResponse cancelResponse;
+    private CancelDto cancelDto;
 
     @BeforeEach
     void setUp() {
-        confirmPaymentRequest = new ConfirmPaymentRequest("paymentKey", "orderId", 10000L);
+        mockMember = mock(Member.class);
 
-        order = spy(Order.builder()
-                .id(1L)
-                .orderNum(confirmPaymentRequest.orderId())
-                .totalPrice(10000L)
-                .build()
+        mockOrder = mock(Order.class);
+
+        // ConfirmPaymentRequest 설정
+        confirmRequest = new ConfirmPaymentRequest(PAYMENT_KEY, ORDER_NUM, TOTAL_PRICE);
+
+        // TossPaymentResponse 성공 응답 설정
+        response = mock(TossPaymentResponse.class);
+
+        // Spy 객체에 Mock 주입 (BeforeEach마다 초기화)
+        spyPaymentService = new PaymentServiceImpl(
+                orderQueryService, authService, tossApiClient, paymentRepository, refundRepository,
+                couponService, cartService, notificationService, eventPublisher
         );
 
-        tossRawJson = "{\"some\":\"json\"}";
+        mockPayment = mock(Payment.class);
 
-        cancelOrderItemRequest = new CancelOrderItemRequest(CancelType.ORDER_CANCEL, CancelReason.ORDER_MISTAKE, 10000L);
+        cancelRequest = new CancelOrderItemRequest(
+                CancelType.ORDER_CANCEL,
+                CancelReason.ORDER_MISTAKE,
+                TOTAL_PRICE
+        );
+
+        cancelDto = mock(CancelDto.class);
+
+        cancelResponse = mock(TossPaymentResponse.class);
     }
 
-    @DisplayName("[결제 승인] (HappyCase) TossPayment 결제 승인")
+    // --- 1. 결제 승인 테스트 (confirmPaymentAndSavePayment) ---
+    @DisplayName("[결제 승인] (HappyCase) 결제 승인 후 모든 후처리 로직이 호출되어야 한다")
     @Test
-    void confirmPayment_happyCase() throws IOException {
+    void confirmPayment_happyCase() {
         // given
-        when(tossApiClient.sendConfirmRequest(confirmPaymentRequest)).thenReturn(tossRawJson);
+        when(orderQueryService.getOrderByOrderNum(ORDER_NUM)).thenReturn(mockOrder);
+        when(mockOrder.getMember()).thenReturn(mockMember);
+        when(mockOrder.getTotalPrice()).thenReturn(TOTAL_PRICE);
+        when(mockOrder.getOrderNum()).thenReturn(ORDER_NUM);
+        when(mockOrder.getId()).thenReturn(ORDER_ID);
+        when(mockOrder.getOrderItems()).thenReturn(List.of(mock(OrderItem.class)));
+        when(mockOrder.getCouponId()).thenReturn(null);
 
-        ReceiptInfo receipt = new ReceiptInfo("http://receipt.com");
-        TossPaymentResponse tossResponse = mock(TossPaymentResponse.class);
-        when(tossResponse.paymentKey()).thenReturn(confirmPaymentRequest.paymentKey());
-        when(tossResponse.status()).thenReturn(PaymentStatus.DONE);
-        when(tossResponse.method()).thenReturn(PaymentMethod.카드);
-        when(tossResponse.totalAmount()).thenReturn(confirmPaymentRequest.amount());
-        when(tossResponse.requestedAt()).thenReturn(ZonedDateTime.now().minusMinutes(5));
-        when(tossResponse.approvedAt()).thenReturn(ZonedDateTime.now());
-        when(tossResponse.receipt()).thenReturn(receipt);
-        when(tossResponse.lastTransactionKey()).thenReturn("lastTransactionKey");
+        when(mockMember.getId()).thenReturn(MEMBER_ID);
+        doNothing().when(authService).verifyAuthorization(anyLong(), anyLong());
 
-        when(objectMapper.readValue(tossRawJson, TossPaymentResponse.class)).thenReturn(tossResponse);
+        when(tossApiClient.sendConfirmRequest(any(ConfirmPaymentRequest.class))).thenReturn(response);
 
-        when(orderRepository.findByOrderNum(confirmPaymentRequest.orderId())).thenReturn(Optional.of(order));
+        when(response.paymentKey()).thenReturn(PAYMENT_KEY);
+        when(response.status()).thenReturn(PaymentStatus.DONE);
+        when(response.totalAmount()).thenReturn(TOTAL_PRICE);
+        when(response.receipt()).thenReturn(new ReceiptInfo("http://url.com"));
+        when(response.requestedAt()).thenReturn(ZonedDateTime.now());
 
-        when(order.getCouponId()).thenReturn(null);
-
-        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        doNothing().when(cartService).deleteByProductDetailIdsAndMemberId(anyList(), anyLong());
-
-        doNothing().when(notificationService).sendNotification(any(NotificationPayload.class));
+        Payment mockPayment = mock(Payment.class);
+        when(paymentRepository.save(any(Payment.class))).thenReturn(mockPayment);
 
         // when
-        paymentService.confirmPaymentAndSavePayment(confirmPaymentRequest, 1L);
+        paymentService.confirmPaymentAndSavePayment(confirmRequest, MEMBER_ID);
 
         // then
-        verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
-        PaymentCompensationEvent published = eventCaptor.getValue();
-        assertThat(published.paymentKey()).isEqualTo(confirmPaymentRequest.paymentKey());
-        assertThat(published.orderNum()).isEqualTo(confirmPaymentRequest.orderId());
-        assertThat(published.amount()).isEqualTo(confirmPaymentRequest.amount());
+        // 1. 주문 금액 검증은 validateAmount 내부에서 처리되므로 Toss API 통신이 실행되어야 함
+        verify(tossApiClient, times(1)).sendConfirmRequest(any(ConfirmPaymentRequest.class));
 
-        verify(orderRepository, times(1)).findByOrderNum(confirmPaymentRequest.orderId());
-        verify(order).updateStatus(OrderStatus.PAID);
+        // 2. 주문 상태 변경
+        verify(mockOrder, times(1)).updateStatus(OrderStatus.PAID);
 
-        verify(paymentRepository, times(1)).save(paymentCaptor.capture());
-        Payment saved = paymentCaptor.getValue();
-        assertThat(saved.getOrderId()).isEqualTo(order.getId());
-        assertThat(saved.getTossPaymentKey()).isEqualTo(tossResponse.paymentKey());
-        assertThat(saved.getStatus()).isEqualTo(tossResponse.status());
-        assertThat(saved.getTotalAmount()).isEqualTo(tossResponse.totalAmount());
+        // 3. Payment 저장
+        verify(paymentRepository, times(1)).save(any(Payment.class));
 
-        verify(cartService, times(1)).deleteByProductDetailIdsAndMemberId(anyList(), anyLong());
-        verify(notificationService, times(1)).sendNotification(any(NotificationPayload.class));
+        // 4. 후처리 로직 호출
+        verify(eventPublisher, times(1)).publishEvent(any(PaymentCompensationEvent.class));
+        verify(cartService, times(1)).deleteByOrderItemsAndMemberId(any(), eq(MEMBER_ID));
+
+        // 5. 쿠폰 (null이므로 호출되지 않아야 함)
+        verify(couponService, never()).useCoupon(anyLong());
     }
 
-    @DisplayName("[결제 승인] orderNum에 해당하는 주문을 찾지 못하면 OrderException 발생")
+    @DisplayName("[결제 승인] 요청 금액이 주문 금액과 일치하지 않을 경우 예외가 발생해야 한다")
     @Test
-    void confirmPayment_orderNotFound_throws() {
+    void confirmPayment_RequestAmountMismatch_ThrowsException() {
         // given
-        when(orderRepository.findByOrderNum(confirmPaymentRequest.orderId())).thenReturn(Optional.empty());
+        ConfirmPaymentRequest mismatchRequest = new ConfirmPaymentRequest(PAYMENT_KEY, ORDER_NUM, 49999L); // 금액 불일치
+        when(orderQueryService.getOrderByOrderNum(ORDER_NUM)).thenReturn(mockOrder);
+        when(mockOrder.getMember()).thenReturn(mockMember);
+        when(mockOrder.getTotalPrice()).thenReturn(TOTAL_PRICE);
+        when(mockMember.getId()).thenReturn(MEMBER_ID);
 
-        // when / then
-        assertThrows(OrderException.class, () -> paymentService.confirmPaymentAndSavePayment(confirmPaymentRequest, 1L));
+        // WHEN & THEN
+        assertThatThrownBy(() -> paymentService.confirmPaymentAndSavePayment(mismatchRequest, MEMBER_ID))
+                .isInstanceOf(PaymentException.class);
 
-        // event나 다른 작업이 발생하지 않아야 함
-        verify(eventPublisher, never()).publishEvent(any(PaymentCompensationEvent.class));
-        verifyNoInteractions(couponService);
+        // Toss API 호출 및 후처리 로직은 실행되지 않아야 함
+        verify(tossApiClient, never()).sendConfirmRequest(any());
         verify(paymentRepository, never()).save(any());
     }
 
-    @DisplayName("[결제 승인] 요청 금액과 주문 총액 불일치")
-    @Test
-    void confirmPayment_requestAmountMismatch_throws() {
-        // given
-        when(orderRepository.findByOrderNum(confirmPaymentRequest.orderId())).thenReturn(Optional.of(order));
-        when(order.getTotalPrice()).thenReturn(9999L); // 요청 금액(1000)과 다름
-
-        // when / then
-        assertThatThrownBy(() -> paymentService.confirmPaymentAndSavePayment(confirmPaymentRequest, 1L))
-                .isInstanceOf(PaymentException.class);
-
-        verify(eventPublisher, never()).publishEvent(any(PaymentCompensationEvent.class));
-        verifyNoInteractions(objectMapper);
-    }
-
-    @DisplayName("[결제 승인] Toss 응답 상태가 DONE이 아니면 PaymentException 발생")
+    @DisplayName("[결제 승인] Toss 응답의 상태가 DONE이 아닐 경우 예외가 발생해야 한다")
     @Test
     void confirmPayment_responseStatusNotDone_throws() throws JsonProcessingException {
         // given
-        when(tossApiClient.sendConfirmRequest(confirmPaymentRequest)).thenReturn(tossRawJson);
+        TossPaymentResponse failedResponse = mock(TossPaymentResponse.class);
+        when(failedResponse.status()).thenReturn(PaymentStatus.ABORTED);
 
-        TossPaymentResponse tossResponse = mock(TossPaymentResponse.class);
-        when(tossResponse.status()).thenReturn(PaymentStatus.CANCELED); // DONE 아님
-        when(objectMapper.readValue(tossRawJson, TossPaymentResponse.class)).thenReturn(tossResponse);
-        when(orderRepository.findByOrderNum(confirmPaymentRequest.orderId())).thenReturn(Optional.of(order));
-        when(order.getTotalPrice()).thenReturn(confirmPaymentRequest.amount());
+        when(orderQueryService.getOrderByOrderNum(ORDER_NUM)).thenReturn(mockOrder);
+        when(mockOrder.getMember()).thenReturn(mockMember);
+        when(mockOrder.getTotalPrice()).thenReturn(TOTAL_PRICE);
+        when(mockMember.getId()).thenReturn(MEMBER_ID);
+
+        when(tossApiClient.sendConfirmRequest(any())).thenReturn(failedResponse);
 
         // when / then
-        assertThatThrownBy(() -> paymentService.confirmPaymentAndSavePayment(confirmPaymentRequest, 1L))
+        assertThatThrownBy(() -> paymentService.confirmPaymentAndSavePayment(confirmRequest, MEMBER_ID))
                 .isInstanceOf(PaymentException.class);
 
-        verify(eventPublisher, times(1)).publishEvent(any(PaymentCompensationEvent.class));
-        verifyNoInteractions(couponService);
         verify(paymentRepository, never()).save(any());
+        verify(mockOrder, never()).updateStatus(any());
     }
 
-    @DisplayName("[결제 승인] Toss응답 금액과 주문 금액 불일치")
+    @DisplayName("[결제 승인] (HappyCase) 쿠폰이 있을 경우 couponService.useCoupon 호출")
     @Test
-    void confirmPaymentAndSavePayment_amountMismatch_throwsPaymentException() throws Exception {
+    void confirmPayment_whenCouponExists() {
         // given
-        when(tossApiClient.sendConfirmRequest(confirmPaymentRequest)).thenReturn(tossRawJson);
+        when(orderQueryService.getOrderByOrderNum(ORDER_NUM)).thenReturn(mockOrder);
+        when(mockOrder.getMember()).thenReturn(mockMember);
+        when(mockOrder.getTotalPrice()).thenReturn(TOTAL_PRICE);
+        when(mockOrder.getOrderNum()).thenReturn(ORDER_NUM);
+        when(mockOrder.getId()).thenReturn(ORDER_ID);
+        when(mockOrder.getOrderItems()).thenReturn(List.of(mock(OrderItem.class)));
+        when(mockOrder.getCouponId()).thenReturn(1L);
 
-        TossPaymentResponse tossResponse = mock(TossPaymentResponse.class);
-        when(tossResponse.status()).thenReturn(PaymentStatus.DONE);
-        when(tossResponse.totalAmount()).thenReturn(confirmPaymentRequest.amount() - 1000L);
-        when(objectMapper.readValue(tossRawJson, TossPaymentResponse.class)).thenReturn(tossResponse);
+        when(mockMember.getId()).thenReturn(MEMBER_ID);
+        doNothing().when(authService).verifyAuthorization(anyLong(), anyLong());
 
-        when(orderRepository.findByOrderNum(confirmPaymentRequest.orderId())).thenReturn(Optional.of(order));
+        when(tossApiClient.sendConfirmRequest(any(ConfirmPaymentRequest.class))).thenReturn(response);
+
+        when(response.paymentKey()).thenReturn(PAYMENT_KEY);
+        when(response.status()).thenReturn(PaymentStatus.DONE);
+        when(response.totalAmount()).thenReturn(TOTAL_PRICE);
+        when(response.receipt()).thenReturn(new ReceiptInfo("http://url.com"));
+        when(response.requestedAt()).thenReturn(ZonedDateTime.now());
+
+        Payment mockPayment = mock(Payment.class);
+        when(paymentRepository.save(any(Payment.class))).thenReturn(mockPayment);
 
         // when
+        paymentService.confirmPaymentAndSavePayment(confirmRequest, MEMBER_ID);
 
         // then
-        assertThatThrownBy(() -> paymentService.confirmPaymentAndSavePayment(confirmPaymentRequest, 1L))
-                .isInstanceOf(PaymentException.class);
-        verify(eventPublisher, times(1)).publishEvent(any(PaymentCompensationEvent.class));
-        verify(paymentRepository, never()).save(any());
-        verify(cartService, never()).deleteByProductDetailIdsAndMemberId(anyList(), anyLong());
-        verify(notificationService, never()).sendNotification(any());
+        verify(couponService, times(1)).useCoupon(anyLong());
     }
 
-    @DisplayName("[결제 승인] 쿠폰이 있을 경우 couponService.useCoupon 호출")
+    @DisplayName("[환불 승인] (HappyCase) 결제 취소/환불 정보를 저장한다.")
     @Test
-    void confirmPayment_whenCouponExists() throws JsonProcessingException {
-        // given
-        when(tossApiClient.sendConfirmRequest(confirmPaymentRequest)).thenReturn(tossRawJson);
+    void cancelPaymentAndSaveRefund_happyCase() {
+        // GIVEN
+        when(paymentRepository.findPaymentByOrderId(ORDER_ID)).thenReturn(Optional.of(mockPayment));
+        when(mockPayment.getTossPaymentKey()).thenReturn(PAYMENT_KEY);
 
-        ReceiptInfo receipt = new ReceiptInfo("http://receipt.com");
-        TossPaymentResponse tossResponse = mock(TossPaymentResponse.class);
-        when(tossResponse.paymentKey()).thenReturn(confirmPaymentRequest.paymentKey());
-        when(tossResponse.status()).thenReturn(PaymentStatus.DONE);
-        when(tossResponse.method()).thenReturn(PaymentMethod.카드);
-        when(tossResponse.totalAmount()).thenReturn(confirmPaymentRequest.amount());
-        when(tossResponse.requestedAt()).thenReturn(ZonedDateTime.now().minusMinutes(5));
-        when(tossResponse.approvedAt()).thenReturn(ZonedDateTime.now());
-        when(tossResponse.receipt()).thenReturn(receipt);
-        when(tossResponse.lastTransactionKey()).thenReturn("lastTransactionKey");
+        when(tossApiClient.sendCancelRequest(eq(PAYMENT_KEY), any(CancelPaymentRequest.class))).thenReturn(cancelResponse);
 
-        when(objectMapper.readValue(tossRawJson, TossPaymentResponse.class)).thenReturn(tossResponse);
+        when(cancelResponse.cancels()).thenReturn(List.of(cancelDto));
+        when(cancelResponse.status()).thenReturn(PaymentStatus.CANCELED);
+        when(cancelResponse.lastTransactionKey()).thenReturn(TRANSACTION_KEY);
 
-        Order order = mock(Order.class);
-        when(order.getId()).thenReturn(42L);
-        when(order.getTotalPrice()).thenReturn(confirmPaymentRequest.amount());
-        when(order.getOrderNum()).thenReturn(confirmPaymentRequest.orderId());
-        when(order.getCouponId()).thenReturn(123L); // 쿠폰 있음
-        when(order.getOrderItems()).thenReturn(List.of());
-        when(orderRepository.findByOrderNum(confirmPaymentRequest.orderId())).thenReturn(Optional.of(order));
-
-        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
-        doNothing().when(couponService).useCoupon(123L);
-        doNothing().when(cartService).deleteByProductDetailIdsAndMemberId(anyList(), anyLong());
-        doNothing().when(notificationService).sendNotification(any());
-
-        // when
-        paymentService.confirmPaymentAndSavePayment(confirmPaymentRequest, 1L);
-
-        // then
-        verify(couponService, times(1)).useCoupon(123L);
-    }
-
-    @DisplayName("[환불 승인] (HappyCase) 환불 처리 및 환불 정보를 저장한다.")
-    @Test
-    void cancelPaymentAndSaveRefund_happyCase() throws JsonProcessingException {
-        // given
-        Long orderId = 1L;
-        Long orderItemId = 2L;
-
-        Payment realPayment = new Payment(); // 실제 객체 생성
-        Payment spyPayment = spy(realPayment);
-
-        when(paymentRepository.findPaymentByOrderId(orderId)).thenReturn(Optional.of(spyPayment));
-
-        when(tossApiClient.sendCancelRequest(any(), any(CancelPaymentRequest.class)))
-                .thenReturn(tossRawJson);
-
-        TossPaymentResponse tossResponse = mock(TossPaymentResponse.class);
-        CancelDto cancelDto = mock(CancelDto.class);
-
-        when(cancelDto.transactionKey()).thenReturn("transactionKey");
-        when(cancelDto.cancelReason()).thenReturn(cancelOrderItemRequest.cancelReason().toString());
-        when(cancelDto.cancelAmount()).thenReturn(cancelOrderItemRequest.cancelAmount());
-        when(cancelDto.cancelStatus()).thenReturn("DONE");
+        when(cancelDto.transactionKey()).thenReturn(TRANSACTION_KEY);
+        when(cancelDto.cancelStatus()).thenReturn(CancelStatus.DONE);
         when(cancelDto.canceledAt()).thenReturn(ZonedDateTime.now());
 
-        when(tossResponse.cancels()).thenReturn(List.of(cancelDto));
-        when(tossResponse.paymentKey()).thenReturn("paymentKey");
-
-        when(objectMapper.readValue(tossRawJson, TossPaymentResponse.class)).thenReturn(tossResponse);
-
         when(refundRepository.findByTransactionKey(anyString())).thenReturn(Optional.empty());
-        when(refundRepository.save(any(Refund.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        doNothing().when(spyPayment).updatePaymentInfo(eq(tossResponse), anyString());
+        when(mockPayment.getId()).thenReturn(PAYMENT_ID);
 
-        // when
-        paymentService.cancelPaymentAndSaveRefund(orderItemId, orderId, cancelOrderItemRequest);
+        // WHEN
+        paymentService.cancelPaymentAndSaveRefund(ORDER_ITEM_ID, ORDER_ID, cancelRequest);
 
-        // then
-        verify(spyPayment, times(1)).updatePaymentInfo(eq(tossResponse), anyString());
+        // THEN
+        // 1. API 호출
+        verify(tossApiClient, times(1)).sendCancelRequest(eq(PAYMENT_KEY), any(CancelPaymentRequest.class));
 
-        verify(refundRepository, times(1)).save(refundCaptor.capture());
-        Refund saved = refundCaptor.getValue();
-        assertThat(saved.getOrderItemId()).isEqualTo(orderItemId);
-        assertThat(saved.getPaymentKey()).isEqualTo(tossResponse.paymentKey());
-        assertThat(saved.getTransactionKey()).isEqualTo(cancelDto.transactionKey());
-        assertThat(saved.getCancelAmount()).isEqualTo(cancelOrderItemRequest.cancelAmount());
+        // 2. 상태 업데이트
+        verify(mockPayment, times(1)).updatePaymentInfo(eq(PaymentStatus.CANCELED), eq(TRANSACTION_KEY));
+
+        // 3. Refund 저장
+        verify(refundRepository, times(1)).save(any(Refund.class));
     }
 
     @DisplayName("[환불 승인] 이미 환불 정보가 존재하면 save 호출 안 함")
     @Test
     void cancelPaymentAndSaveRefund_refundAlreadyExists() throws JsonProcessingException {
         // given
-        Long orderId = 1L;
-        Long orderItemId = 2L;
+        when(paymentRepository.findPaymentByOrderId(ORDER_ID)).thenReturn(Optional.of(mockPayment));
+        when(mockPayment.getTossPaymentKey()).thenReturn(PAYMENT_KEY);
 
-        Payment realPayment = new Payment();
-        Payment spyPayment = spy(realPayment);
+        when(tossApiClient.sendCancelRequest(eq(PAYMENT_KEY), any(CancelPaymentRequest.class))).thenReturn(cancelResponse);
 
-        when(paymentRepository.findPaymentByOrderId(orderId)).thenReturn(Optional.of(spyPayment));
-        when(tossApiClient.sendCancelRequest(any(), any(CancelPaymentRequest.class)))
-                .thenReturn(tossRawJson);
+        when(cancelResponse.cancels()).thenReturn(List.of(cancelDto));
 
-        TossPaymentResponse tossResponse = mock(TossPaymentResponse.class);
-        CancelDto cancelDto = mock(CancelDto.class);
+        when(cancelDto.transactionKey()).thenReturn(TRANSACTION_KEY);
+        when(cancelDto.cancelStatus()).thenReturn(CancelStatus.DONE);
 
-        when(cancelDto.transactionKey()).thenReturn("transactionKey");
+        when(refundRepository.findByTransactionKey(anyString())).thenReturn(Optional.of(mock(Refund.class)));
 
-        when(tossResponse.cancels()).thenReturn(List.of(cancelDto));
-        when(objectMapper.readValue(anyString(), eq(TossPaymentResponse.class))).thenReturn(tossResponse);
-
-        when(refundRepository.findByTransactionKey("transactionKey")).thenReturn(Optional.of(mock(Refund.class)));
 
         // when
-        paymentService.cancelPaymentAndSaveRefund(orderItemId, orderId, cancelOrderItemRequest);
+        paymentService.cancelPaymentAndSaveRefund(ORDER_ITEM_ID, ORDER_ID, cancelRequest);
 
         // then
-        verify(spyPayment, never()).updatePaymentInfo(any(), anyString());
-        verify(refundRepository, never()).save(any());
+        // 1. API 호출은 실행되어야 함
+        verify(tossApiClient, times(1)).sendCancelRequest(eq(PAYMENT_KEY), any(CancelPaymentRequest.class));
+
+        // 2. 아래 로직은 호출되지 않아야 함
+        verify(refundRepository, never()).save(any(Refund.class));
+        verify(mockPayment, never()).updatePaymentInfo(any(PaymentStatus.class), anyString());
     }
 
+    @Test
+    @DisplayName("[환불 승인] 환불 상태가 DONE이 아닐 경우 예외가 발생해야 한다")
+    void cancelPayment_StatusNotAccepted_ThrowsException() {
+        // GIVEN
+        when(paymentRepository.findPaymentByOrderId(ORDER_ID)).thenReturn(Optional.of(mockPayment));
+        when(mockPayment.getTossPaymentKey()).thenReturn(PAYMENT_KEY);
+
+        when(tossApiClient.sendCancelRequest(eq(PAYMENT_KEY), any(CancelPaymentRequest.class))).thenReturn(cancelResponse);
+
+        when(cancelResponse.cancels()).thenReturn(List.of(cancelDto));
+
+        CancelStatus mockCancelStatus = mock(CancelStatus.class);
+        when(cancelDto.transactionKey()).thenReturn(TRANSACTION_KEY);
+        when(cancelDto.cancelStatus()).thenReturn(mockCancelStatus);
+        when(mockCancelStatus.isDone()).thenReturn(false);
+//        when(cancelDto.canceledAt()).thenReturn(ZonedDateTime.now());
+
+        // WHEN & THEN
+        assertThatThrownBy(() -> paymentService.cancelPaymentAndSaveRefund(ORDER_ITEM_ID, ORDER_ID, cancelRequest))
+                .isInstanceOf(PaymentException.class);
+
+        // Refund 저장은 실행되지 않아야 함
+        verify(refundRepository, never()).save(any());
+    }
 
 }

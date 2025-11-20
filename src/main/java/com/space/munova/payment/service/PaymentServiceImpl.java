@@ -1,8 +1,7 @@
 package com.space.munova.payment.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.space.munova.auth.service.AuthService;
+import com.space.munova.common.validation.AmountVerifier;
 import com.space.munova.coupon.service.CouponService;
 import com.space.munova.notification.dto.NotificationPayload;
 import com.space.munova.notification.dto.NotificationType;
@@ -10,15 +9,13 @@ import com.space.munova.notification.service.NotificationService;
 import com.space.munova.order.dto.CancelOrderItemRequest;
 import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.order.entity.Order;
-import com.space.munova.order.exception.OrderException;
-import com.space.munova.order.repository.OrderRepository;
+import com.space.munova.order.service.OrderQueryServiceImpl;
 import com.space.munova.payment.client.TossApiClient;
 import com.space.munova.payment.dto.CancelDto;
 import com.space.munova.payment.dto.CancelPaymentRequest;
 import com.space.munova.payment.dto.ConfirmPaymentRequest;
 import com.space.munova.payment.dto.TossPaymentResponse;
 import com.space.munova.payment.entity.Payment;
-import com.space.munova.payment.entity.PaymentStatus;
 import com.space.munova.payment.entity.Refund;
 import com.space.munova.payment.event.PaymentCompensationEvent;
 import com.space.munova.payment.exception.PaymentException;
@@ -30,8 +27,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 import static com.space.munova.payment.dto.PaymentNotification.PAYMENT_CONFIRM;
 
 @Service
@@ -39,51 +34,35 @@ import static com.space.munova.payment.dto.PaymentNotification.PAYMENT_CONFIRM;
 @Transactional(readOnly = true)
 public class PaymentServiceImpl implements PaymentService {
 
+    private final OrderQueryServiceImpl orderQueryService;
+    private final AuthService authService;
+    private final TossApiClient tossApiClient;
     private final PaymentRepository paymentRepository;
     private final RefundRepository refundRepository;
-    private final OrderRepository orderRepository;
-    private final TossApiClient tossApiClient;
+    private final CouponService couponService;
     private final CartService cartService;
     private final NotificationService notificationService;
-    private final CouponService couponService;
-    private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     @Override
     public void confirmPaymentAndSavePayment(ConfirmPaymentRequest request, Long memberId) {
-        Order order = orderRepository.findByOrderNum(request.orderId())
-                .orElseThrow(OrderException::notFoundException);
+        Order order = orderQueryService.getOrderByOrderNum(request.orderId());
 
-        if (!request.amount().equals(order.getTotalPrice())) {
-            throw PaymentException.amountMismatchException(
-                    String.format("요청금액: %d, 실제금액: %d", request.amount(), order.getTotalPrice())
-            );
-        }
+        authService.verifyAuthorization(order.getMember().getId(), memberId);
+        validateAmount(request.amount(), order.getTotalPrice());
 
-        String tossResponse = tossApiClient.sendConfirmRequest(request);
+        TossPaymentResponse response = tossApiClient.sendConfirmRequest(request);
+
         eventPublisher.publishEvent(new PaymentCompensationEvent(request.paymentKey(), request.orderId(), request.amount()));
 
-        TossPaymentResponse response;
-        try {
-            response = objectMapper.readValue(tossResponse, TossPaymentResponse.class);
-
-        } catch (JsonProcessingException e) {
-            throw PaymentException.jsonParsingException();
-        }
-
-        if (!PaymentStatus.DONE.equals(response.status())) {
+        if (!response.status().isDone()) {
             throw PaymentException.paymentStatusException(
-                    String.format("현재 결제 상태: %s", response.status())
+                    String.format("PaymentStatus는 'DONE' 상태여야 합니다. 현재 상태: '%s'", response.status().name())
             );
         }
 
-
-        if (!response.totalAmount().equals(order.getTotalPrice())) {
-            throw PaymentException.amountMismatchException(
-                    String.format("결제금액: %d, 실제금액: %d", response.totalAmount(), order.getTotalPrice())
-            );
-        }
+        validateAmount(response.totalAmount(), order.getTotalPrice());
 
         order.updateStatus(OrderStatus.PAID);
 
@@ -91,26 +70,10 @@ public class PaymentServiceImpl implements PaymentService {
             couponService.useCoupon(order.getCouponId());
         }
 
-        Payment payment = Payment.builder()
-                .orderId(order.getId())
-                .tossPaymentKey(response.paymentKey())
-                .status(response.status())
-                .method(response.method())
-                .totalAmount(response.totalAmount())
-                .requestedAt(response.requestedAt())
-                .approvedAt(response.approvedAt())
-                .receipt(response.receipt().url())
-                .lastTransactionKey(response.lastTransactionKey())
-                .paymentObject(tossResponse)
-                .build();
-
+        Payment payment = Payment.create(order.getId(), response);
         paymentRepository.save(payment);
 
-        // 장바구니 삭제
-        List<Long> productDetailIds = order.getOrderItems().stream()
-                .map(orderItem -> orderItem.getProductDetail().getId())
-                .toList();
-        cartService.deleteByProductDetailIdsAndMemberId(productDetailIds, memberId);
+        cartService.deleteByOrderItemsAndMemberId(order.getOrderItems(), memberId);
 
         // 알림 발송
         sendPaymentNotification(memberId, order.getOrderNum(), payment.getTotalAmount());
@@ -127,41 +90,34 @@ public class PaymentServiceImpl implements PaymentService {
     public void cancelPaymentAndSaveRefund(Long orderItemId, Long orderId, CancelOrderItemRequest request) {
         Payment payment = getPaymentByOrderId(orderId);
 
-        CancelPaymentRequest paymentRequest = new CancelPaymentRequest(request.cancelReason(), request.cancelAmount());
-
-        String tossResponse = tossApiClient.sendCancelRequest(payment.getTossPaymentKey(), paymentRequest);
-
-        TossPaymentResponse response;
-        try {
-            response = objectMapper.readValue(tossResponse, TossPaymentResponse.class);
-
-        } catch (JsonProcessingException e) {
-            throw PaymentException.jsonParsingException();
-        }
+        CancelPaymentRequest cancelRequest = CancelPaymentRequest.of(request.cancelReason(), request.cancelAmount());
+        TossPaymentResponse response = tossApiClient.sendCancelRequest(payment.getTossPaymentKey(), cancelRequest);
 
         for (CancelDto cancel : response.cancels()) {
             String transactionKey = cancel.transactionKey();
+
+            if (!cancel.cancelStatus().isDone()) {
+                throw PaymentException.paymentStatusException(
+                        String.format("CancelStatus는 'DONE' 상태여야 합니다. 현재 상태: '%s'", cancel.cancelStatus().name())
+                );
+            }
 
             if (refundRepository.findByTransactionKey(transactionKey).isPresent()) {
                 continue;
             }
 
-            if (cancel.cancelStatus().equals("DONE")) {
-                payment.updatePaymentInfo(response, tossResponse);
+            payment.updatePaymentInfo(response.status(), response.lastTransactionKey());
 
-                Refund refund = Refund.builder()
-                        .paymentId(payment.getId())
-                        .orderItemId(orderItemId)
-                        .paymentKey(response.paymentKey())
-                        .transactionKey(cancel.transactionKey())
-                        .cancelReason(cancel.cancelReason())
-                        .cancelAmount(cancel.cancelAmount())
-                        .cancelStatus(cancel.cancelStatus())
-                        .canceledAt(cancel.canceledAt())
-                        .build();
+            Refund refund = Refund.create(payment.getId(), orderItemId, response.paymentKey(), cancel);
+            refundRepository.save(refund);
+        }
+    }
 
-                refundRepository.save(refund);
-            }
+    private void validateAmount(Long expectedAmount, Long actualAmount) {
+        try {
+            AmountVerifier.verify(expectedAmount, actualAmount);
+        } catch (IllegalArgumentException e) {
+            throw PaymentException.amountMismatchException(e.getMessage());
         }
     }
 

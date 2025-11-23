@@ -54,6 +54,14 @@ public class ProductDetail extends BaseEntity {
                 .build();
     }
 
+    public String getNameSnapshot() {
+        return this.product.getName();
+    }
+
+    public Long getPriceSnapshot() {
+        return this.product.getPrice();
+    }
+
     public void deductStock(int quantity) {
         if (this.quantity < quantity) {
             throw ProductDetailException.stockInsufficientException("재고 차감 오류: 재고가 부족합니다.");
@@ -61,7 +69,7 @@ public class ProductDetail extends BaseEntity {
         this.quantity -= quantity;
     }
 
-    public void restoreStock(int quantity) {
+    public void increaseStock(int quantity) {
         if (this.quantity == null) {
             this.quantity = 0;
         }

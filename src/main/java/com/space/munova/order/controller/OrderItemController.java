@@ -3,7 +3,6 @@ package com.space.munova.order.controller;
 import com.space.munova.core.config.ResponseApi;
 import com.space.munova.order.dto.CancelOrderItemRequest;
 import com.space.munova.order.service.OrderItemService;
-import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +16,8 @@ public class OrderItemController {
 
     @PostMapping("/{orderItemId}/cancel")
     public ResponseApi<Void>  cancelOrder(@PathVariable Long orderItemId, @RequestBody CancelOrderItemRequest request) {
-        orderItemService.cancelOrderItem(orderItemId, request);
+        Long memberId = JwtHelper.getMemberId();
+        orderItemService.cancelOrderItem(orderItemId, request, memberId);
         return ResponseApi.ok();
     }
 }

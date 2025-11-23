@@ -12,8 +12,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "payment")
@@ -40,27 +39,41 @@ public class Payment extends BaseEntity {
 
     private Long totalAmount;
 
-    private ZonedDateTime requestedAt;
+    private Instant requestedAt;
 
-    private ZonedDateTime approvedAt;
+    private Instant approvedAt;
 
     private String receipt;
 
     @Column(length = 64)
     private String lastTransactionKey;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    private String paymentObject;
+    public static Payment create(Long orderId, TossPaymentResponse response) {
+        Instant requestedAt = response.requestedAt().toInstant();
+        Instant approvedAt = response.approvedAt() != null ?
+                response.approvedAt().toInstant() : null;
 
-    public void updatePaymentInfo(TossPaymentResponse response, String originResponse) {
-        if (this.status != PaymentStatus.DONE && this.status != PaymentStatus.PARTIAL_CANCELED) {
+        return Payment.builder()
+                .orderId(orderId)
+                .tossPaymentKey(response.paymentKey())
+                .status(response.status())
+                .method(response.method())
+                .totalAmount(response.totalAmount())
+                .requestedAt(requestedAt)
+                .approvedAt(approvedAt)
+                .receipt(response.receipt().url())
+                .lastTransactionKey(response.lastTransactionKey())
+                .build();
+    }
+
+    public void updatePaymentInfo(PaymentStatus status, String lastTransactionKey) {
+        if (!this.status.isUpdatableStatus()) {
             throw PaymentException.illegalPaymentStateException(
                     String.format("현재 결제 상태: %s", this.status)
             );
         }
 
-        this.status = response.status();
-        this.lastTransactionKey = response.lastTransactionKey();
-        this.paymentObject = originResponse;
+        this.status = status;
+        this.lastTransactionKey = lastTransactionKey;
     }
 }

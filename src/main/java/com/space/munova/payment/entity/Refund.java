@@ -1,15 +1,14 @@
 package com.space.munova.payment.entity;
 
 import com.space.munova.core.entity.BaseEntity;
-import com.space.munova.order.entity.OrderItem;
-import com.space.munova.payment.dto.CancelReason;
+import com.space.munova.payment.dto.CancelDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "refund")
@@ -19,31 +18,47 @@ import java.time.ZonedDateTime;
 @Builder
 public class Refund extends BaseEntity {
 
-    public enum RefundStatus {
-        DONE
-    }
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "refund_id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_id", nullable = false)
-    private Payment payment;
+    private Long paymentId;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_item_id", nullable = false)
-    private OrderItem orderItem;
+    private Long orderItemId;
+
+    private String paymentKey;
 
     @Column(length = 64)
     private String transactionKey;
 
+    @Column(nullable = false)
     private String cancelReason;
 
+    @Column(nullable = false)
     private Long cancelAmount;
 
-    private String cancelStatus;
+    private Instant canceledAt;
 
-    private ZonedDateTime canceledAt;
+    public static Refund create(Long paymentId, Long orderItemId, String paymentKey, CancelDto cancel) {
+        return Refund.builder()
+                .paymentId(paymentId)
+                .orderItemId(orderItemId)
+                .paymentKey(paymentKey)
+                .transactionKey(cancel.transactionKey())
+                .cancelReason(cancel.cancelReason())
+                .cancelAmount(cancel.cancelAmount())
+                .canceledAt(cancel.canceledAt().toInstant())
+                .build();
+    }
+
+    public static Refund createWhenRollBack(String paymentKey, CancelDto cancel) {
+        return Refund.builder()
+                .paymentKey(paymentKey)
+                .transactionKey(cancel.transactionKey())
+                .cancelReason(cancel.cancelReason())
+                .cancelAmount(cancel.cancelAmount())
+                .canceledAt(cancel.canceledAt().toInstant())
+                .build();
+    }
 }

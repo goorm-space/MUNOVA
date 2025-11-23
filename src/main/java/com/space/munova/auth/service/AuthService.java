@@ -16,4 +16,6 @@ public interface AuthService {
     // 로그아웃
     void signOut(String deviceId, Long memberId);
 
+    // 권한 확인
+    void verifyAuthorization(Long actualOwnerId, Long currentMemberId);
 }

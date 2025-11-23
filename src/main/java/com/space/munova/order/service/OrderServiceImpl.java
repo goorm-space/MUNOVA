@@ -1,13 +1,9 @@
 package com.space.munova.order.service;
 
-import com.space.munova.auth.exception.AuthException;
+import com.space.munova.auth.service.AuthService;
 import com.space.munova.core.dto.PagingResponse;
-import com.space.munova.coupon.dto.UseCouponRequest;
-import com.space.munova.coupon.dto.UseCouponResponse;
-import com.space.munova.coupon.service.CouponService;
 import com.space.munova.member.entity.Member;
-import com.space.munova.member.exception.MemberException;
-import com.space.munova.member.repository.MemberRepository;
+import com.space.munova.member.service.MemberService;
 import com.space.munova.order.dto.*;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
@@ -16,11 +12,13 @@ import com.space.munova.order.exception.OrderException;
 import com.space.munova.order.repository.OrderItemRepository;
 import com.space.munova.order.repository.OrderProductLogRepository;
 import com.space.munova.order.repository.OrderRepository;
+import com.space.munova.order.service.processor.CouponAppliedProcessor;
+import com.space.munova.order.service.processor.NoCouponProcessor;
+import com.space.munova.order.service.processor.OrderAmountProcessor;
 import com.space.munova.payment.entity.Payment;
 import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.ProductDetailService;
 import com.space.munova.recommend.service.RecommendService;
-import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -35,38 +33,51 @@ public class OrderServiceImpl implements OrderService {
 
     private static final int PAGE_SIZE = 5;
 
+    private final CouponAppliedProcessor couponAppliedProcessor;
+    private final NoCouponProcessor noCouponProcessor;
     private final ProductDetailService productDetailService;
-    private final CouponService couponService;
     private final OrderItemService orderItemService;
     private final RecommendService recommendService;
     private final PaymentService paymentService;
+    private final MemberService memberService;
+    private final AuthService authService;
 
     private final OrderItemRepository orderItemRepository;
     private final OrderRepository orderRepository;
-    private final MemberRepository memberRepository;
     private final OrderProductLogRepository orderProductLogRepository;
 
 
     @Transactional
     @Override
     public Order createOrder(CreateOrderRequest request, Long memberId) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(MemberException::notFoundException);
+        Member member = memberService.getMemberEntity(memberId);
 
         // 초기 주문 생성
-        Order order = Order.createInitOrder(member, request.userRequest());
+        Order order = Order.createOrder(member, request.userRequest());
 
-        // --- 1. 재고 감소
+        // 1. 재고 선점
         List<OrderItem> orderItems = orderItemService.deductStockAndCreateOrderItems(request.orderItems(), order);
         orderItems.forEach(order::addOrderItem);
 
-        // --- 2. 쿠폰 적용
-        Order finalOrder = finalizeOrderWithCoupon(order, request);
+        // 2. 총액 계산
+        long totalProductAmount = order.getOrderItems().stream()
+                .mapToLong(OrderItem::calculateAmount)
+                .sum();
 
-        orderRepository.save(finalOrder);
+        // 3. 쿠폰 유무에 따라 금액 계산
+        OrderAmountProcessor processor;
+        if (request.orderCouponId() != null) {
+            processor = couponAppliedProcessor;
+        } else {
+            processor = noCouponProcessor;
+        }
+
+        processor.process(order, request, totalProductAmount);
+
+        orderRepository.save(order);
 
         //UserActionSummary 저장 로직
-        List<Long> orderItemIds=finalOrder.getOrderItems().stream()
+        List<Long> orderItemIds=order.getOrderItems().stream()
                 .map(OrderItem::getId)
                 .toList();
         List<Long> productDetailIds=orderItemRepository.findProductDetailIdsByOrderItemIds(orderItemIds);
@@ -74,7 +85,7 @@ public class OrderServiceImpl implements OrderService {
             Long productId=productDetailService.findProductIdByDetailId(productDetailId);
             recommendService.updateUserAction(productId,0,null,null,true);
         }
-        return finalOrder;
+        return order;
     }
 
     @Transactional(readOnly = false)
@@ -128,55 +139,10 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findOrderDetailsById(orderId)
                 .orElseThrow(OrderException::notFoundException);
 
-        if (!memberId.equals(order.getMember().getId())) {
-            throw AuthException.unauthorizedException(
-                    "접근 시도한 userId:", memberId.toString(),
-                    "orderId:", orderId.toString()
-            );
-        }
+        authService.verifyAuthorization(order.getMember().getId(), memberId);
 
         Payment payment = paymentService.getPaymentByOrderId(orderId);
 
         return GetOrderDetailResponse.from(order, payment);
-    }
-
-    public Order finalizeOrderWithCoupon(Order order, CreateOrderRequest request) {
-        long totalProductAmount = order.getOrderItems().stream()
-                .mapToLong(item -> item.getPriceSnapshot() * item.getQuantity())
-                .sum();
-
-        if (request.orderCouponId() != null) {
-            UseCouponRequest couponRequest = UseCouponRequest.of(totalProductAmount);
-            UseCouponResponse couponResponse = couponService.calculateAmountWithCoupon(request.orderCouponId(), couponRequest);
-
-            if (couponResponse.finalPrice().longValue() != request.clientCalculatedAmount().longValue()) {
-                throw OrderException.amountMismatchException(
-                        String.format("client: %d, server: %d", request.clientCalculatedAmount(), couponResponse.finalPrice())
-                );
-            }
-
-            order.updateFinalOrder(
-                    couponResponse.originalPrice(),
-                    couponResponse.discountPrice(),
-                    couponResponse.finalPrice(),
-                    request.orderCouponId(),
-                    OrderStatus.PAYMENT_PENDING
-            );
-        } else {
-            if (totalProductAmount != request.clientCalculatedAmount()) {
-                throw OrderException.amountMismatchException(
-                        String.format("client: %d, server: %d", request.clientCalculatedAmount(), totalProductAmount)
-                );
-            }
-            order.updateFinalOrder(
-                    totalProductAmount,
-                    0L,
-                    totalProductAmount,
-                    null,
-                    OrderStatus.PAYMENT_PENDING
-            );
-        }
-
-        return order;
     }
 }

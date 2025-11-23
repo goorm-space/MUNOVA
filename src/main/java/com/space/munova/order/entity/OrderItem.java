@@ -1,5 +1,6 @@
 package com.space.munova.order.entity;
 
+import com.space.munova.order.dto.CancelType;
 import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.product.domain.ProductDetail;
 import jakarta.persistence.*;
@@ -40,6 +41,21 @@ public class OrderItem {
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
+
+    public static OrderItem create(Order order, ProductDetail productDetail, int quantity) {
+        return OrderItem.builder()
+                .order(order)
+                .productDetail(productDetail)
+                .nameSnapshot(productDetail.getNameSnapshot())
+                .priceSnapshot(productDetail.getPriceSnapshot())
+                .quantity(quantity)
+                .status(OrderStatus.CREATED)
+                .build();
+    }
+
+    public long calculateAmount() {
+        return this.priceSnapshot * this.quantity;
+    }
 
     public void updateStatus(OrderStatus status) {
         this.status = status;

@@ -4,15 +4,14 @@ import com.space.munova.auth.dto.GenerateTokens;
 import com.space.munova.auth.dto.SignInGenerateToken;
 import com.space.munova.auth.dto.SignInRequest;
 import com.space.munova.auth.dto.SignupRequest;
-import com.space.munova.auth.event.dto.SignupEvent;
 import com.space.munova.auth.exception.AuthException;
+import com.space.munova.auth.dto.*;
 import com.space.munova.core.annotation.RedisDistributeLock;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,21 +25,26 @@ public class AuthServiceImpl implements AuthService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
-    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 회원가입
      */
+    @Transactional
     @RedisDistributeLock(key = "#signupRequest.username()")
-    public void signup(SignupRequest signupRequest) {
+    public SignupResponse signup(SignupRequest signupRequest) {
         // 사용자명 중복체크
         if (memberRepository.existsByUsername(signupRequest.username())) {
             throw MemberException.duplicatedMemberName();
         }
-
-        // 패스워드 encoding & 데이터베이스 저장 요청
-        SignupEvent signupEvent = SignupEvent.from(signupRequest);
-        eventPublisher.publishEvent(signupEvent);
+        // 멤버 생성
+        String encodedPassword = passwordEncoder.encode(signupRequest.password());
+        Member member = Member.createMember(
+                signupRequest.username(),
+                encodedPassword,
+                signupRequest.address()
+        );
+        Member savedMember = memberRepository.save(member);
+        return SignupResponse.of(savedMember.getId(), savedMember.getUsername());
     }
 
     /**

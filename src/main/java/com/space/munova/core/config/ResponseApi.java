@@ -1,5 +1,6 @@
 package com.space.munova.core.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -37,7 +38,10 @@ public class ResponseApi<T> {
         return new ResponseApi<>(HttpStatus.OK.value(), data);
     }
 
-    public static <T> ResponseApi<T> created(T data) { return new ResponseApi<>(HttpStatus.CREATED.value(), data); }
+    public static <T> ResponseApi<T> created(HttpServletResponse response, T data) {
+        response.setStatus(HttpStatus.CREATED.value());
+        return new ResponseApi<>(HttpStatus.CREATED.value(), data);
+    }
 
     public static <T> ResponseApi<T> nok(HttpStatusCode statusCode, String errorCode, String message) {
         return new ResponseApi<>(statusCode.value(), errorCode, message, null);

@@ -105,13 +105,14 @@ public class JwtHelper {
     /**
      * refreshToken을 쿠키에 저장
      */
-    public void saveRefreshTokenToCookie(HttpServletResponse response, String refreshToken) {
+    public void saveRefreshTokenToCookie(HttpServletResponse response, String refreshToken, String deviceId) {
         Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken);
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setPath("/");
         cookie.setMaxAge(Math.toIntExact(refreshExpiration / 1000));
         response.addCookie(cookie);
+        response.setHeader(DEVICE_ID_HEADER_PREFIX, deviceId);
     }
 
     /**

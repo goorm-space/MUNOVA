@@ -1,5 +1,6 @@
 package com.space.munova.coupon.service;
 
+import com.space.munova.core.annotation.VelvetQ;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.coupon.dto.*;
 import com.space.munova.coupon.entity.Coupon;
@@ -8,6 +9,7 @@ import com.space.munova.coupon.exception.CouponException;
 import com.space.munova.coupon.repository.CouponDetailRepository;
 import com.space.munova.coupon.repository.CouponRepository;
 import com.space.munova.coupon.repository.CouponSearchQueryDslRepository;
+import com.space.munova.velvetQ.dto.VelvetQDomainType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,6 +42,7 @@ public class CouponServiceImpl implements CouponService {
      */
     @Override
     @Transactional
+    @VelvetQ(domain = VelvetQDomainType.COUPON, resourceId = "#issueCouponRequest.couponDetailId")
     public IssueCouponResponse issueCoupon(IssueCouponRequest issueCouponRequest) {
         Long memberId = issueCouponRequest.memberId();
         Long couponDetailId = issueCouponRequest.couponDetailId();

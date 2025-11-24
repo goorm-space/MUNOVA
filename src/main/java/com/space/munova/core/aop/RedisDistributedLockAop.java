@@ -1,6 +1,7 @@
 package com.space.munova.core.aop;
 
 import com.space.munova.core.annotation.RedisDistributeLock;
+import com.space.munova.core.utils.AopParseKey;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -10,9 +11,6 @@ import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.expression.ExpressionParser;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
@@ -29,7 +27,7 @@ import static com.space.munova.core.config.StaticVariables.REDISSON_LOCK_PREFIX;
 @Component
 @RequiredArgsConstructor
 @Order(Ordered.HIGHEST_PRECEDENCE)
-public class RedisDistributedLock {
+public class RedisDistributedLockAop {
 
     private final RedissonClient redissonClient;
 
@@ -39,8 +37,11 @@ public class RedisDistributedLock {
         Method method = signature.getMethod();
         RedisDistributeLock annotation = method.getAnnotation(RedisDistributeLock.class);
 
-        String key = REDISSON_LOCK_PREFIX +
-                parseKey(signature.getParameterNames(), joinPoint.getArgs(), annotation.key());
+        String key = REDISSON_LOCK_PREFIX + AopParseKey.parseKey(
+                signature.getParameterNames(),
+                joinPoint.getArgs(),
+                annotation.key()
+        );
         RLock rLock = redissonClient.getLock(key);
 
         try {
@@ -61,14 +62,4 @@ public class RedisDistributedLock {
 
     }
 
-    private Object parseKey(String[] parameterNames, Object[] args, String key) {
-        ExpressionParser parser = new SpelExpressionParser();
-        StandardEvaluationContext context = new StandardEvaluationContext();
-
-        for (int i = 0; i < parameterNames.length; i++) {
-            context.setVariable(parameterNames[i], args[i]);
-        }
-
-        return parser.parseExpression(key).getValue(context, Object.class);
-    }
 }

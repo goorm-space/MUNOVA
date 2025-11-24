@@ -16,9 +16,9 @@ import java.util.concurrent.atomic.LongAdder;
 @Component
 public class LogBatchBuffer {
 
-    private static final int MAX_SIZE = 10_000;
+    private static final int MAX_SIZE = 10_000; // 유동적으로 바꿔야함
 
-    private final BlockingQueue<Map<String, Object>> buffer = new LinkedBlockingQueue<>(MAX_SIZE);
+    private final BlockingQueue<Map<String, Object>> buffer = new LinkedBlockingQueue<>(MAX_SIZE); // 다른 자료구조는 없나?
 
     private final LongAdder currentSize = new LongAdder();
 
@@ -42,6 +42,7 @@ public class LogBatchBuffer {
                 .tag("component", "log_batch_buffer")
                 .register(meterRegistry);
 
+        //0에 가까워질수록: API 들어오는 속도 > Redis로 빠져나가는 속도
         Gauge.builder("redis.stream.buffer.remaining", () -> MAX_SIZE - currentSize.intValue())
                 .description("Redis Stream 버퍼 남은 공간")
                 .tag("component", "log_batch_buffer")
@@ -55,26 +56,15 @@ public class LogBatchBuffer {
 
 
     public boolean add(Map<String, Object> log) {
-        // offer()는 non-blocking, 즉시 반환
-        // 큐가 가득 차면 false 반환 (backpressure - drop 정책)
         boolean added = buffer.offer(log);
 
         if (added) {
             currentSize.increment();
             return true;
         } else {
-            // 큐 가득참 - 로그 폐기 (API 안정성 우선)
             bufferFullCounter.increment();
             return false;
         }
-    }
-
-    public Map<String, Object> poll() {
-        Map<String, Object> log = buffer.poll();
-        if (log != null) {
-            currentSize.decrement();
-        }
-        return log;
     }
 
     public java.util.List<Map<String, Object>> pollBatch(int batchSize) {

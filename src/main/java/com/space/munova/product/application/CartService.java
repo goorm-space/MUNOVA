@@ -1,6 +1,8 @@
 package com.space.munova.product.application;
 
 import com.space.munova.core.dto.PagingResponse;
+import com.space.munova.member.entity.Member;
+import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.application.dto.cart.AddCartItemRequestDto;
 import com.space.munova.product.application.dto.cart.FindCartInfoResponseDto;
@@ -46,7 +48,6 @@ public class CartService {
     ///  카트 생성 메서드
     @Transactional(readOnly = false)
     public void addCartItem(AddCartItemRequestDto reqDto, Long memberId) {
-         /*
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(MemberException::notFoundException);
         ProductDetail productDetail = productDetailService.findById((reqDto.productDetailId()));
@@ -60,13 +61,8 @@ public class CartService {
             Cart cart = Cart.createDefaultCart(member, productDetail, reqDto.quantity());
             cartRepository.save(cart);
         }
-        Long productId=productDetailService.findProductIdByDetailId(reqDto.productDetailId());
-        */
-        // DB 쿼리 주석처리 (Redis Stream 파이프라인 테스트용)
-
-        // 테스트용 하드코딩 값 (DB 쿼리 없이 Redis Stream만 전송)
-        Long productId = 1L; // 테스트용 상품 ID
-        int quantity = reqDto.quantity(); // 요청에서 받은 수량 사용
+        Long productId = productDetailService.findProductIdByDetailId(reqDto.productDetailId());
+        int quantity = reqDto.quantity();
 
         Map<String, Object> logData = Map.of(
                 "event_type", "product_add_cart",

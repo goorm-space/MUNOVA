@@ -1,18 +1,21 @@
 package com.space.munova.recommend.infra;
 
-/*
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.connection.stream.MapRecord;
-import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -20,35 +23,62 @@ public class RedisBatchScheduler {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final LogBatchBuffer logBuffer;
+    private final MeterRegistry meterRegistry;
+
+    private Counter batchSendSuccessCounter;
+    private Counter batchSendFailureCounter;
+    private Counter batchSendTotalCounter;
+    private Timer batchSendTimer;
 
     public RedisBatchScheduler(
             @Qualifier("clusterRedisTemplate") RedisTemplate<String, Object> redisTemplate,
-            LogBatchBuffer logBuffer
+            LogBatchBuffer logBuffer,
+            MeterRegistry meterRegistry
     ) {
         this.redisTemplate = redisTemplate;
         this.logBuffer = logBuffer;
+        this.meterRegistry = meterRegistry;
     }
 
     private static final int BATCH_SIZE = 100;
     private static final int STREAM_BUCKETS = 10; // 10개의 스트림 그룹으로 분산 -> 어차피 redis가 자동으로 할당해줘서 더 잘게 나눠서 한쪽으로 과부하 쏠림 방지
 
+    @PostConstruct
+    public void initMetrics() {
+        batchSendSuccessCounter = Counter.builder("redis.stream.batch.send.success")
+                .description("Redis Stream 배치 전송 성공 횟수")
+                .tag("component", "redis_batch_scheduler")
+                .register(meterRegistry);
+
+        batchSendFailureCounter = Counter.builder("redis.stream.batch.send.failure")
+                .description("Redis Stream 배치 전송 실패 횟수")
+                .tag("component", "redis_batch_scheduler")
+                .register(meterRegistry);
+
+        batchSendTotalCounter = Counter.builder("redis.stream.batch.send.total")
+                .description("Redis Stream 배치 전송 총 메시지 수")
+                .tag("component", "redis_batch_scheduler")
+                .register(meterRegistry);
+
+        batchSendTimer = Timer.builder("redis.stream.batch.send.duration")
+                .description("Redis Stream 배치 전송 소요 시간")
+                .tag("component", "redis_batch_scheduler")
+                .register(meterRegistry);
+    }
+
     // 50ms 간격으로 배치 전송
     @Scheduled(fixedDelay = 50)
     public void flushBatchToRedis() {
-        List<Map<String, Object>> batch = new ArrayList<>(BATCH_SIZE);
-
-        //버퍼에서 로그 가져옴
-        while (!logBuffer.getBuffer().isEmpty() && batch.size() < BATCH_SIZE) {
-            Map<String, Object> polled = logBuffer.getBuffer().poll();
-            if (polled != null) batch.add(polled);
-        }
+        List<Map<String, Object>> batch = logBuffer.pollBatch(BATCH_SIZE);
 
         if (batch.isEmpty()) return;
 
+        Timer.Sample sample = Timer.start(meterRegistry);
         try {
-            redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            List<Object> results = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
                 var streamCommands = connection.streamCommands();
 
+                //TODO: 시간복잡도가 높아요 O(n^2)
                 for (Map<String, Object> logData : batch) {
                     Map<byte[], byte[]> body = new HashMap<>();
                     for (Map.Entry<String, Object> e : logData.entrySet()) {
@@ -58,28 +88,30 @@ public class RedisBatchScheduler {
                         );
                     }
 
-
-                    // memberId 별로 stream을 나눔 10개로 (1001 -> 1, 205 -> 5 ...)
-                    Object memberIdObj = logData.get("member_id");
                     String streamKey;
+                    Object memberIdObj = logData.get("member_id");
                     if (memberIdObj != null) {
                         long memberId = Long.parseLong(String.valueOf(memberIdObj));
-                        int bucket = (int) (memberId % STREAM_BUCKETS); // 예: 0~9
+                        int bucket = (int) (memberId % STREAM_BUCKETS);
                         streamKey = "user_action_stream_" + bucket;
                     } else {
                         streamKey = "user_action_stream_unknown";
                     }
+
                     MapRecord<byte[], byte[], byte[]> record =
                             MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8), body);
-                    RecordId recordId=streamCommands.xAdd(record);
-                    log.info("✅ XADD 전송 완료: {}건", recordId);
+                    streamCommands.xAdd(record);
                 }
                 return null;
             });
-            log.info("✅ Redis 배치 전송 완료: {}건", batch.size());
+            batchSendSuccessCounter.increment();
+            batchSendTotalCounter.increment(batch.size());
+            log.info("✅ Redis 배치 전송 완료: {}건 (파이프라인 모드)", batch.size());
         } catch (Exception e) {
-            log.warn("Redis 배치 전송 실패: {}", e.getMessage());
+            batchSendFailureCounter.increment();
+            log.warn("Redis 배치 전송 실패: {}", e.getMessage(), e);
+        } finally {
+            sample.stop(batchSendTimer);
         }
     }
 }
- */

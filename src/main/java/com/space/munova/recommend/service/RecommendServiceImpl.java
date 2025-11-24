@@ -299,6 +299,7 @@ public class RecommendServiceImpl implements RecommendService {
     // 유저 행동 발생 시 호출
     public void updateUserAction( Long productId, Integer clicked, Boolean liked, Boolean inCart, Boolean purchased) {
         Long memberId = JwtHelper.getMemberId();
+        
         UserActionSummary summary = summaryRepository.findByMemberIdAndProductId(memberId, productId)
                 .orElse(UserActionSummary.builder()
                         .memberId(memberId)

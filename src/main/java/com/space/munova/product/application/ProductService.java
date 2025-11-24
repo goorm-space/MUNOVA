@@ -9,10 +9,10 @@ import com.space.munova.product.application.dto.*;
 import com.space.munova.product.application.event.ProductDeleteEvenForLikeDto;
 import com.space.munova.product.application.event.ProductDeleteEventForCartDto;
 import com.space.munova.product.application.exception.ProductException;
-import com.space.munova.product.domain.*;
-import com.space.munova.product.domain.Repository.ProductClickLogRepository;
+import com.space.munova.product.domain.Brand;
+import com.space.munova.product.domain.Category;
+import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.Repository.ProductRepository;
-import com.space.munova.product.domain.Repository.ProductSearchLogRepository;
 import com.space.munova.product.domain.enums.ProductCategory;
 import com.space.munova.recommend.infra.RedisStreamProducer;
 import com.space.munova.recommend.service.RecommendService;
@@ -38,7 +38,6 @@ import java.util.Map;
 @Transactional(readOnly = true)
 public class ProductService {
 
-    private final ProductClickLogRepository productClickLogRepository;
     private final ProductRepository productRepository;
     private final ProductImageService productImageService;
     private final ProductDetailService productDetailService;
@@ -46,7 +45,6 @@ public class ProductService {
     private final CategoryService categoryService;
     private final MemberRepository memberRepository;
     private final ProductOptionService productOptionService;
-    private final ProductSearchLogRepository productSearchLogRepository;
     private final RecommendService recommendService;
     private final RedisStreamProducer logProducer;
 
@@ -60,7 +58,7 @@ public class ProductService {
 
     /// 상품 등록 메서드
     @Transactional
-    public void saveProduct(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, AddProductRequestDto reqDto, Long sellerId)  {
+    public void saveProduct(MultipartFile mainImgFile, List<MultipartFile> sideImgFile, AddProductRequestDto reqDto, Long sellerId) {
 
         Member seller = memberRepository.findById(sellerId).orElseThrow(MemberException::notFoundException);
 
@@ -103,7 +101,7 @@ public class ProductService {
     public ProductDetailResponseDto findProductDetailsBySeller(Long productId, Long sellerId) {
 
         /// 판매자가 등록한상품이 아닐경우 에러 터트림.
-        if(!productRepository.existsByIdAndMemberIdAndIsDeletedFalse(productId, sellerId)){
+        if (!productRepository.existsByIdAndMemberIdAndIsDeletedFalse(productId, sellerId)) {
             throw ProductException.badRequestException("등록한 상품을 찾을 수 없습니다.");
         }
 
@@ -116,6 +114,7 @@ public class ProductService {
         productRepository.updateProductViewCount(productId);
 
     }
+
     @Transactional(readOnly = false)
     public void updateProductViewCountLogin(Long productId) {
         productRepository.updateProductViewCount(productId);
@@ -133,13 +132,13 @@ public class ProductService {
                         "product_id", productId
                 )
         );
-        logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
+        logProducer.sendLogAsync(logData);
 
     }
 
     /*
-    * 상품 제거 메서드 (관련 테이블 모두 논리삭제) - 상품, 상품좋아요, 상품디테일, 상품이미지, 장바구니, 상품옵션매핑
-    * */
+     * 상품 제거 메서드 (관련 테이블 모두 논리삭제) - 상품, 상품좋아요, 상품디테일, 상품이미지, 장바구니, 상품옵션매핑
+     * */
 
     ///  현재 프로덕트를 삭제할때 카트와 좋아요를 한트랜잭션에 묶고 있지만 이후에 트랜잭션을 분리해야함.
     ///  상품 , 좋아요, 장바구니는 각각 어그리거트 루트가 다르다.
@@ -168,10 +167,8 @@ public class ProductService {
     }
 
 
-
-
     public PagingResponse<FindProductResponseDto> findProductsWithOptionalLogging(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
-        Page<FindProductResponseDto> retVal = productRepository.findProductByConditions(categoryId,optionIds, keyword, pageable);
+        Page<FindProductResponseDto> retVal = productRepository.findProductByConditions(categoryId, optionIds, keyword, pageable);
 
         return PagingResponse.from(retVal);
     }
@@ -179,15 +176,16 @@ public class ProductService {
     @Transactional
     public void saveSearchLog(Long categoryId, String keyword) {
         Long memberId = JwtHelper.getMemberId();
-
-        ProductSearchLog log = ProductSearchLog.builder()
-                .memberId(memberId)
-                .searchDetail(keyword != null ? keyword : "")
-                .searchCategoryId(categoryId)
-                .build();
-
-        productSearchLogRepository.save(log);
-
+        Map<String, Object> logData = Map.of(
+                "event_type", "product_search",
+                "service", "product",
+                "member_id", memberId,
+                "data", Map.of(
+                        "category_id", categoryId != null ? categoryId : "",
+                        "keyword", keyword != null ? keyword : ""
+                )
+        );
+        logProducer.sendLogAsync(logData);
     }
 
     // 상품옵션 조회
@@ -197,13 +195,13 @@ public class ProductService {
 
 
     public Product findByIdAndIsDeletedFalse(Long productId) {
-        return productRepository.findByIdAndIsDeletedFalse(productId).orElseThrow(()-> ProductException.badRequestException("해당 상품 정보를 찾을 수 없습니다."));
+        return productRepository.findByIdAndIsDeletedFalse(productId).orElseThrow(() -> ProductException.badRequestException("해당 상품 정보를 찾을 수 없습니다."));
     }
 
     @Transactional(readOnly = false)
     public int minusLikeCountInProductIds(Long productId) {
         int rowCount = productRepository.minusLikeCountInProductIds(productId);
-        if(rowCount == 0) {
+        if (rowCount == 0) {
             throw ProductException.notFoundProductException("취소한 상품을 찾을 수 없습니다.");
         }
         return rowCount;
@@ -230,12 +228,12 @@ public class ProductService {
 
             /// 이미지 수정
             /// 메인이미지가 넘어왔을경우 메인이미지 업데이트
-            if(mainImgFile != null &&  !mainImgFile.isEmpty())  {
+            if (mainImgFile != null && !mainImgFile.isEmpty()) {
                 productImageService.updateMainImg(mainImgFile, product);
             }
 
             /// 사이드 이미지가 넘어왔을경우 업데이틑
-            if(sideImgFile != null &&  !sideImgFile.isEmpty())  {
+            if (sideImgFile != null && !sideImgFile.isEmpty()) {
                 productImageService.saveSideImg(sideImgFile, product);
             }
 
@@ -246,15 +244,15 @@ public class ProductService {
             /// 삭제아이템과 업데이트아이템이 겹칠경우 업데이트아이템에서 삭제된아이템제거
             productDetailUpdateDtos.removeDeletedItemsFromUpdateList();
 
-            if(!productDetailUpdateDtos.addShoeOptionDtos().isEmpty()) {
+            if (!productDetailUpdateDtos.addShoeOptionDtos().isEmpty()) {
                 productDetailService.saveProductDetailAndOption(product, reqDto.addShoeOptionDto().shoeOptionDtos());
             }
 
-            if(!productDetailUpdateDtos.updateQuantityDtos().isEmpty()) {
+            if (!productDetailUpdateDtos.updateQuantityDtos().isEmpty()) {
                 productDetailService.updateQuantity(productDetailUpdateDtos.updateQuantityDtos());
             }
 
-            if(!productDetailUpdateDtos.deleteDetailIds().isEmpty()) {
+            if (!productDetailUpdateDtos.deleteDetailIds().isEmpty()) {
                 productDetailService.deleteProductDetailByIds(productDetailUpdateDtos.deleteDetailIds());
             }
 
@@ -318,7 +316,7 @@ public class ProductService {
         }
 
         public void removeDeletedItemsFromUpdateList() {
-            if(this.updateQuantityDtos.isEmpty() || this.deleteDetailIds.isEmpty()) {
+            if (this.updateQuantityDtos.isEmpty() || this.deleteDetailIds.isEmpty()) {
                 return;
             }
 

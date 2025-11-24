@@ -4,7 +4,10 @@ import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
-import com.space.munova.product.application.dto.cart.*;
+import com.space.munova.product.application.dto.cart.AddCartItemRequestDto;
+import com.space.munova.product.application.dto.cart.FindCartInfoResponseDto;
+import com.space.munova.product.application.dto.cart.ProductInfoForCartDto;
+import com.space.munova.product.application.dto.cart.UpdateCartRequestDto;
 import com.space.munova.product.application.exception.CartException;
 import com.space.munova.product.domain.Cart;
 import com.space.munova.product.domain.ProductDetail;
@@ -20,8 +23,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,42 +48,32 @@ public class CartService {
     ///  카트 생성 메서드
     @Transactional(readOnly = false)
     public void addCartItem(AddCartItemRequestDto reqDto, Long memberId) {
-
-
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(MemberException::notFoundException);
         ProductDetail productDetail = productDetailService.findById((reqDto.productDetailId()));
-
-        ///  상품 디테일 수량 및 제거여부 검증
         productDetail.validAddToCart(reqDto.quantity());
-
-
-        ///  사용자의 장바구니에 상품디테일이 있는지 확인.
         boolean isExist = cartRepository.existsByMemberIdAndProductDetailId(memberId, productDetail.getId());
-
-        if(isExist) { ///  있으면 수량확인후 업데이트
-
+        if(isExist) {
             Cart cart = cartRepository.findByProductDetailIdAndMemberId(productDetail.getId(), memberId)
                     .orElseThrow(CartException::badRequestCartException);
             cart.updateQuantity(reqDto.quantity());
-
-        } else { /// 없으면 저장.
-
+        } else {
             Cart cart = Cart.createDefaultCart(member, productDetail, reqDto.quantity());
             cartRepository.save(cart);
         }
+        Long productId = productDetailService.findProductIdByDetailId(reqDto.productDetailId());
+        int quantity = reqDto.quantity();
 
-        Long productId=productDetailService.findProductIdByDetailId(reqDto.productDetailId());
         Map<String, Object> logData = Map.of(
                 "event_type", "product_add_cart",
                 "service", "product",
                 "member_id", memberId,
                 "data", Map.of(
                         "product_id", productId,
-                        "quantity", productDetail.getQuantity()
+                        "quantity", quantity
                 )
         );
-        logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
+        logProducer.sendLogAsync(logData);
     }
 
 
@@ -94,16 +88,16 @@ public class CartService {
 
     /// 유저의 장바구니 카트 상품제거
     @Transactional(readOnly = false)
-    public void deleteByCartIds(List<Long> cartIds,  Long memberId) {
+    public void deleteByCartIds(List<Long> cartIds, Long memberId) {
 
         upsertUserAction(cartIds);
-        cartRepository.deleteByCartIdsAndMemberId(cartIds,memberId);
+        cartRepository.deleteByCartIdsAndMemberId(cartIds, memberId);
     }
 
     private void upsertUserAction(List<Long> cartIds) {
         List<Long> productIdsByCartIds = cartRepository.findProductIdsByCartIds(cartIds);
-        for(Long productId:productIdsByCartIds){
-            recommendService.updateUserAction(productId,0,null,false,null);
+        for (Long productId : productIdsByCartIds) {
+            recommendService.updateUserAction(productId, 0, null, false, null);
         }
     }
 
@@ -146,7 +140,7 @@ public class CartService {
     public void deleteByProductDetailIdsAndMemberId(List<Long> productDetailIds) {
         Long memberId = JwtHelper.getMemberId();
 
-        cartRepository.deleteByProductDetailIdsAndMemberId(productDetailIds,memberId);
+        cartRepository.deleteByProductDetailIdsAndMemberId(productDetailIds, memberId);
     }
 
 

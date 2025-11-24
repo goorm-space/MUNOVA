@@ -23,5 +23,5 @@ public interface RecommendService {
 
     List<RecommendReasonResponseDto> getRecommendationReason(Long userId, Long productId);
     double getRecommendationScore(Long userId, Long productId);
-    void updateUserAction( Long productId, Integer clicked, Boolean liked, Boolean inCart, Boolean purchased);
+    void updateUserAction(Long productId, Integer clicked, Boolean liked, Boolean inCart, Boolean purchased);
 }

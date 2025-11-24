@@ -50,15 +50,13 @@ public class ProductLikeService {
         ///  삭제메시지 발행
         ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
         eventPublisher.publishEvent(eventDto);
-        upsertUserAction(productId,false);
+        upsertUserAction(productId, false);
     }
 
     @Transactional(readOnly = false)
     public void addLike(Long productId, Long memberId) {
-
         Member member = memberRepository.findById(memberId).orElseThrow(MemberException::invalidMemberException);
         Product product = productService.findByIdAndIsDeletedFalse(productId);
-
         boolean isLiked = productLikeRepository.existsByProductIdAndMemberIdAndIsDeletedFalse(productId, memberId);
 
         /// 좋아요 한 상풍인데 또 좋아요 눌렀을 경우 disLike
@@ -74,11 +72,11 @@ public class ProductLikeService {
                             "product_id", productId
                     )
             );
-            logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
+            logProducer.sendLogAsync(logData);
 
             /// 좋아요 취소 메시지 발행
-            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
-            eventPublisher.publishEvent(eventDto);
+//            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
+//            eventPublisher.publishEvent(eventDto);
 
         } else {
             /// 사용자 좋아요 리스트 추가
@@ -93,11 +91,11 @@ public class ProductLikeService {
                             "product_id", productId
                     )
             );
-            logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
+            logProducer.sendLogAsync(logData);
 
             ///  좋아요 메시지 발행
-            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, false);
-            eventPublisher.publishEvent(eventDto);
+//            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, false);
+//            eventPublisher.publishEvent(eventDto);
         }
     }
 

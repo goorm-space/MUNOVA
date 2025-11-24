@@ -6,12 +6,16 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.lettuce.core.cluster.ClusterClientOptions;
+import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -19,6 +23,7 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import java.time.Duration;
 import java.util.List;
 
 @Configuration
@@ -90,21 +95,44 @@ public class RedisConfig {
         return redisTemplate;
     }
 
-    
+
     @Bean(name = "clusterRedisConnectionFactory")
     public RedisConnectionFactory clusterRedisConnectionFactory() {
         RedisClusterConfiguration clusterConfig = new RedisClusterConfiguration(clusterNodes);
         clusterConfig.setPassword(password);
-        return new LettuceConnectionFactory(clusterConfig);
+        clusterConfig.setMaxRedirects(3);
+
+
+        ClusterTopologyRefreshOptions topologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
+                .enablePeriodicRefresh(Duration.ofSeconds(30))
+                .enableAdaptiveRefreshTrigger(ClusterTopologyRefreshOptions.RefreshTrigger.MOVED_REDIRECT)
+                .enableAdaptiveRefreshTrigger(ClusterTopologyRefreshOptions.RefreshTrigger.ASK_REDIRECT)
+                .build();
+
+        ClusterClientOptions clientOptions = ClusterClientOptions.builder()
+                .topologyRefreshOptions(topologyRefreshOptions)
+                .validateClusterNodeMembership(false)
+                .build();
+
+        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
+                .clientOptions(clientOptions)
+                .commandTimeout(Duration.ofSeconds(5))
+                .build();
+
+        LettuceConnectionFactory factory = new LettuceConnectionFactory(clusterConfig, clientConfig);
+        factory.setValidateConnection(true); // 나중에 false로 바꾸던가 해야지 -> 성능 up!
+        factory.afterPropertiesSet();
+
+        return factory;
     }
 
 
     @Bean(name = "clusterRedisTemplate")
-    public RedisTemplate<String, Object> clusterRedisTemplate() {
+    public RedisTemplate<String, Object> clusterRedisTemplate(@Qualifier("clusterRedisConnectionFactory") RedisConnectionFactory factory) {
         ObjectMapper objectMapper = getJsonSerializeObjectMapper();
 
         RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(clusterRedisConnectionFactory());
+        template.setConnectionFactory(factory);
 
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer(objectMapper));
@@ -114,5 +142,4 @@ public class RedisConfig {
 
         return template;
     }
-     
 }

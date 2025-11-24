@@ -158,3 +158,5 @@ build/
 
 *.sh
 *.md
+
+grafana

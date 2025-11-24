@@ -7,14 +7,15 @@ import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.connection.stream.MapRecord;
-import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -48,17 +49,17 @@ public class RedisBatchScheduler {
                 .description("Redis Stream 배치 전송 성공 횟수")
                 .tag("component", "redis_batch_scheduler")
                 .register(meterRegistry);
-        
+
         batchSendFailureCounter = Counter.builder("redis.stream.batch.send.failure")
                 .description("Redis Stream 배치 전송 실패 횟수")
                 .tag("component", "redis_batch_scheduler")
                 .register(meterRegistry);
-        
+
         batchSendTotalCounter = Counter.builder("redis.stream.batch.send.total")
                 .description("Redis Stream 배치 전송 총 메시지 수")
                 .tag("component", "redis_batch_scheduler")
                 .register(meterRegistry);
-        
+
         batchSendTimer = Timer.builder("redis.stream.batch.send.duration")
                 .description("Redis Stream 배치 전송 소요 시간")
                 .tag("component", "redis_batch_scheduler")
@@ -79,6 +80,7 @@ public class RedisBatchScheduler {
             List<Object> results = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
                 var streamCommands = connection.streamCommands();
 
+                //TODO: 시간복잡도가 높아요 O(n^2)
                 for (Map<String, Object> logData : batch) {
                     Map<byte[], byte[]> body = new HashMap<>();
                     for (Map.Entry<String, Object> e : logData.entrySet()) {
@@ -98,7 +100,7 @@ public class RedisBatchScheduler {
                     } else {
                         streamKey = "user_action_stream_unknown";
                     }
-                    
+
                     MapRecord<byte[], byte[], byte[]> record =
                             MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8), body);
                     streamCommands.xAdd(record);

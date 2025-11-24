@@ -155,3 +155,6 @@ build/
 **/.DS_Store
 
 *.yml
+
+*.sh
+*.md

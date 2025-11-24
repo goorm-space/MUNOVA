@@ -1,10 +1,11 @@
 package com.space.munova.product.application;
 
 import com.space.munova.core.dto.PagingResponse;
-import com.space.munova.member.entity.Member;
-import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
-import com.space.munova.product.application.dto.cart.*;
+import com.space.munova.product.application.dto.cart.AddCartItemRequestDto;
+import com.space.munova.product.application.dto.cart.FindCartInfoResponseDto;
+import com.space.munova.product.application.dto.cart.ProductInfoForCartDto;
+import com.space.munova.product.application.dto.cart.UpdateCartRequestDto;
 import com.space.munova.product.application.exception.CartException;
 import com.space.munova.product.domain.Cart;
 import com.space.munova.product.domain.ProductDetail;
@@ -20,8 +21,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -75,7 +77,7 @@ public class CartService {
                         "quantity", quantity
                 )
         );
-        logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
+        logProducer.sendLogAsync(logData);
     }
 
 
@@ -90,16 +92,16 @@ public class CartService {
 
     /// 유저의 장바구니 카트 상품제거
     @Transactional(readOnly = false)
-    public void deleteByCartIds(List<Long> cartIds,  Long memberId) {
+    public void deleteByCartIds(List<Long> cartIds, Long memberId) {
 
         upsertUserAction(cartIds);
-        cartRepository.deleteByCartIdsAndMemberId(cartIds,memberId);
+        cartRepository.deleteByCartIdsAndMemberId(cartIds, memberId);
     }
 
     private void upsertUserAction(List<Long> cartIds) {
         List<Long> productIdsByCartIds = cartRepository.findProductIdsByCartIds(cartIds);
-        for(Long productId:productIdsByCartIds){
-            recommendService.updateUserAction(productId,0,null,false,null);
+        for (Long productId : productIdsByCartIds) {
+            recommendService.updateUserAction(productId, 0, null, false, null);
         }
     }
 
@@ -142,7 +144,7 @@ public class CartService {
     public void deleteByProductDetailIdsAndMemberId(List<Long> productDetailIds) {
         Long memberId = JwtHelper.getMemberId();
 
-        cartRepository.deleteByProductDetailIdsAndMemberId(productDetailIds,memberId);
+        cartRepository.deleteByProductDetailIdsAndMemberId(productDetailIds, memberId);
     }
 
 

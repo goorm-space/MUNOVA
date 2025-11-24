@@ -130,7 +130,7 @@ public class ProductService {
                         "product_id", productId
                 )
         );
-        logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
+        logProducer.sendLogAsync(logData);
 
     }
 
@@ -185,7 +185,7 @@ public class ProductService {
                         "keyword", keyword != null ? keyword : ""
                 )
         );
-        logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
+        logProducer.sendLogAsync(logData);
     }
 
     // 상품옵션 조회

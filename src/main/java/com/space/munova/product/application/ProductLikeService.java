@@ -78,7 +78,7 @@ public class ProductLikeService {
                             "product_id", productId
                     )
             );
-            logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
+            logProducer.sendLogAsync(logData);
 
             /// 좋아요 취소 메시지 발행
 //            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
@@ -97,7 +97,7 @@ public class ProductLikeService {
                             "product_id", productId
                     )
             );
-            logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
+            logProducer.sendLogAsync(logData);
 
             ///  좋아요 메시지 발행
 //            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, false);

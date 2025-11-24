@@ -6,12 +6,15 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.lettuce.core.cluster.ClusterClientOptions;
+import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -19,6 +22,7 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import java.time.Duration;
 import java.util.List;
 
 @Configuration
@@ -90,12 +94,36 @@ public class RedisConfig {
         return redisTemplate;
     }
 
-    
+
     @Bean(name = "clusterRedisConnectionFactory")
     public RedisConnectionFactory clusterRedisConnectionFactory() {
         RedisClusterConfiguration clusterConfig = new RedisClusterConfiguration(clusterNodes);
         clusterConfig.setPassword(password);
-        return new LettuceConnectionFactory(clusterConfig);
+        clusterConfig.setMaxRedirects(3); // 최대 리다이렉트 횟수
+
+        // Lettuce 클러스터 클라이언트 옵션 설정
+        // Failover 성능 최적화를 위한 토폴로지 갱신 설정
+        ClusterTopologyRefreshOptions topologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
+                .enablePeriodicRefresh(Duration.ofSeconds(30)) // 30초마다 토폴로지 갱신
+                .enableAdaptiveRefreshTrigger(ClusterTopologyRefreshOptions.RefreshTrigger.MOVED_REDIRECT) // MOVED 에러 시 즉시 토폴로지 갱신
+                .enableAdaptiveRefreshTrigger(ClusterTopologyRefreshOptions.RefreshTrigger.ASK_REDIRECT) // ASK 에러 시 즉시 토폴로지 갱신
+                .build();
+
+        ClusterClientOptions clientOptions = ClusterClientOptions.builder()
+                .topologyRefreshOptions(topologyRefreshOptions)
+                .validateClusterNodeMembership(false) // 노드 멤버십 검증 비활성화 (성능 향상)
+                .build();
+
+        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
+                .clientOptions(clientOptions)
+                .commandTimeout(Duration.ofSeconds(5)) // 명령 타임아웃 5초
+                .build();
+
+        LettuceConnectionFactory factory = new LettuceConnectionFactory(clusterConfig, clientConfig);
+        factory.setValidateConnection(true); // 연결 검증 활성화
+        factory.afterPropertiesSet(); // 초기화
+
+        return factory;
     }
 
 
@@ -114,5 +142,4 @@ public class RedisConfig {
 
         return template;
     }
-     
 }

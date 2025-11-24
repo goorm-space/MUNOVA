@@ -7,15 +7,12 @@ import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.ProductOptionMapping;
 import com.space.munova.product.domain.Repository.ProductDetailRepository;
-import com.space.munova.product.domain.enums.OptionCategory;
 import com.space.munova.product.application.exception.ProductDetailException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
 import java.util.List;
 
 @Service
@@ -104,10 +101,10 @@ public class ProductDetailService {
     }
 
     @Transactional
-    public void restoreProductDetailStock(Long productDetailId, int cancelQuantity) {
+    public void increaseStock(Long productDetailId, int cancelQuantity) {
         ProductDetail productDetail = getProductDetailWithPessimisticLock(productDetailId);
 
-        productDetail.restoreStock(cancelQuantity);
+        productDetail.increaseStock(cancelQuantity);
     }
 
 

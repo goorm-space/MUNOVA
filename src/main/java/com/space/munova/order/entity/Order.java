@@ -50,7 +50,7 @@ public class Order extends BaseEntity {
     @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
 
-    public static Order createInitOrder(Member member, String userRequest) {
+    public static Order createOrder(Member member, String userRequest) {
         return Order.builder()
                 .member(member)
                 .orderNum(generateOrderNum())
@@ -69,27 +69,19 @@ public class Order extends BaseEntity {
         this.orderItems.add(orderItem);
     }
 
-    public void updateFinalOrder(Long originPrice, Long discountPrice, Long totalPrice, Long couponId, OrderStatus status) {
+    public void updateOrder(Long originPrice, Long discountPrice, Long totalPrice, Long couponId) {
         this.originPrice = originPrice;
         this.discountPrice = discountPrice;
         this.totalPrice = totalPrice;
         this.couponId = couponId;
-        this.status = status;
+        this.status = OrderStatus.PAYMENT_PENDING;
 
-        if (this.orderItems != null) {
-            for (OrderItem orderItem : this.orderItems) {
-                orderItem.updateStatus(status);
-            }
-        }
+        this.orderItems.forEach(orderItem -> orderItem.updateStatus(this.status));
     }
 
     public void updateStatus(OrderStatus status) {
         this.status = status;
 
-        if (this.orderItems != null) {
-            for (OrderItem orderItem : this.orderItems) {
-                orderItem.updateStatus(status);
-            }
-        }
+        this.orderItems.forEach(orderItem -> orderItem.updateStatus(this.status));
     }
 }

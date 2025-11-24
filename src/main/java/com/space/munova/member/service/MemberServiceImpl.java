@@ -60,4 +60,10 @@ public class MemberServiceImpl implements MemberService {
         GenerateTokens generateTokens = tokenService.saveRefreshToken(member, deviceId);
         return UpdateMemberResponse.of(generateTokens.accessToken(), generateTokens.refreshToken());
     }
+
+    @Override
+    public Member getMemberEntity(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(MemberException::notFoundException);
+    }
 }

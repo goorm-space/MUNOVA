@@ -2,11 +2,10 @@ package com.space.munova.payment.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.space.munova.payment.client.exception.TossClientException;
 import com.space.munova.payment.dto.CancelPaymentRequest;
 import com.space.munova.payment.dto.ConfirmPaymentRequest;
 import com.space.munova.payment.dto.TossPaymentResponse;
-import com.space.munova.payment.exception.PaymentException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -21,64 +20,68 @@ import java.net.http.HttpResponse;
 @RequiredArgsConstructor
 public class TossApiClient {
 
+    private static final String BASE_URL = "https://api.tosspayments.com/v1/payments";
+
     @Value("${toss-payments.encoded-secret-key}")
     private String secretKey;
 
-    private static final String BASE_URL = "https://api.tosspayments.com/v1/payments";
+    private final ObjectMapper objectMapper;
+    private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    public String sendConfirmRequest(ConfirmPaymentRequest requestBody) {
+    public TossPaymentResponse sendConfirmRequest(ConfirmPaymentRequest requestBody) {
+        String path = "/confirm";
+
+        String responseBody = executeRequest(path, requestBody);
+
+        return parseResponse(responseBody);
+    }
+
+    public TossPaymentResponse sendCancelRequest(String paymentKey, CancelPaymentRequest requestBody) {
+        String path = String.format("/%s/cancel", paymentKey);
+
+        String responseBody = executeRequest(path, requestBody);
+
+        return parseResponse(responseBody);
+    }
+
+    private String executeRequest(String path, Object requestBody) {
+        String fullUrl = String.format("%s%s", BASE_URL, path);
+
+        String jsonBody;
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            String jsonBody = objectMapper.writeValueAsString(requestBody);
+            jsonBody = objectMapper.writeValueAsString(requestBody);
+        }  catch (JsonProcessingException e) {
+            throw TossClientException.toJsonException("RequestBody: %s", requestBody.toString());
+        }
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(String.format("%s/confirm", BASE_URL)))
-                    .header("Authorization", String.format("Basic %s", secretKey))
-                    .header("Content-Type", "application/json")
-                    .method("POST", HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(fullUrl))
+                .header("Authorization", String.format("Basic %s", secretKey))
+                .header("Content-Type", "application/json")
+                .method("POST", HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
 
-            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        try{
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode() == 200) {
-                return response.body();
-            } else {
-                throw PaymentException.tossApiCallFailedException();
+            if (response.statusCode() != 200) {
+                throw TossClientException.apiCallFailedException(response.toString());
             }
+            return response.body();
+
         } catch (IOException e) {
-            throw new RuntimeException("토스 API 통신 중 I/O 오류 발생", e);
+            throw TossClientException.networkIoException();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("토스 API 통신 중 쓰레드 중단됨", e);
+            throw TossClientException.threadInterruptedError();
         }
     }
 
-    public String sendCancelRequest(String paymentKey, CancelPaymentRequest requestBody) {
+    private TossPaymentResponse parseResponse(String responseBody) {
         try {
-            String fullUrl = String.format("%s/%s/cancel", BASE_URL, paymentKey);
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            String jsonBody = objectMapper.writeValueAsString(requestBody);
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(fullUrl))
-                    .header("Authorization", String.format("Basic %s", secretKey))
-                    .header("Content-Type", "application/json")
-                    .method("POST", HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
-
-            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() == 200) {
-                return response.body();
-            } else {
-                throw PaymentException.tossApiCallFailedException();
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("토스 API 통신 중 I/O 오류 발생", e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("토스 API 통신 중 쓰레드 중단됨", e);
+            return objectMapper.readValue(responseBody, TossPaymentResponse.class);
+        } catch (JsonProcessingException e) {
+            throw TossClientException.toJsonException("ResponseBody: %s", responseBody);
         }
     }
 }

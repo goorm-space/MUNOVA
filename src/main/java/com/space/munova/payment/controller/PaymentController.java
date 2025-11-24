@@ -3,10 +3,13 @@ package com.space.munova.payment.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.space.munova.core.config.ResponseApi;
+import com.space.munova.order.exception.OrderException;
 import com.space.munova.payment.client.TossApiClient;
 import com.space.munova.payment.dto.CancelPaymentRequest;
 import com.space.munova.payment.dto.ConfirmPaymentRequest;
+import com.space.munova.payment.exception.PaymentException;
 import com.space.munova.payment.service.PaymentService;
+import com.space.munova.security.jwt.JwtHelper;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +34,7 @@ public class PaymentController {
 
     @PostMapping("/confirm")
     public void requestTossPayments(@RequestBody ConfirmPaymentRequest requestBody) {
-        paymentService.confirmPaymentAndSavePayment(requestBody);
+        Long memberId = JwtHelper.getMemberId();
+        paymentService.confirmPaymentAndSavePayment(requestBody, memberId);
     }
 }

@@ -3,15 +3,18 @@ package com.space.munova.order.controller;
 import com.space.munova.auth.exception.AuthException;
 import com.space.munova.core.config.ResponseApi;
 import com.space.munova.core.dto.PagingResponse;
-import com.space.munova.order.dto.*;
+import com.space.munova.order.dto.CreateOrderRequest;
+import com.space.munova.order.dto.GetOrderDetailResponse;
+import com.space.munova.order.dto.OrderSummaryDto;
+import com.space.munova.order.dto.PaymentPrepareResponse;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.exception.OrderException;
 import com.space.munova.order.exception.OrderItemException;
 import com.space.munova.order.service.OrderService;
 import com.space.munova.payment.exception.PaymentException;
-import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.exception.ProductDetailException;
 import com.space.munova.security.jwt.JwtHelper;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,14 +29,17 @@ public class OrderController {
      * 주문 생성 후 결제에 필요한 응답 보내기
      */
     @PostMapping
-    public ResponseApi<PaymentPrepareResponse> createOrder(@RequestBody CreateOrderRequest request) {
+    public ResponseApi<PaymentPrepareResponse> createOrder(
+            @RequestBody CreateOrderRequest request,
+            HttpServletResponse response
+    ) {
         Long memberId = JwtHelper.getMemberId();
 
         try {
             Order order = orderService.createOrder(request, memberId);
             orderService.saveOrderLog(order);
-            PaymentPrepareResponse response = PaymentPrepareResponse.from(order);
-            return ResponseApi.created(response);
+            PaymentPrepareResponse paymentResponse = PaymentPrepareResponse.from(order);
+            return ResponseApi.created(response, paymentResponse);
         } catch (AuthException | OrderException | OrderItemException | ProductDetailException e) {
             return ResponseApi.nok(e.getStatusCode(), e.getCode(), e.getMessage());
         }

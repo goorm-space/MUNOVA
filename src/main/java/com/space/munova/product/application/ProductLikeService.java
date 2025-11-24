@@ -12,7 +12,6 @@ import com.space.munova.product.domain.ProductLike;
 import com.space.munova.product.domain.Repository.ProductLikeRepository;
 import com.space.munova.recommend.infra.RedisStreamProducer;
 import com.space.munova.recommend.service.RecommendService;
-import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -20,7 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.HashSet;
+
 import java.util.List;
 import java.util.Map;
 
@@ -43,7 +42,7 @@ public class ProductLikeService {
 
         ///  멤버의 좋아요리스트 제거후 영향받은 로우카운드 리턴받음.
         int rowCount = productLikeRepository.deleteAllByProductIdsAndMemberId(productId, memberId);
-        if(rowCount == 0) {
+        if (rowCount == 0) {
             throw LikeException.badRequestException("취소한 상품을 찾을수 없습니다.");
         }
 
@@ -60,7 +59,7 @@ public class ProductLikeService {
         boolean isLiked = productLikeRepository.existsByProductIdAndMemberIdAndIsDeletedFalse(productId, memberId);
 
         /// 좋아요 한 상풍인데 또 좋아요 눌렀을 경우 disLike
-        if(isLiked) {
+        if (isLiked) {
             ///  사용자 좋아요 리스트 제거
             productLikeRepository.deleteAllByProductIdsAndMemberId(productId, memberId);
 
@@ -75,8 +74,8 @@ public class ProductLikeService {
             logProducer.sendLogAsync(logData);
 
             /// 좋아요 취소 메시지 발행
-//            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
-//            eventPublisher.publishEvent(eventDto);
+            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
+            eventPublisher.publishEvent(eventDto);
 
         } else {
             /// 사용자 좋아요 리스트 추가
@@ -94,8 +93,8 @@ public class ProductLikeService {
             logProducer.sendLogAsync(logData);
 
             ///  좋아요 메시지 발행
-//            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, false);
-//            eventPublisher.publishEvent(eventDto);
+            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, false);
+            eventPublisher.publishEvent(eventDto);
         }
     }
 
@@ -111,7 +110,7 @@ public class ProductLikeService {
         productLikeRepository.deleteAllByProductIds(productIds);
     }
 
-    private void upsertUserAction(Long productId, Boolean liked){
+    private void upsertUserAction(Long productId, Boolean liked) {
         recommendService.updateUserAction(productId, 0, liked, null, null);
     }
 

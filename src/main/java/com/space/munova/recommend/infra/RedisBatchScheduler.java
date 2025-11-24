@@ -69,14 +69,12 @@ public class RedisBatchScheduler {
     // 50ms 간격으로 배치 전송
     @Scheduled(fixedDelay = 50)
     public void flushBatchToRedis() {
-        // drainTo() 사용 (한 번에 여러 개 제거, 더 효율적)
         List<Map<String, Object>> batch = logBuffer.pollBatch(BATCH_SIZE);
 
         if (batch.isEmpty()) return;
 
         Timer.Sample sample = Timer.start(meterRegistry);
         try {
-            // 파이프라인 모드로 배치 전송 (성능 최적화)
             List<Object> results = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
                 var streamCommands = connection.streamCommands();
 
@@ -90,12 +88,11 @@ public class RedisBatchScheduler {
                         );
                     }
 
-                    // memberId 기반으로 user_action_stream_0~9로 분산
                     String streamKey;
                     Object memberIdObj = logData.get("member_id");
                     if (memberIdObj != null) {
                         long memberId = Long.parseLong(String.valueOf(memberIdObj));
-                        int bucket = (int) (memberId % STREAM_BUCKETS); // 0~9
+                        int bucket = (int) (memberId % STREAM_BUCKETS);
                         streamKey = "user_action_stream_" + bucket;
                     } else {
                         streamKey = "user_action_stream_unknown";
@@ -107,7 +104,6 @@ public class RedisBatchScheduler {
                 }
                 return null;
             });
-            // 파이프라인 모드에서는 results가 List로 반환되지만, 실제 성공 여부는 Stream에 데이터가 있는지로 확인
             batchSendSuccessCounter.increment();
             batchSendTotalCounter.increment(batch.size());
             log.info("✅ Redis 배치 전송 완료: {}건 (파이프라인 모드)", batch.size());

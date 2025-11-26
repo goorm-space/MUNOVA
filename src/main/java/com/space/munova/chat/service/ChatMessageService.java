@@ -8,8 +8,8 @@ import java.util.List;
 
 public interface ChatMessageService {
 
-    ChatMessageResponseDto createChatMessage(ChatMessageRequestDto chatMessageRequest, Long chatId);
+    ChatMessageResponseDto createChatMessage(ChatMessageRequestDto chatMessageRequest, Long chatId, Long memberId);
 
-    List<ChatMessageViewDto> getMessagesByChatId(Long chatId);
+    List<ChatMessageViewDto> getMessagesByChatId(Long chatId, Long memberId);
 
 }

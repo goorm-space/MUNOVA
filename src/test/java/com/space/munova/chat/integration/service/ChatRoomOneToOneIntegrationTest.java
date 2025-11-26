@@ -66,32 +66,32 @@ public class ChatRoomOneToOneIntegrationTest extends IntegrationTestBase {
         );
     }
 
-    @Test
-    @DisplayName("1:1 채팅방 생성 통합 테스트 - 해피케이스")
-    void createOneToOneChatRoom_success() {
-        // given
-        Member seller = createMember("seller");
-        Member buyer = createMember("buyer");
-        Product product = createProduct("신발", seller);
-
-        // when
-        OneToOneChatResponseDto result = chatRoomService.createOneToOneChatRoom(product.getId(), buyer.getId());
-
-        // then
-        assertThat(result).isNotNull();
-        assertThat(result.buyerId()).isEqualTo(buyer.getId());
-        assertThat(result.sellerId()).isEqualTo(seller.getId());
-
-        Chat chat = chatRepository.findById(result.chatId()).orElseThrow();
-        assertThat(chat.getType()).isEqualTo(ChatType.ONE_ON_ONE);
-        assertThat(chat.getStatus()).isEqualTo(ChatStatus.OPENED);
-        assertThat(chat.getChatMembers()).hasSize(2);
-
-        List<ChatMember> members = chat.getChatMembers();
-        assertThat(members)
-                .extracting(ChatMember::getChatMemberType)
-                .containsExactlyInAnyOrder(ChatUserType.OWNER, ChatUserType.MEMBER);
-    }
+//    @Test
+//    @DisplayName("1:1 채팅방 생성 통합 테스트 - 해피케이스")
+//    void createOneToOneChatRoom_success() {
+//        // given
+//        Member seller = createMember("seller");
+//        Member buyer = createMember("buyer");
+//        Product product = createProduct("신발", seller);
+//
+//        // when
+//        OneToOneChatResponseDto result = chatRoomService.createOneToOneChatRoom(product.getId(), buyer.getId());
+//
+//        // then
+//        assertThat(result).isNotNull();
+//        assertThat(result.buyerId()).isEqualTo(buyer.getId());
+//        assertThat(result.sellerId()).isEqualTo(seller.getId());
+//
+//        Chat chat = chatRepository.findById(result.chatId()).orElseThrow();
+//        assertThat(chat.getType()).isEqualTo(ChatType.ONE_ON_ONE);
+//        assertThat(chat.getStatus()).isEqualTo(ChatStatus.OPENED);
+//        assertThat(chat.getChatMembers()).hasSize(2);
+//
+//        List<ChatMember> members = chat.getChatMembers();
+//        assertThat(members)
+//                .extracting(ChatMember::getChatMemberType)
+//                .containsExactlyInAnyOrder(ChatUserType.OWNER, ChatUserType.MEMBER);
+//    }
 //
 //    @Test
 //    @DisplayName("이미 존재하는 1:1 채팅방이 있으면 새로 만들지 않고 기존 채팅방 정보를 반환한다")

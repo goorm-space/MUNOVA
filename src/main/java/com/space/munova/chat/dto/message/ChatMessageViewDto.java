@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 public record ChatMessageViewDto(
         String content,
-        MessageType type,   // TEXT, IMAGE
+        MessageType type,
 //    Long userId,
         String username,
         LocalDateTime createdAt

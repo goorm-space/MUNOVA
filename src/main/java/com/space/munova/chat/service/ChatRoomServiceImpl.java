@@ -49,16 +49,14 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Transactional
     public OneToOneChatResponseDto createOneToOneChatRoom(Long productId, Long buyerId) {
 
-        Member buyer = memberRepository.findById(buyerId)
-                .orElseThrow(() -> MemberException.notFoundException("buyerId :" + buyerId));
+        Member buyer = getMemberOrThrow(buyerId);
 
         // 상품 조회
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> ChatException.cannotFindProductException("productId :" + productId));
 
         // 판매자(상품 등록자, 문의 대상) 조회 -> 꼭 필요할까?
-        Member seller = memberRepository.findById(product.getMember().getId())
-                .orElseThrow(() -> MemberException.notFoundException("memberId :" + product.getMember().getId()));
+        Member seller = product.getMember();
 
         // 판매자와 문의자 동일인일 경우 생성 불가
         if (product.getMember().getId().equals(buyerId)) {
@@ -70,7 +68,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 
         // 있으면 기존 채팅방 반환
         if (existingChat.isPresent()) {
-            return OneToOneChatResponseDto.of(existingChat.get().getChatId(), buyerId, seller.getId());
+            return OneToOneChatResponseDto.of(existingChat.get().getChatId(), buyerId, product.getMember().getId());
         }
 
         // 1:1 채팅방 생성
@@ -90,8 +88,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     public List<ChatItemDto> getOneToOneChatRoomsByMember(ChatUserType chatUserType, Long memberId) {
 
         List<Chat> allChats = chatRepository.findByChatTypeAndChatStatus(memberId, ChatType.ONE_ON_ONE, chatUserType, ChatStatus.OPENED);
-
-        return allChats.stream().map(c -> ChatItemDto.of(c.getId(), c.getName(), c.getLastMessageContent(), c.getLastMessageTime())).toList();
+        return mapToChatItemDtos(allChats);
     }
 
     // 1:1 채팅 목록 조회(판매자, 상태 상관 x)
@@ -100,8 +97,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     public List<ChatItemDto> getOneToOneChatRoomsBySeller(Long memberId) {
 
         List<Chat> allChats = chatRepository.findByChatTypeAndChatStatus(memberId, ChatType.ONE_ON_ONE, ChatUserType.OWNER, null);
-
-        return allChats.stream().map(c -> ChatItemDto.of(c.getId(), c.getName(), c.getLastMessageContent(), c.getLastMessageTime())).toList();
+        return mapToChatItemDtos(allChats);
     }
 
 
@@ -112,8 +108,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     public GroupChatInfoResponseDto createGroupChatRoom(GroupChatRequestDto requestDto, Long memberId) {
 
         // 채팅방 생성자 조회
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> MemberException.notFoundException("memberId :" + memberId));
+        Member member = getMemberOrThrow(memberId);
 
         // 채팅방 이름 중복 확인
         if (chatRepository.existsByName(requestDto.chatName())) {
@@ -126,10 +121,10 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 
         List<Category> categoryList = categoryRepository.findAllById(requestDto.productCategoryId());
 
-        for (Category category : categoryList) {
-            ChatTag chatTag = ChatTag.createChatTag(chat, category);
-            chatTagRepository.save(chatTag);
-        }
+        List<ChatTag> tags = categoryList.stream()
+                .map(c -> ChatTag.createChatTag(chat, c))
+                .toList();
+        chatTagRepository.saveAll(tags);
 
         chatMemberRepository.save(ChatMember.createChatMember(chat, member, ChatUserType.OWNER, member.getUsername()));
         List<ProductCategory> list = categoryList.stream().map(Category::getCategoryType).toList();
@@ -164,8 +159,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Transactional
     public ChatInfoResponseDto setChatRoomClosed(Long chatId, Long memberId, MemberRole role) {
 
-        ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, ChatStatus.OPENED, ChatType.ONE_ON_ONE, ChatUserType.OWNER)
-                .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId :" + chatId));
+        ChatMember chatMember = getChatMemberOrThrow(chatId, memberId, ChatUserType.OWNER, ChatType.ONE_ON_ONE, ChatStatus.OPENED);
 
         // 이미 닫혀있는 경우 예외 던짐
         chatMember.getChatId().oneToOneChatCloseBySeller(role);
@@ -179,8 +173,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     public ChatInfoResponseDto updateGroupChatInfo(Long chatId, GroupChatUpdateRequestDto groupChatUpdateDto, Long memberId) {
 
         // 채팅방 정보 및 해당 사용자가 해당 방의 생성자인지 확인
-        ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, null, ChatType.GROUP, ChatUserType.OWNER)
-                .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId=" + chatId));
+        ChatMember chatMember = getChatMemberOrThrow(chatId, memberId, ChatUserType.OWNER, ChatType.GROUP, null);
 
         chatMember.getChatId().updateInfo(groupChatUpdateDto);
 
@@ -193,8 +186,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     public void leaveGroupChat(Long chatId, Long memberId) {
 
         // 해당 채팅방이 유효한지, 해당 채팅방의 참여자인지 조회
-        ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, ChatStatus.OPENED, ChatType.GROUP, ChatUserType.MEMBER)
-                .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId=" + chatId));
+        ChatMember chatMember = getChatMemberOrThrow(chatId, memberId,ChatUserType.MEMBER, ChatType.GROUP, ChatStatus.OPENED);
 
         chatMember.getChatId().decrementParticipant();
         chatMemberRepository.delete(chatMember);
@@ -205,20 +197,19 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Transactional
     public void joinGroupChat(Long chatId, Long memberId) {
 
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> MemberException.notFoundException("memberId=" + memberId));
+        Member member = getMemberOrThrow(memberId);
 
         // OPENED 상태의 GROUP 채팅방 확인
         Chat chat = chatRepository.findChatByIdAndType(chatId, ChatType.GROUP)
                 .orElseThrow(() -> ChatException.invalidChatRoomException("chatId=" + chatId));
 
         // 해당 채팅방에 이미 참여중인지 확인
-        if (chatMemberRepository.existsMemberInChat(chatId, memberId, ChatStatus.OPENED)) return;
+        if (chatMemberRepository.existsMemberInChat(chatId, memberId, ChatStatus.OPENED)) {
+            return;
+        }
 
         // 정원 증가
         chat.incrementParticipant();
-
-
         chatMemberRepository.save(ChatMember.createChatMember(chat, member, ChatUserType.MEMBER, member.getUsername()));
     }
 
@@ -228,11 +219,10 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     public void closeGroupChat(Long chatId, Long memberId) {
 
         // 해당 채팅방이 OPENED 되어 있고, 이에 대한 OWENER 인 경우
-        ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, ChatStatus.OPENED, ChatType.GROUP, ChatUserType.OWNER)
-                .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId=" + chatId));
-
+        ChatMember chatMember = getChatMemberOrThrow(chatId, memberId, ChatUserType.OWNER, ChatType.GROUP,ChatStatus.OPENED);
         chatMember.getChatId().updateChatStatus(ChatStatus.CLOSED);
     }
+
 
     // OWNER가 채팅방 OPENED로 전환
     @Override
@@ -240,9 +230,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     public void openGroupChat(Long chatId, Long memberId) {
 
         // 해당 채팅방이 CLOSED 되어 있고, 이에 대한 OWENER 인 경우
-        ChatMember chatMember = chatMemberRepository.findChatMember(chatId, memberId, ChatStatus.CLOSED, ChatType.GROUP, ChatUserType.OWNER)
-                .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId=" + chatId));
-
+        ChatMember chatMember = getChatMemberOrThrow(chatId, memberId, ChatUserType.OWNER, ChatType.GROUP,  ChatStatus.CLOSED);
         chatMember.getChatId().updateChatStatus(ChatStatus.OPENED);
     }
 
@@ -251,17 +239,48 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Transactional
     public GroupChatDetailResponseDto getGroupChatDetail(Long chatId, Long memberId) {
         // 해당 채팅방의 참여자인지 확인
-        if(!chatMemberRepository.existsChatMemberAndMemberIdBy(chatId, memberId)){
-            throw ChatException.unauthorizedParticipantException("userId=" + memberId);
-        }
-
-        Chat chat = chatRepository.findByIdAndType(chatId, ChatType.GROUP)
-                .orElseThrow(() -> ChatException.cannotFindChatException("chatId=" + chatId));
+        validateMemberIsParticipant(chatId, memberId);
+        Chat chat = getGroupChatOrThrow(chatId);
 
         return GroupChatDetailResponseDto.of(chat);
     }
 
+
+
+    // private Helper
     private String generateChatRoomName(String productName, String userName) {
         return "[" + productName + "] 문의 - " + (userName != null ? userName : "사용자") + "님";
     }
+
+    private Member getMemberOrThrow(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> MemberException.notFoundException("memberId : " + memberId));
+    }
+
+    private Chat getGroupChatOrThrow(Long chatId) {
+        return chatRepository.findByIdAndType(chatId, ChatType.GROUP)
+                .orElseThrow(() -> ChatException.invalidChatRoomException("chatId=" + chatId));
+    }
+
+    private ChatMember getChatMemberOrThrow(Long chatId, Long memberId, ChatUserType type, ChatType chatType, ChatStatus status) {
+        return chatMemberRepository.findChatMember(chatId, memberId, status, chatType, type)
+                .orElseThrow(() -> ChatException.unauthorizedParticipantException("chatId=" + chatId));
+    }
+
+    private void validateMemberIsParticipant(Long chatId, Long memberId) {
+        if(!chatMemberRepository.existsChatMemberAndMemberIdBy(chatId, memberId)) {
+            throw ChatException.unauthorizedParticipantException("memberId=" + memberId);
+        }
+    }
+
+    private List<ChatItemDto> mapToChatItemDtos(List<Chat> chats) {
+        return chats.stream()
+                .map(c -> ChatItemDto.of(
+                        c.getId(),
+                        c.getName(),
+                        c.getLastMessageContent(),
+                        c.getLastMessageTime()))
+                .toList();
+    }
+
 }

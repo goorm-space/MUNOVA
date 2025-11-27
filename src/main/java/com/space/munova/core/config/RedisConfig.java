@@ -104,9 +104,11 @@ public class RedisConfig {
 
 
         ClusterTopologyRefreshOptions topologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
-                .enablePeriodicRefresh(Duration.ofSeconds(30))
+                .enablePeriodicRefresh(Duration.ofSeconds(10)) // 30초 → 10초로 단축 (토폴로지 갱신 빈도 증가)
+                .enableAllAdaptiveRefreshTriggers() // 모든 적응형 갱신 트리거 활성화
                 .enableAdaptiveRefreshTrigger(ClusterTopologyRefreshOptions.RefreshTrigger.MOVED_REDIRECT)
                 .enableAdaptiveRefreshTrigger(ClusterTopologyRefreshOptions.RefreshTrigger.ASK_REDIRECT)
+                .enableAdaptiveRefreshTrigger(ClusterTopologyRefreshOptions.RefreshTrigger.PERSISTENT_RECONNECTS)
                 .build();
 
         ClusterClientOptions clientOptions = ClusterClientOptions.builder()

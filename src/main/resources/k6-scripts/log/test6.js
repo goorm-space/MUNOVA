@@ -4,7 +4,7 @@ import {check, sleep} from 'k6';
 
 // --- 액세스 토큰 (예시용, 실제 테스트 시 여러 사용자 토큰 리스트로 교체 가능)
 const TOKENS = [
-    'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI1IiwiYXV0aG9yaXRpZXMiOiJVU0VSIiwidXNlcm5hbWUiOiJyZWRpczEiLCJpYXQiOjE3NjM1Mjg1MjgsImV4cCI6MTc2MzcwODUyOH0.p7uEJTrXPeXytk5h8zk9pFYyBHJWfKvX3GV0RvlPxJ1FUKaZJ90GIyPSFmVwx6j_BAF7Xi_k24L26AshVCXq0A',
+    'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI1IiwiYXV0aG9yaXRpZXMiOiJVU0VSIiwidXNlcm5hbWUiOiJyZWRpczEiLCJpYXQiOjE3NjQwMzM0MTgsImV4cCI6MTc2NDIxMzQxOH0.Gf0m13NxLWhymrFUnMYKfRElGfdbhM0BBSCSybfFj92InJyCqSUnsT3063tOMikY0HXMreGkaTap-XPbAqZU9Q',
 //    'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2IiwiYXV0aG9yaXRpZXMiOiJVU0VSIiwidXNlcm5hbWUiOiJyZWRpczIiLCJpYXQiOjE3NjMzMzkzMzEsImV4cCI6MTc2MzUxOTMzMX0.j4AWvJ0c7JB35fbQLkHwchl-NhsiFYxFoFtyocTaFzKsWkjrcyoa10HdwnBVF6rvB0rM8ZKce8HyxKf2Fl0ueA', // 예시
 //    'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI3IiwiYXV0aG9yaXRpZXMiOiJVU0VSIiwidXNlcm5hbWUiOiJyZWRpczMiLCJpYXQiOjE3NjMzMzkzNDEsImV4cCI6MTc2MzUxOTM0MX0.nYwZtlU4HxteUzuQT8jL4JF7ubBC1cuZQP_1qRNmv_mdx3gF3VyCQgBG7hJQc7qyW94MTO6UnNTPFSbK-XAjBg'  // 예시
 ];

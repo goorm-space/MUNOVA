@@ -6,8 +6,6 @@ import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.redis.connection.stream.MapRecord;
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -17,13 +15,14 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Slf4j
 @Component
 public class RedisBatchScheduler {
     private static final int BATCH_SIZE = 500;
-    private static final int STREAM_BUCKETS = 10;
+    private static final int STREAM_BUCKETS = 32;
+    private static final int MAX_RETRIES = 2; // 최대 재시도 횟수 (부하 테스트를 위해 감소)
+    private static final long RETRY_DELAY_MS = 0; // 재시도 간격 (ms) - 즉시 재시도로 변경하여 처리 속도 향상
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final LogBatchBuffer logBuffer;
@@ -96,7 +95,7 @@ public class RedisBatchScheduler {
         Timer.Sample sample = Timer.start(meterRegistry);
         try {
             // 1. 원본 데이터를 Redis 형식으로 변환
-            List<Map<String, Object>> redisDataList = new java.util.ArrayList<>(batch.size());
+            Map<Integer, List<Map<String, Object>>> groupedByBucket = new HashMap<>();
             Instant now = Instant.now();
             long producerTimeMs = System.currentTimeMillis();
 
@@ -106,7 +105,7 @@ public class RedisBatchScheduler {
                 redisData.put("event_time", now.toString());
                 redisData.put("event_timestamp", String.valueOf(now.toEpochMilli()));
                 redisData.put("producer_time", String.valueOf(producerTimeMs));
-                redisData.put("session_id", UUID.randomUUID().toString());
+///                redisData.put("session_id", UUID.randomUUID().toString());
                 redisData.put("version", 1);
 
                 // 원본 데이터 변환
@@ -120,67 +119,82 @@ public class RedisBatchScheduler {
                         redisData.put(entry.getKey(), String.valueOf(value));
                     }
                 }
-
-                redisDataList.add(redisData);
-            }
-
-            // 2. Redis 클러스터에서 파이프라인은 같은 노드로 가는 명령만 묶어야 함
-            // 스트림 키별로 그룹화 (원본 데이터와 Redis 데이터를 함께 저장)
-            Map<Integer, List<Map.Entry<Map<String, Object>, Map<String, Object>>>> groupedByBucket = new HashMap<>();
-
-            for (int i = 0; i < redisDataList.size(); i++) {
-                Map<String, Object> redisData = redisDataList.get(i);
-                Map<String, Object> originalLog = batch.get(i); // 원본 데이터 보존
-
                 Object memberIdObj = redisData.get("member_id");
                 int bucket = 0;
                 if (memberIdObj != null) {
                     long memberId = Long.parseLong(String.valueOf(memberIdObj));
                     bucket = (int) (memberId % STREAM_BUCKETS);
                 }
-                groupedByBucket.computeIfAbsent(bucket, k -> new java.util.ArrayList<>())
-                        .add(Map.entry(originalLog, redisData));
+
+                groupedByBucket
+                        .computeIfAbsent(bucket, k -> new java.util.ArrayList<>())
+                        .add(redisData);
             }
 
-            // 각 버킷별로 파이프라인 실행
-            for (Map.Entry<Integer, List<Map.Entry<Map<String, Object>, Map<String, Object>>>> entry : groupedByBucket.entrySet()) {
+            // 각 버킷별로 개별 전송 (파이프라인 제거 - 클러스터 토폴로지 문제로 인한 실패 방지)
+            // 파이프라인은 같은 노드로 가는 명령만 묶을 수 있지만, 클러스터 토폴로지 갱신 문제로 실패 가능
+            for (Map.Entry<Integer, List<Map<String, Object>>> entry : groupedByBucket.entrySet()) {
                 int bucket = entry.getKey();
-                List<Map.Entry<Map<String, Object>, Map<String, Object>>> bucketBatch = entry.getValue();
-                byte[] streamKeyBytes = STREAM_KEY_BYTES[bucket];
+                List<Map<String, Object>> bucketBatch = entry.getValue();
+                String streamKey = "user_action_stream_" + bucket;
 
-                try {
-                    redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
-                        var streamCommands = connection.streamCommands();
+                int successCount = 0;
+                int failureCount = 0;
 
-                        for (Map.Entry<Map<String, Object>, Map<String, Object>> dataEntry : bucketBatch) {
-                            Map<String, Object> redisData = dataEntry.getValue();
-                            Map<byte[], byte[]> body = new HashMap<>(32);
-                            for (Map.Entry<String, Object> e : redisData.entrySet()) {
-                                body.put(keyBytes(e.getKey()), valueBytes(e.getValue()));
+                // 개별 전송 (파이프라인 대신) + 재시도 로직
+                for (Map<String, Object> redisData : bucketBatch) {
+                    Map<String, String> body = new HashMap<>();
+                    for (Map.Entry<String, Object> e : redisData.entrySet()) {
+                        body.put(e.getKey(), String.valueOf(e.getValue()));
+                    }
+
+                    // 재시도 로직
+                    boolean sent = false;
+                    int retryCount = 0;
+
+                    while (!sent && retryCount < MAX_RETRIES) {
+                        try {
+                            redisTemplate.opsForStream().add(streamKey, body);
+                            successCount++;
+                            sent = true;
+                        } catch (Exception e) {
+                            retryCount++;
+
+                            if (retryCount < MAX_RETRIES) {
+                                // 재시도 전 잠시 대기 (토폴로지 갱신 시간 확보)
+                                // RETRY_DELAY_MS가 0이면 즉시 재시도하여 처리 속도 향상
+                                if (RETRY_DELAY_MS > 0) {
+                                    try {
+                                        Thread.sleep(RETRY_DELAY_MS);
+                                    } catch (InterruptedException ie) {
+                                        Thread.currentThread().interrupt();
+                                        break;
+                                    }
+                                }
+                            } else {
+                                // 최종 실패
+                                failureCount++;
+                                if (failureCount <= 5) {
+                                    // 상세 에러 정보 로깅 (근본 원인 파악용)
+                                    log.error("Redis 개별 전송 최종 실패 (bucket={}, streamKey={}, 재시도={}): {}",
+                                            bucket, streamKey, retryCount, e.getMessage());
+                                    log.error("에러 타입: {}, 원인: {}",
+                                            e.getClass().getName(),
+                                            e.getCause() != null ? e.getCause().getMessage() : "없음");
+                                }
                             }
-
-                            MapRecord<byte[], byte[], byte[]> record =
-                                    MapRecord.create(streamKeyBytes, body);
-                            streamCommands.xAdd(record);
-                        }
-                        return null;
-                    });
-
-                    batchSendSuccessCounter.increment();
-                    batchSendTotalCounter.increment(bucketBatch.size());
-                } catch (Exception e) {
-                    batchSendFailureCounter.increment(bucketBatch.size());
-                    log.warn("Redis 배치 전송 실패 (bucket={}): {}", bucket, e.getMessage(), e);
-
-                    // ⚠️ 중요: 전송 실패한 메시지를 다시 버퍼에 넣어서 손실 방지
-                    for (Map.Entry<Map<String, Object>, Map<String, Object>> dataEntry : bucketBatch) {
-                        Map<String, Object> originalLog = dataEntry.getKey();
-                        // 원본 데이터를 다시 버퍼에 추가 (버퍼가 가득 차면 실패하지만, 최소한 시도는 함)
-                        boolean reAdded = logBuffer.add(originalLog);
-                        if (!reAdded) {
-                            log.warn("전송 실패한 메시지를 버퍼에 다시 넣지 못했습니다. 버퍼가 가득 찼습니다.");
                         }
                     }
+                }
+
+                if (successCount > 0) {
+                    batchSendSuccessCounter.increment();
+                    batchSendTotalCounter.increment(successCount);
+                }
+                if (failureCount > 0) {
+                    batchSendFailureCounter.increment(failureCount);
+                    log.error("Redis 배치 전송 부분 실패 (bucket={}, 성공={}, 실패={})",
+                            bucket, successCount, failureCount);
                 }
             }
         } catch (Exception e) {

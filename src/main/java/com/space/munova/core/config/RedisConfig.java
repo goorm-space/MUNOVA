@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.lettuce.core.api.StatefulConnection;
 import io.lettuce.core.cluster.ClusterClientOptions;
 import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -116,7 +117,7 @@ public class RedisConfig {
         clusterConfig.setMaxRedirects(3);
 
         // 연결 풀 설정 (application-docker.properties에서 읽어옴)
-        GenericObjectPoolConfig<?> poolConfig = new GenericObjectPoolConfig<>();
+        GenericObjectPoolConfig<StatefulConnection<?, ?>> poolConfig = new GenericObjectPoolConfig<>();
         poolConfig.setMaxTotal(maxActive);
         poolConfig.setMaxIdle(maxIdle);
         poolConfig.setMinIdle(minIdle);
@@ -125,13 +126,6 @@ public class RedisConfig {
         poolConfig.setTestOnReturn(false);
         poolConfig.setBlockWhenExhausted(true); // 풀이 고갈되면 대기
         
-        // 연결 풀 설정 로깅 (확인용)
-        System.out.println("=== Redis Cluster Connection Pool 설정 ===");
-        System.out.println("Max Active: " + maxActive);
-        System.out.println("Max Idle: " + maxIdle);
-        System.out.println("Min Idle: " + minIdle);
-        System.out.println("Command Timeout: " + timeout + "ms");
-        System.out.println("==========================================");
 
         ClusterTopologyRefreshOptions topologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
                 .enablePeriodicRefresh(Duration.ofSeconds(10)) // 30초 → 10초로 단축 (토폴로지 갱신 빈도 증가)

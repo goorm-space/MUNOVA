@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.lettuce.core.cluster.ClusterClientOptions;
 import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -15,8 +16,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
-import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
@@ -36,6 +37,18 @@ public class RedisConfig {
     private String password;
     @Value("${spring.data.redis.cluster.nodes}")
     private List<String> clusterNodes;
+    
+    @Value("${spring.data.redis.lettuce.pool.max-active:16}")
+    private int maxActive;
+    
+    @Value("${spring.data.redis.lettuce.pool.max-idle:16}")
+    private int maxIdle;
+    
+    @Value("${spring.data.redis.lettuce.pool.min-idle:8}")
+    private int minIdle;
+    
+    @Value("${spring.data.redis.timeout:1000}")
+    private int timeout;
 
     private RedisStandaloneConfiguration redisStandaloneConfiguration() {
         RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
@@ -102,6 +115,23 @@ public class RedisConfig {
         clusterConfig.setPassword(password);
         clusterConfig.setMaxRedirects(3);
 
+        // 연결 풀 설정 (application-docker.properties에서 읽어옴)
+        GenericObjectPoolConfig<?> poolConfig = new GenericObjectPoolConfig<>();
+        poolConfig.setMaxTotal(maxActive);
+        poolConfig.setMaxIdle(maxIdle);
+        poolConfig.setMinIdle(minIdle);
+        poolConfig.setTestOnBorrow(true); // 연결 검증 활성화
+        poolConfig.setTestWhileIdle(true); // 유휴 연결 검증
+        poolConfig.setTestOnReturn(false);
+        poolConfig.setBlockWhenExhausted(true); // 풀이 고갈되면 대기
+        
+        // 연결 풀 설정 로깅 (확인용)
+        System.out.println("=== Redis Cluster Connection Pool 설정 ===");
+        System.out.println("Max Active: " + maxActive);
+        System.out.println("Max Idle: " + maxIdle);
+        System.out.println("Min Idle: " + minIdle);
+        System.out.println("Command Timeout: " + timeout + "ms");
+        System.out.println("==========================================");
 
         ClusterTopologyRefreshOptions topologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
                 .enablePeriodicRefresh(Duration.ofSeconds(10)) // 30초 → 10초로 단축 (토폴로지 갱신 빈도 증가)
@@ -114,15 +144,18 @@ public class RedisConfig {
         ClusterClientOptions clientOptions = ClusterClientOptions.builder()
                 .topologyRefreshOptions(topologyRefreshOptions)
                 .validateClusterNodeMembership(false)
+                .autoReconnect(true) // 자동 재연결 활성화
                 .build();
 
-        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
+        // 연결 풀을 사용하는 LettuceClientConfiguration 생성
+        LettucePoolingClientConfiguration clientConfig = LettucePoolingClientConfiguration.builder()
+                .poolConfig(poolConfig)
                 .clientOptions(clientOptions)
-                .commandTimeout(Duration.ofSeconds(5))
+                .commandTimeout(Duration.ofMillis(timeout)) // application-docker.properties에서 읽어온 timeout 사용
                 .build();
 
         LettuceConnectionFactory factory = new LettuceConnectionFactory(clusterConfig, clientConfig);
-        factory.setValidateConnection(true); // 나중에 false로 바꾸던가 해야지 -> 성능 up!
+        factory.setValidateConnection(false); // 연결 검증 비활성화 - 성능 향상 및 토폴로지 문제 완화
         factory.afterPropertiesSet();
 
         return factory;

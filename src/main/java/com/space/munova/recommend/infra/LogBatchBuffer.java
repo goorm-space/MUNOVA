@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.LongAdder;
 @Component
 public class LogBatchBuffer {
 
-    private static final int MAX_SIZE = 10_000; // 유동적으로 바꿔야함
+    private static final int MAX_SIZE = 50_000; // 유동적으로 바꿔야함
 
     private final BlockingQueue<Map<String, Object>> buffer = new LinkedBlockingQueue<>(MAX_SIZE); // 다른 자료구조는 없나?
 
@@ -85,5 +85,15 @@ public class LogBatchBuffer {
 
     public int size() {
         return currentSize.intValue();
+    }
+
+
+    public int remainingCapacity() {
+        return buffer.remainingCapacity();
+    }
+
+
+    public boolean isNearlyFull() {
+        return currentSize.intValue() >= MAX_SIZE * 0.9;
     }
 }

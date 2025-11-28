@@ -56,22 +56,23 @@ public class PipelineLoadTestRunner implements CommandLineRunner {
      * - 실제 스레드 20,000개를 생성하지 않고, 적은 수의 스레드로 부하를 생성합니다
      * - 각 스레드는 여러 VUS를 시뮬레이션하여 총 20,000 VUS의 부하를 만듭니다
      */
-    private static final int VUS_COUNT = 30000;           // VUS (Virtual User) 개수
+    private static final int VUS_COUNT = 20000;           // VUS (Virtual User) 개수
 
     /**
      * 실제 사용할 스레드 풀 크기
      * - 초당 30,000개를 생성하려면 여러 스레드가 필요합니다
      * - 스레드 1개로는 초당 약 9,000~10,000개 정도만 생성 가능합니다
-     * - 스레드 4개 정도면 초당 30,000개 생성 가능합니다
+     * - 스레드 4개로는 부족하여 실제로는 초당 약 10,000개 정도만 생성됨
+     * - 스레드 10개 정도면 초당 30,000개 생성 가능합니다
      */
-    private static final int THREAD_POOL_SIZE = 4; // 초당 30,000개 생성용
+    private static final int THREAD_POOL_SIZE = 10; // 초당 30,000개 생성용
 
     /**
      * 초당 생성할 로그 수: 1초에 생성할 로그의 개수
      * - API에 초당 20,000개 요청이 오는 것과 비슷한 부하를 시뮬레이션합니다
      * - 파이프라인이 초당 20,000개를 견뎌낼 수 있는지 테스트합니다
      */
-    private static final int LOGS_PER_SECOND = 30000;      // 초당 생성할 로그 수
+    private static final int LOGS_PER_SECOND = 20000;      // 초당 생성할 로그 수
 
     /**
      * 테스트 지속 시간: 부하 테스트를 실행할 시간 (초)
@@ -107,11 +108,11 @@ public class PipelineLoadTestRunner implements CommandLineRunner {
 
         // Redis 클러스터 연결이 완료될 때까지 대기 및 연결 테스트
         log.info("Redis 클러스터 연결 확인 중...");
-        int maxRetries = 30; // 최대 30번 시도 (30초)
+        int redisConnectionMaxRetries = 30; // 최대 30번 시도 (30초)
         boolean connected = false;
         Exception lastException = null;
 
-        for (int i = 0; i < maxRetries; i++) {
+        for (int i = 0; i < redisConnectionMaxRetries; i++) {
             try {
                 // 실제 Redis 연결 테스트 (여러 번 확인하여 확실하게)
                 // 1. SET/GET/DEL 테스트
@@ -135,13 +136,13 @@ public class PipelineLoadTestRunner implements CommandLineRunner {
                 clusterRedisTemplate.delete(testKey2);
 
                 connected = true;
-                log.info("✅ Redis 클러스터 연결 확인 완료. (시도 횟수: {}/{})", i + 1, maxRetries);
+                log.info("✅ Redis 클러스터 연결 확인 완료. (시도 횟수: {}/{})", i + 1, redisConnectionMaxRetries);
                 break;
             } catch (Exception e) {
                 lastException = e;
-                if (i < maxRetries - 1) {
+                if (i < redisConnectionMaxRetries - 1) {
                     log.info("Redis 클러스터 연결 시도 중... (시도 {}/{}, 에러: {})",
-                            i + 1, maxRetries, e.getClass().getSimpleName() + ": " + e.getMessage());
+                            i + 1, redisConnectionMaxRetries, e.getClass().getSimpleName() + ": " + e.getMessage());
                     try {
                         Thread.sleep(1000); // 1초 대기
                     } catch (InterruptedException ie) {
@@ -150,7 +151,7 @@ public class PipelineLoadTestRunner implements CommandLineRunner {
                         return;
                     }
                 } else {
-                    log.error("❌ Redis 클러스터 연결 확인 실패 (최대 시도 횟수 {}회 도달)", maxRetries);
+                    log.error("❌ Redis 클러스터 연결 확인 실패 (최대 시도 횟수 {}회 도달)", redisConnectionMaxRetries);
                     log.error("마지막 에러: {}", lastException.getMessage(), lastException);
                 }
             }
@@ -206,32 +207,27 @@ public class PipelineLoadTestRunner implements CommandLineRunner {
                         long secondStartTime = System.currentTimeMillis();
                         int logsGeneratedThisSecond = 0;
 
-                        // 1초 동안 로그 생성 (이 스레드가 담당하는 만큼)
+                        // 목표 개수에 도달할 때까지 계속 생성 (시간 제한 없이)
                         while (logsGeneratedThisSecond < logsPerSecondForThisThread) {
                             try {
                                 // 여러 VUS를 시뮬레이션하기 위해 VUS ID를 순환시킴
                                 int vusId = startVusId + (logIndex % vusForThisThread);
                                 Map<String, Object> logData = createLogData(vusId, logIndex);
-                                
+
                                 // 버퍼가 거의 가득 찬 경우 (90% 이상) 잠시 대기
-                                int retryCount = 0;
-                                int maxRetries = 100; // 최대 100번 재시도 (약 100ms)
+                                int bufferWaitRetryCount = 0;
+                                int bufferWaitMaxRetries = 200; // 최대 200번 재시도 (약 200ms)
                                 
-                                while (retryCount < maxRetries && logBuffer.isNearlyFull()) {
+                                while (bufferWaitRetryCount < bufferWaitMaxRetries && logBuffer.isNearlyFull()) {
                                     Thread.sleep(1); // 1ms 대기
-                                    retryCount++;
+                                    bufferWaitRetryCount++;
                                 }
-                                
+
                                 // sendLog() 호출 (원래 로직 유지)
                                 redisStreamProducer.sendLog(logData);
                                 localSuccess++;
                                 logIndex++;
                                 logsGeneratedThisSecond++;
-
-                                // 1초가 지났는데 아직 목표 개수에 도달하지 못했다면 중단
-                                if (System.currentTimeMillis() - secondStartTime >= 1000) {
-                                    break;
-                                }
                             } catch (Exception e) {
                                 localFailure++;
                                 if (localFailure <= 5) {
@@ -240,8 +236,13 @@ public class PipelineLoadTestRunner implements CommandLineRunner {
                             }
                         }
 
-                        // 1초 대기 (다음 초까지)
+                        // 각 초마다 실제 생성량 로깅
                         long elapsed = System.currentTimeMillis() - secondStartTime;
+                        log.info("스레드 {} - {}초: 목표={}, 실제={}, 소요시간={}ms",
+                                finalThreadId, second + 1, logsPerSecondForThisThread,
+                                logsGeneratedThisSecond, elapsed);
+
+                        // 다음 초까지 대기 (이미 시간이 지났어도 최소한 1초는 대기)
                         if (elapsed < 1000) {
                             try {
                                 Thread.sleep(1000 - elapsed);

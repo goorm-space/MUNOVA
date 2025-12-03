@@ -3,7 +3,6 @@ package com.space.munova.product.application;
 import com.space.munova.product.application.exception.ProductDetailException;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.Repository.ProductDetailRepository;
-import org.hibernate.query.sqm.mutation.internal.cte.CteInsertStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,8 +13,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProductDetailService 단위 테스트")
@@ -35,7 +36,7 @@ class ProductDetailServiceTest {
     void setUp() {
         // 각 테스트 실행 전에 공통 설정
         productDetailId = 1L;
-        
+
         // 기본 ProductDetail 객체 생성 (각 테스트에서 필요에 따라 수정해서 사용)
         baseProductDetail = ProductDetail.builder()
                 .id(productDetailId)
@@ -60,7 +61,7 @@ class ProductDetailServiceTest {
                 .thenReturn(Optional.of(realProductDetail));
 
         // When
-        ProductDetail result = productDetailService.deductStock(productDetailId, requestQuantity);
+        ProductDetail result = productDetailService.getStock(productDetailId, requestQuantity);
 
         // Then: 비즈니스 로직 검증 - 재고가 차감되었는지 확인
         assertEquals(5, result.getQuantity());  // 10 - 5 = 5
@@ -85,7 +86,7 @@ class ProductDetailServiceTest {
 
         // When & Then: 비즈니스 로직 검증 - 재고가 0이면 예외 발생
         assertThrows(ProductDetailException.class, () -> {
-            productDetailService.deductStock(productDetailId, requestQuantity);
+            productDetailService.getStock(productDetailId, requestQuantity);
         });
 
         // 재고는 변경되지 않아야 함
@@ -111,7 +112,7 @@ class ProductDetailServiceTest {
 
         // When & Then: 비즈니스 로직 검증 - 재고가 요청량보다 적으면 예외 발생
         assertThrows(ProductDetailException.class, () -> {
-            productDetailService.deductStock(productDetailId, requestQuantity);
+            productDetailService.getStock(productDetailId, requestQuantity);
         });
 
         // 재고는 변경되지 않아야 함

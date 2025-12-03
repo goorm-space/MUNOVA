@@ -19,7 +19,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -37,8 +38,8 @@ public class OrderItemServiceImpl implements OrderItemService {
     @Override
     public List<OrderItem> deductStockAndCreateOrderItems(List<OrderItemRequest> itemRequests, Order order) {
         List<OrderItem> orderItems = new ArrayList<>();
-        for(OrderItemRequest orderItemRequest : itemRequests) {
-            ProductDetail detail = productDetailService.deductStock(orderItemRequest.productDetailId(), orderItemRequest.quantity());
+        for (OrderItemRequest orderItemRequest : itemRequests) {
+            ProductDetail detail = productDetailService.getStock(orderItemRequest.productDetailId(), orderItemRequest.quantity());
 
             OrderItem orderItem = OrderItem.create(order, detail, orderItemRequest.quantity());
 
@@ -54,7 +55,7 @@ public class OrderItemServiceImpl implements OrderItemService {
         OrderItem orderItem = orderItemRepository.findById(orderItemId)
                 .orElseThrow(OrderItemException::notFoundException);
 
-        authService.verifyAuthorization(orderItem.getOrder().getMember().getId(), memberId);
+//        authService.verifyAuthorization(orderItem.getOrder().getMember().getId(), memberId);
 
         CancellationStrategy strategy;
         if (request.cancelType() == CancelType.ORDER_CANCEL) {
@@ -71,9 +72,9 @@ public class OrderItemServiceImpl implements OrderItemService {
 
         strategy.updateOrderItemStatus(orderItem);
 
-        List<Long> singleOrderItemId= List.of(orderItemId);
-        List<Long> productDetailId=orderItemRepository.findProductDetailIdsByOrderItemIds(singleOrderItemId);
-        Long productId=productDetailService.findProductIdByDetailId(productDetailId.get(0));
-        recommendService.updateUserAction(productId,0,null,null,false);
+        List<Long> singleOrderItemId = List.of(orderItemId);
+        List<Long> productDetailId = orderItemRepository.findProductDetailIdsByOrderItemIds(singleOrderItemId);
+        Long productId = productDetailService.findProductIdByDetailId(productDetailId.get(0));
+        recommendService.updateUserAction(productId, 0, null, null, false);
     }
 }

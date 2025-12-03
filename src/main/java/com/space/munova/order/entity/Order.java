@@ -1,7 +1,6 @@
 package com.space.munova.order.entity;
 
 import com.space.munova.core.entity.BaseEntity;
-import com.space.munova.coupon.entity.Coupon;
 import com.space.munova.member.entity.Member;
 import com.space.munova.order.dto.OrderStatus;
 import jakarta.persistence.*;
@@ -50,12 +49,10 @@ public class Order extends BaseEntity {
     @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
 
-    public static Order createOrder(Member member, String userRequest) {
+    public static Order createOrder(String userRequest) {
         return Order.builder()
-                .member(member)
                 .orderNum(generateOrderNum())
                 .userRequest(userRequest)
-                .status(OrderStatus.CREATED)
                 .build();
     }
 

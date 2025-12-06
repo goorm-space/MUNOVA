@@ -1,6 +1,6 @@
 package com.space.munova.product.domain.Repository;
 
-import com.space.munova.product.application.dto.ProductOptionInfoDto;
+import com.space.munova.product.application.product.query.dto.ProductOptionInfoDto;
 import com.space.munova.product.domain.ProductDetail;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -29,7 +29,7 @@ public interface ProductDetailRepository extends JpaRepository<ProductDetail, Lo
     @Query("UPDATE ProductDetail pd " +
             "SET pd.isDeleted = true " +
             "WHERE pd.id IN :productIds")
-    void deleteProductDetailByIds(List<Long> productIds);
+    int deleteProductDetailByIds(List<Long> productIds);
 
     @Query("SELECT pd " +
             "FROM ProductDetail pd " +
@@ -47,5 +47,5 @@ public interface ProductDetailRepository extends JpaRepository<ProductDetail, Lo
     @Query("UPDATE ProductDetail pd " +
             "SET pd.quantity = :quantity " +
             "WHERE pd.id = :detailId")
-    void updateQuantity(Long detailId, int quantity);
+    int updateQuantity(Long detailId, int quantity);
 }

@@ -1,21 +1,16 @@
 package com.space.munova.recommend.controller;
 
 import com.space.munova.core.config.ResponseApi;
-import com.space.munova.core.dto.PagingResponse;
-import com.space.munova.product.application.dto.FindProductResponseDto;
-import com.space.munova.recommend.dto.RecommendProductResponseDto;
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
 import com.space.munova.recommend.infra.RedisStreamProducer;
 import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor

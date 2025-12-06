@@ -2,8 +2,8 @@ package com.space.munova.product.domain;
 
 
 import com.space.munova.core.entity.BaseEntity;
-import com.space.munova.product.application.cart.exception.CartException;
-import com.space.munova.product.application.shared.exception.ProductDetailException;
+import com.space.munova.product.application.cart.command.exception.CartException;
+import com.space.munova.product.application.product.command.exception.ProductDetailException;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;

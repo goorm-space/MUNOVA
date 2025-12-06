@@ -3,7 +3,7 @@ package com.space.munova.product.infra;
 
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.space.munova.product.application.dto.FindProductResponseDto;
+import com.space.munova.product.application.product.query.dto.FindProductResponseDto;
 import com.space.munova.product.domain.Repository.ProductLikeRepositoryCustom;
 import com.space.munova.product.domain.enums.ProductImageType;
 import lombok.RequiredArgsConstructor;

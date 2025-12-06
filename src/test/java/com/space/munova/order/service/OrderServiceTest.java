@@ -16,7 +16,7 @@ import com.space.munova.order.service.processor.NoCouponProcessor;
 import com.space.munova.payment.entity.Payment;
 import com.space.munova.payment.exception.PaymentException;
 import com.space.munova.payment.service.PaymentService;
-import com.space.munova.product.application.shared.ProductDetailService;
+import com.space.munova.product.application.product.command.ProductDetailService;
 import com.space.munova.recommend.service.RecommendService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -1,8 +1,8 @@
 package com.space.munova.product.infra.mongo.query;
 
 
-import com.space.munova.product.application.dto.FindProductResponseDto;
-import com.space.munova.product.application.dto.ProductCursorDto;
+import com.space.munova.product.application.product.query.dto.FindProductResponseDto;
+import com.space.munova.product.application.product.query.dto.ProductCursorDto;
 import com.space.munova.product.domain.enums.SortFlag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

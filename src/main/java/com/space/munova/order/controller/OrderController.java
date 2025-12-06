@@ -12,7 +12,7 @@ import com.space.munova.order.exception.OrderException;
 import com.space.munova.order.exception.OrderItemException;
 import com.space.munova.order.service.OrderService;
 import com.space.munova.payment.exception.PaymentException;
-import com.space.munova.product.application.shared.exception.ProductDetailException;
+import com.space.munova.product.application.product.command.exception.ProductDetailException;
 import com.space.munova.security.jwt.JwtHelper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

@@ -1,6 +1,6 @@
 package com.space.munova.product.application.event;
 
-import com.space.munova.product.application.ProductService;
+import com.space.munova.product.application.product.command.ProductCommandFacadeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -11,7 +11,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @RequiredArgsConstructor
 public class ProductEventListener {
 
-    private final ProductService productService;
+    private final ProductCommandFacadeService productCommandFacadeService;
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -20,11 +20,10 @@ public class ProductEventListener {
         ///  딜리티드가 트루일경우 product LikeCount --
         ///  딜리티드가 펄스 일경우 Product LikeCount ++
         if(event.isDeleted()) {
-
-            productService.minusLikeCountInProductIds(event.productId());
+            productCommandFacadeService.minusLikeCountInProductIds(event.productId());
         } else {
 
-            productService.plusLikeCountByProductId(event.productId());
+            productCommandFacadeService.plusLikeCountByProductId(event.productId());
         }
     }
 }

@@ -1,22 +1,20 @@
 package com.space.munova.product.domain.Repository;
 
 
-import com.space.munova.product.application.dto.FindProductResponseDto;
-import com.space.munova.product.application.dto.ProductInfoDto;
+import com.space.munova.product.application.product.query.dto.ProductInfoDto;
 import com.space.munova.product.domain.Product;
-import com.space.munova.recommend.dto.RecommendProductResponseDto;
-import org.springframework.data.domain.Pageable;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long>, ProductRepositoryCustom {
 //    @Query("""
-//        SELECT new com.space.munova.product.application.dto.FindProductResponseDto(
+//        SELECT new com.space.munova.product.application.product.query.dto.FindProductResponseDto(
 //            p.id,
 //            pi.imgUrl,
 //            b.brandName,
@@ -38,15 +36,16 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
 //    """)
 //    List<FindProductResponseDto> findSimilarProductsByCategory(Long refCategoryId, Long excludeId, Pageable pageable);
 
-    @Query("SELECT new com.space.munova.product.application.dto.ProductInfoDto(p.id, c.id, b.brandName, p.name, p.info, p.price, p.likeCount, p.viewCount) " +
+    @Query("SELECT new com.space.munova.product.application.product.query.dto.ProductInfoDto(p.id, c.id, b.brandName, p.name, p.info, p.price, p.likeCount, p.viewCount) " +
             "FROM Product p " +
             "LEFT JOIN Brand b " +
             "ON p.brand.id = b.id " +
             "LEFT JOIN Category c " +
             "ON c.id = p.category.id " +
             "WHERE p.id = :productId " +
+            "AND p.member.id = :sellerId " +
             "AND p.isDeleted = false")
-    Optional<ProductInfoDto> findProductInfoById(Long productId);
+    Optional<ProductInfoDto> findByIdAndSellerId(Long productId, Long sellerId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Product p " +
@@ -71,14 +70,15 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
 
     boolean existsByIdAndMemberIdAndIsDeletedFalse(Long productId , Long sellerId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Product p " +
             "WHERE p.isDeleted = false " +
             "AND p.id = :productId " +
             "AND p.member.id = :sellerId ")
-    Optional<Product> findByIdAndMemberIdAndIsDeletedFalse(Long productId, Long sellerId);
+    Optional<Product> findProductForUpdate(Long productId, Long sellerId);
 
 //    @Query("""
-//    SELECT new com.space.munova.product.application.dto.FindProductResponseDto(
+//    SELECT new com.space.munova.product.application.product.query.dto.FindProductResponseDto(
 //        p.id,
 //        pi.imgUrl,
 //        b.brandName,

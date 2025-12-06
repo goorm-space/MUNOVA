@@ -1,17 +1,13 @@
 package com.space.munova.recommend.service;
 
-import com.space.munova.core.config.ResponseApi;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.member.repository.MemberRepository;
-import com.space.munova.product.application.dto.FindProductResponseDto;
-import com.space.munova.product.domain.Category;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.Repository.ProductRepository;
 import com.space.munova.product.domain.enums.ProductCategory;
 import com.space.munova.recommend.domain.ProductRecommendation;
 import com.space.munova.recommend.domain.UserActionSummary;
 import com.space.munova.recommend.domain.UserRecommendation;
-import com.space.munova.recommend.dto.RecommendProductResponseDto;
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
 import com.space.munova.recommend.dto.RecommendationsProductResponseDto;
 import com.space.munova.recommend.dto.RecommendationsUserResponseDto;
@@ -22,11 +18,8 @@ import com.space.munova.recommend.repository.UserRecommendationRepository;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -35,7 +28,6 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor

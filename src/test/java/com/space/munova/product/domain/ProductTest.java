@@ -1,7 +1,7 @@
 package com.space.munova.product.domain;
 
 import com.space.munova.member.entity.Member;
-import com.space.munova.product.application.command.exception.ProductException;
+import com.space.munova.product.application.product.command.exception.ProductException;
 import com.space.munova.product.domain.enums.ProductCategory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

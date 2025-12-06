@@ -18,7 +18,7 @@ import com.space.munova.payment.event.PaymentCompensationEvent;
 import com.space.munova.payment.exception.PaymentException;
 import com.space.munova.payment.repository.PaymentRepository;
 import com.space.munova.payment.repository.RefundRepository;
-import com.space.munova.product.application.cart.CartService;
+import com.space.munova.product.application.cart.command.CartCommandService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,7 +53,7 @@ public class PaymentServiceTest {
     @Mock
     private CouponService couponService;
     @Mock
-    private CartService cartService;
+    private CartCommandService cartCommandService;
     @Mock
     private NotificationService notificationService;
     @Mock
@@ -100,7 +100,7 @@ public class PaymentServiceTest {
         // Spy 객체에 Mock 주입 (BeforeEach마다 초기화)
         spyPaymentService = new PaymentServiceImpl(
                 orderQueryService, authService, tossApiClient, paymentRepository, refundRepository,
-                couponService, cartService, notificationService, eventPublisher
+                couponService, cartCommandService, notificationService, eventPublisher
         );
 
         mockPayment = mock(Payment.class);
@@ -158,7 +158,7 @@ public class PaymentServiceTest {
 
         // 4. 후처리 로직 호출
         verify(eventPublisher, times(1)).publishEvent(any(PaymentCompensationEvent.class));
-        verify(cartService, times(1)).deleteByOrderItemsAndMemberId(any(), eq(MEMBER_ID));
+        verify(cartCommandService, times(1)).deleteByOrderItemsAndMemberId(any(), eq(MEMBER_ID));
 
         // 5. 쿠폰 (null이므로 호출되지 않아야 함)
         verify(couponService, never()).useCoupon(anyLong());

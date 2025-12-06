@@ -1,6 +1,6 @@
 package com.space.munova.product.application.event;
 
-import com.space.munova.product.application.like.ProductLikeService;
+import com.space.munova.product.application.like.command.ProductLikeCommandService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -11,13 +11,13 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @RequiredArgsConstructor
 public class ProductLikeEventListener {
 
-    private final ProductLikeService productLikeService;
+    private final ProductLikeCommandService productLikeCommandService;
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleLikeDelete(ProductDeleteEvenForLikeDto event) {
         if(event.isDeleted()) {
-            productLikeService.deleteProductLikeByProductIds(event.productId());
+            productLikeCommandService.deleteProductLikeByProductIds(event.productId());
         }
     }
 }

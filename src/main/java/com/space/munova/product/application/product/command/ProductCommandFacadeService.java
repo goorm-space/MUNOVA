@@ -41,7 +41,7 @@ public class ProductCommandFacadeService {
     private final ProductCommandService productCommandService;
     private final MemberRepository memberRepository;
     private final RecommendService recommendService;
-    private ApplicationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     public void plusLikeCountByProductId(Long productId) {
@@ -101,7 +101,7 @@ public class ProductCommandFacadeService {
         /// 삭제된 디테일 아이디 값반환.
         List<Long> deletedDetailIds = productDetailService.deleteProductDetailByProductId(deleteProductIds);
 
-        productCommandService.deleteProduct(deletedDetailIds);
+        productCommandService.deleteProduct(deleteProductIds);
 
         /// 비동기로 장바구니, 좋아요에 상품 삭제 메시지 발행
         ProductDeleteEventForCartDto deleteCartMessage = new ProductDeleteEventForCartDto(deletedDetailIds, true);
@@ -153,7 +153,8 @@ public class ProductCommandFacadeService {
         productDetailUpdateDtos.removeDeletedItemsFromUpdateList();
 
         if(!productDetailUpdateDtos.addShoeOptionDtos().isEmpty()) {
-             savedDetailAndOptionInfoDto = productDetailService.saveProductDetailAndOption(product, reqDto.addShoeOptionDto().shoeOptionDtos());
+             savedDetailAndOptionInfoDto = productDetailService.saveProductDetailAndOption(product,
+                     productDetailUpdateDtos.addShoeOptionDtos());
 
         }
 

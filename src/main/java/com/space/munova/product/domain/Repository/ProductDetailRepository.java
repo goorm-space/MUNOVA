@@ -13,7 +13,7 @@ import java.util.Optional;
 
 public interface ProductDetailRepository extends JpaRepository<ProductDetail, Long>, ProductDetailRepositoryCustom {
 
-    @Query("SELECT new com.space.munova.product.application.dto.ProductOptionInfoDto(o.id, pd.id, o.optionType, o.optionName,  pd.quantity) " +
+    @Query("SELECT new com.space.munova.product.application.product.query.dto.ProductOptionInfoDto(o.id, pd.id, o.optionType, o.optionName,  pd.quantity) " +
             "FROM Product p " +
             "JOIN ProductDetail pd " +
             "ON p.id = pd.product.id " +

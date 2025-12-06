@@ -2,6 +2,7 @@ package com.space.munova.product.domain;
 
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.entity.Member;
+import com.space.munova.product.application.like.exception.LikeException;
 import com.space.munova.product.application.product.command.exception.ProductException;
 import jakarta.persistence.*;
 import lombok.*;
@@ -34,7 +35,7 @@ public class ProductLike extends BaseEntity {
     public static ProductLike createDefaultProductLike(Product product, Member member) {
 
         if(product == null || member == null){
-            throw ProductException.badRequestException();
+            throw LikeException.badRequestException();
         }
 
         return  ProductLike.builder()
@@ -47,7 +48,7 @@ public class ProductLike extends BaseEntity {
 
     public void deleteLike(Long reqMemberId) {
         if(!reqMemberId.equals(this.member.getId())) {
-            throw new IllegalArgumentException("유효하지 않은 요청입니다.");
+            throw LikeException.badRequestException("유효하지 않은 요청입니다.");
         }
 
         this.isDeleted = true;

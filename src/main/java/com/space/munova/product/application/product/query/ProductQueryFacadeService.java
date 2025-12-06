@@ -3,7 +3,7 @@ package com.space.munova.product.application.product.query;
 
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.product.application.product.query.dto.*;
-import com.space.munova.product.application.product.query.exception.ProductException;
+import com.space.munova.product.application.product.query.exception.ProductQueryException;
 import com.space.munova.product.application.product.query.port.ProductDetailsPort;
 import com.space.munova.product.application.product.query.port.ProductListPort;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ public class ProductQueryFacadeService {
         ProductListPort selectedPort = productSearchPorts.stream()
                 .filter(p -> p.supports(productSearchRequestDto))
                 .findFirst()
-                .orElseThrow(() -> ProductException.badRequestException("잘못된 요청입니다."));
+                .orElseThrow(() -> ProductQueryException.badRequestException("잘못된 요청입니다."));
 
         return PagingResponse.from(selectedPort.findList(productSearchRequestDto, pageable));
     }

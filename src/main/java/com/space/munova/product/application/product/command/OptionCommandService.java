@@ -1,6 +1,6 @@
 package com.space.munova.product.application.product.command;
 
-import com.space.munova.product.application.product.command.exception.OptionException;
+import com.space.munova.product.application.product.command.exception.OptionCommandException;
 import com.space.munova.product.domain.Option;
 import com.space.munova.product.domain.Repository.OptionRepository;
 import com.space.munova.product.domain.enums.OptionCategory;
@@ -20,7 +20,7 @@ public class OptionCommandService {
 
     public Option findByCategoryAndName(OptionCategory optionCategory, String optionName) {
         return OptionRepository.findByOptionTypeAndOptionName(optionCategory, optionName)
-                .orElseThrow(() -> OptionException.badRequset("요청한 옵션을 찾을 수 없습니다."));
+                .orElseThrow(() -> OptionCommandException.badRequset("요청한 옵션을 찾을 수 없습니다."));
     }
 
     public Option saveOption(Option option) {
@@ -29,6 +29,6 @@ public class OptionCommandService {
 
     public Option findById(Long colorId) {
         return OptionRepository.findById(colorId)
-                .orElseThrow(() -> OptionException.badRequset("요청한 옵션을 찾을 수 없습니다."));
+                .orElseThrow(() -> OptionCommandException.badRequset("요청한 옵션을 찾을 수 없습니다."));
     }
 }

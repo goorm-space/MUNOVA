@@ -4,7 +4,7 @@ import com.space.munova.product.application.product.query.dto.FindProductRespons
 import com.space.munova.product.application.product.query.dto.ProductCursorDto;
 import com.space.munova.product.application.product.query.dto.ProductDetailResponseDto;
 import com.space.munova.product.application.product.query.dto.ProductSearchRequestDto;
-import com.space.munova.product.application.product.query.exception.ProductException;
+import com.space.munova.product.application.product.query.exception.ProductQueryException;
 import com.space.munova.product.application.product.query.port.ProductDetailsPort;
 import com.space.munova.product.application.product.query.port.ProductListPort;
 import com.space.munova.product.infra.mongo.ProductMongoDocument;
@@ -26,7 +26,7 @@ public class MongoQueryAdapter implements ProductListPort, ProductDetailsPort {
     public ProductDetailResponseDto findProductDetails(Long productId) {
         ProductMongoDocument doc = productMongoQueryRepo
                 .findById(productId)
-                .orElseThrow(() -> ProductException.badRequestException("상품 정보를 확인할 수 없습니다."));
+                .orElseThrow(() -> ProductQueryException.badRequestException("상품 정보를 확인할 수 없습니다."));
 
         return ProductDetailResponseDto.from(doc);
     }

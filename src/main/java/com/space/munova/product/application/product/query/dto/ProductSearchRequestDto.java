@@ -1,6 +1,6 @@
 package com.space.munova.product.application.product.query.dto;
 
-import com.space.munova.product.application.product.command.exception.ProductException;
+import com.space.munova.product.application.product.query.exception.ProductQueryException;
 import com.space.munova.product.domain.enums.SortFlag;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,7 +30,7 @@ public class ProductSearchRequestDto {
         }
 
         if (!isValidCursor()) {
-            throw ProductException.badRequestException("잘못된 요청입니다.");
+            throw ProductQueryException.badRequestException("잘못된 요청입니다.");
         }
 
         ProductCursorDto productCursorDto = new ProductCursorDto();

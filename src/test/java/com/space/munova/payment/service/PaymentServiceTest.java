@@ -18,7 +18,7 @@ import com.space.munova.payment.event.PaymentCompensationEvent;
 import com.space.munova.payment.exception.PaymentException;
 import com.space.munova.payment.repository.PaymentRepository;
 import com.space.munova.payment.repository.RefundRepository;
-import com.space.munova.product.application.CartService;
+import com.space.munova.product.application.cart.CartService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

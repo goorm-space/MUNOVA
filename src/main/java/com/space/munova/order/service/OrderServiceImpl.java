@@ -17,7 +17,7 @@ import com.space.munova.order.service.processor.NoCouponProcessor;
 import com.space.munova.order.service.processor.OrderAmountProcessor;
 import com.space.munova.payment.entity.Payment;
 import com.space.munova.payment.service.PaymentService;
-import com.space.munova.product.application.ProductDetailService;
+import com.space.munova.product.application.shared.ProductDetailService;
 import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;

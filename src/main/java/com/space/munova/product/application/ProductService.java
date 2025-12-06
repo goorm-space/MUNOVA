@@ -5,10 +5,12 @@ import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
+import com.space.munova.product.application.command.dto.AddProductRequestDto;
 import com.space.munova.product.application.dto.*;
 import com.space.munova.product.application.event.ProductDeleteEvenForLikeDto;
 import com.space.munova.product.application.event.ProductDeleteEventForCartDto;
-import com.space.munova.product.application.exception.ProductException;
+import com.space.munova.product.application.command.exception.ProductException;
+import com.space.munova.product.application.shared.*;
 import com.space.munova.product.domain.*;
 import com.space.munova.product.domain.Repository.ProductClickLogRepository;
 import com.space.munova.product.domain.Repository.ProductRepository;
@@ -36,7 +38,8 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class ProductService {
+public class
+ProductService {
 
     private final ProductClickLogRepository productClickLogRepository;
     private final ProductRepository productRepository;
@@ -168,8 +171,6 @@ public class ProductService {
     }
 
 
-
-
     public PagingResponse<FindProductResponseDto> findProductsWithOptionalLogging(Long categoryId, String keyword, List<Long> optionIds, Pageable pageable) {
         Page<FindProductResponseDto> retVal = productRepository.findProductByConditions(categoryId,optionIds, keyword, pageable);
 
@@ -204,7 +205,7 @@ public class ProductService {
     public int minusLikeCountInProductIds(Long productId) {
         int rowCount = productRepository.minusLikeCountInProductIds(productId);
         if(rowCount == 0) {
-            throw ProductException.notFoundProductException("취소한 상품을 찾을 수 없습니다.");
+            throw ProductException.notFoundProductException("좋아요 취소 실패.");
         }
         return rowCount;
     }

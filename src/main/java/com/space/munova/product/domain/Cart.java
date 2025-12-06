@@ -2,9 +2,8 @@ package com.space.munova.product.domain;
 
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.entity.Member;
-import com.space.munova.product.application.exception.CartException;
+import com.space.munova.product.application.cart.exception.CartException;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 

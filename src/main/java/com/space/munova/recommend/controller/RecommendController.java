@@ -55,15 +55,15 @@ public class RecommendController {
         return ResponseEntity.ok().body("test");
     }
 
-    @PutMapping("/api/recommend/user/{productId}")
-    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateMemberProductRecommend(@PathVariable Long productId) {
-        return recommendService.updateUserProductRecommend(productId);
-    }
-
-    @PutMapping("/recommend/{productId}")
-    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateSimilarProductRecommend(@PathVariable Long productId) {
-        return recommendService.updateSimilarProductRecommend(productId);
-    }
+//    @PutMapping("/api/recommend/user/{productId}")
+//    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateMemberProductRecommend(@PathVariable Long productId) {
+//        return recommendService.updateUserProductRecommend(productId);
+//    }
+//
+//    @PutMapping("/recommend/{productId}")
+//    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateSimilarProductRecommend(@PathVariable Long productId) {
+//        return recommendService.updateSimilarProductRecommend(productId);
+//    }
 
     @GetMapping("/api/admin/recommend/user/{userId}/product/{productId}/based_on")
     public ResponseEntity<ResponseApi<List<RecommendReasonResponseDto>>> getRecommendationReason(@PathVariable Long userId, @PathVariable Long productId,@PageableDefault(size = 10, sort="CreatedAt") Pageable pageable) {

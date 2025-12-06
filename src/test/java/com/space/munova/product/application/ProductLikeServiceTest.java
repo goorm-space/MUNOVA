@@ -5,6 +5,8 @@ import com.space.munova.member.dto.MemberRole;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.application.dto.FindProductResponseDto;
+import com.space.munova.product.application.shared.ProductImageService;
+import com.space.munova.product.application.like.ProductLikeService;
 import com.space.munova.product.domain.*;
 import com.space.munova.product.domain.Repository.ProductLikeRepository;
 import com.space.munova.product.domain.enums.ProductCategory;

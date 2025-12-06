@@ -41,7 +41,7 @@ export default function () {
         const payload = JSON.stringify({
             productId: productId, // ✅ 명시적 key:value
         });
-        res = http.post(`http://localhost:8080/api/like`,payload, {
+        res = http.post(`http://localhost:8080/api/like`, payload, {
             headers: { Authorization: token, 'Content-Type': 'application/json' },
         });
     } else if (action === 'cart') {
@@ -49,8 +49,8 @@ export default function () {
             productDetailId: 1,
             quantity: quantity
         });
-        res = http.post(`http://localhost:8080/api/cart`,payload, {
-            headers: {Authorization: token, 'Content-Type': 'application/json'},
+        res = http.post(`http://localhost:8080/api/cart`, payload, {
+            headers: { Authorization: token, 'Content-Type': 'application/json' },
         });
     }
     // } else if (action === 'purchase') {

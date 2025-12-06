@@ -1,6 +1,6 @@
 package com.space.munova.product.application.event;
 
-import com.space.munova.product.application.CartService;
+import com.space.munova.product.application.cart.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;

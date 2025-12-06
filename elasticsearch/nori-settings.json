@@ -1,0 +1,44 @@
+{
+    "index": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+    },
+    "analysis": {  
+      "filter": {
+        "nori_synonym": {
+          "type": "synonym",
+        "synonyms_path": "synonyms.txt",
+          "expand": true,
+          "lenient": true
+      },
+      "nori_stopwords": {
+        "type": "stop",
+        "stopwords": [
+          "은", "는", "이", "가", "을", "를", "의", "에", "에서", "와", "과", "도", "로", "으로",
+          "그", "그것", "그런", "그리고", "그러나", "하지만", "또한", "또", "또는",
+          "이것", "저것", "이런", "저런", "이렇게", "저렇게",
+          "있다", "없다", "하다", "되다", "이다", "아니다",
+          "것", "수", "때", "곳", "년", "월", "일", "시", "분", "초"
+        ]
+        }
+      },
+      "analyzer": {
+        "nori": {
+          "type": "custom",
+          "tokenizer": "nori_tokenizer",
+          "filter": [
+            "nori_synonym",
+          "nori_stopwords",
+            "lowercase"
+          ]
+        }
+      },
+      "tokenizer": {
+        "nori_tokenizer": {
+          "type": "nori_tokenizer",
+          "decompound_mode": "mixed"
+      }
+    }
+  }
+}
+

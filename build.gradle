@@ -159,6 +159,16 @@ dependencies {
     testImplementation "com.redis:testcontainers-redis:2.2.2"
     testAnnotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.projectlombok:lombok'
+
+
+
+    // MongoDB 의존성 추가
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+    // Elasticsearch 의존성 추가
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+
+    // 2. 프로메테우스용 Micrometer (이게 있어야 /actuator/prometheus가 생김)
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 }
 
 

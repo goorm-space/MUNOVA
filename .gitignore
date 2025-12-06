@@ -155,3 +155,13 @@ build/
 **/.DS_Store
 
 *.yml
+
+
+# Logs
+logs/
+*.log
+*.log.*
+
+
+# Docker data
+docker-data/

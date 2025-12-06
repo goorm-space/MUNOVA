@@ -2,9 +2,9 @@ package com.space.munova.product.ui;
 
 import com.space.munova.core.config.ResponseApi;
 import com.space.munova.core.dto.PagingResponse;
-import com.space.munova.product.application.ProductLikeService;
+import com.space.munova.product.application.like.ProductLikeService;
 import com.space.munova.product.application.dto.FindProductResponseDto;
-import com.space.munova.product.application.dto.like.ProductLikeRequestDto;
+import com.space.munova.product.application.like.dto.ProductLikeRequestDto;
 import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import jakarta.validation.constraints.NotNull;
@@ -14,8 +14,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor

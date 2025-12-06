@@ -2,7 +2,9 @@ package com.space.munova.product.application;
 
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.repository.MemberRepository;
+import com.space.munova.product.application.command.dto.AddProductRequestDto;
 import com.space.munova.product.application.dto.*;
+import com.space.munova.product.application.shared.*;
 import com.space.munova.product.domain.Brand;
 import com.space.munova.product.domain.Category;
 import com.space.munova.product.domain.Product;

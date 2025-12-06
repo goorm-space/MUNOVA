@@ -15,28 +15,28 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long>, ProductRepositoryCustom {
-    @Query("""
-        SELECT new com.space.munova.product.application.dto.FindProductResponseDto(
-            p.id,
-            pi.imgUrl,
-            b.brandName,
-            p.name,
-            p.price,
-            p.likeCount,
-            p.salesCount,
-            p.createdAt
-        )
-        FROM Product p
-        JOIN p.category c
-        LEFT JOIN p.brand b
-        LEFT JOIN ProductImage pi 
-            ON pi.product.id = p.id AND pi.imageType = com.space.munova.product.domain.enums.ProductImageType.MAIN
-        WHERE (c.refCategory.id = :refCategoryId OR c.id = :refCategoryId)
-          AND p.id <> :excludeId
-          AND p.isDeleted = false
-        ORDER BY p.id ASC
-    """)
-    List<FindProductResponseDto> findSimilarProductsByCategory(Long refCategoryId, Long excludeId, Pageable pageable);
+//    @Query("""
+//        SELECT new com.space.munova.product.application.dto.FindProductResponseDto(
+//            p.id,
+//            pi.imgUrl,
+//            b.brandName,
+//            p.name,
+//            p.price,
+//            p.likeCount,
+//            p.salesCount,
+//            p.createdAt
+//        )
+//        FROM Product p
+//        JOIN p.category c
+//        LEFT JOIN p.brand b
+//        LEFT JOIN ProductImage pi
+//            ON pi.product.id = p.id AND pi.imageType = com.space.munova.product.domain.enums.ProductImageType.MAIN
+//        WHERE (c.refCategory.id = :refCategoryId OR c.id = :refCategoryId)
+//          AND p.id <> :excludeId
+//          AND p.isDeleted = false
+//        ORDER BY p.id ASC
+//    """)
+//    List<FindProductResponseDto> findSimilarProductsByCategory(Long refCategoryId, Long excludeId, Pageable pageable);
 
     @Query("SELECT new com.space.munova.product.application.dto.ProductInfoDto(p.id, c.id, b.brandName, p.name, p.info, p.price, p.likeCount, p.viewCount) " +
             "FROM Product p " +
@@ -77,26 +77,26 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
             "AND p.member.id = :sellerId ")
     Optional<Product> findByIdAndMemberIdAndIsDeletedFalse(Long productId, Long sellerId);
 
-    @Query("""
-    SELECT new com.space.munova.product.application.dto.FindProductResponseDto(
-        p.id,
-        pi.imgUrl,
-        b.brandName,
-        p.name,
-        p.price,
-        p.likeCount,
-        p.salesCount,
-        p.createdAt
-    )
-    FROM Product p
-    LEFT JOIN p.brand b
-    LEFT JOIN ProductImage pi 
-        ON pi.product.id = p.id 
-        AND pi.imageType = com.space.munova.product.domain.enums.ProductImageType.MAIN
-    WHERE p.id = :productId
-      AND p.isDeleted = false
-""")
-    FindProductResponseDto findProductSummaryById(@Param("productId") Long productId);
+//    @Query("""
+//    SELECT new com.space.munova.product.application.dto.FindProductResponseDto(
+//        p.id,
+//        pi.imgUrl,
+//        b.brandName,
+//        p.name,
+//        p.price,
+//        p.likeCount,
+//        p.salesCount,
+//        p.createdAt
+//    )
+//    FROM Product p
+//    LEFT JOIN p.brand b
+//    LEFT JOIN ProductImage pi
+//        ON pi.product.id = p.id
+//        AND pi.imageType = com.space.munova.product.domain.enums.ProductImageType.MAIN
+//    WHERE p.id = :productId
+//      AND p.isDeleted = false
+//""")
+//    FindProductResponseDto findProductSummaryById(@Param("productId") Long productId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Product p " +

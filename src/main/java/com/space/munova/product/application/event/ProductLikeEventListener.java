@@ -1,6 +1,6 @@
 package com.space.munova.product.application.event;
 
-import com.space.munova.product.application.ProductLikeService;
+import com.space.munova.product.application.like.ProductLikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;

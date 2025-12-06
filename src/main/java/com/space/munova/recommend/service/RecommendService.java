@@ -18,8 +18,8 @@ public interface RecommendService {
 
     PagingResponse<RecommendationsProductResponseDto> getRecommendationsByProductId(Long productId, Pageable pageable);
 
-    ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateUserProductRecommend(Long productId);
-    ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateSimilarProductRecommend(Long productId);
+//    ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateUserProductRecommend(Long productId);
+//    ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateSimilarProductRecommend(Long productId);
 
     List<RecommendReasonResponseDto> getRecommendationReason(Long userId, Long productId);
     double getRecommendationScore(Long userId, Long productId);

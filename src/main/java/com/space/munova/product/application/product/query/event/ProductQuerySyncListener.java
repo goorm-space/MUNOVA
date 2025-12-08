@@ -9,12 +9,14 @@ import com.space.munova.product.application.product.query.port.ProductMongoSyncP
 import com.space.munova.product.infra.elasticsearch.ProductEsDocument;
 import com.space.munova.product.infra.mongo.ProductMongoDocument;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ProductQuerySyncListener {
 
     ///  아웃박스 실패 저장 포트
@@ -32,6 +34,7 @@ public class ProductQuerySyncListener {
         try {
             productMongoSyncPort.syncSave(event);
         } catch (Exception e) {
+            log.error("Mongo Save Failed", e);
             productMongoQuerySyncFailedPort.syncSaveMongoFailedEvent(event);
         }
     }
@@ -44,6 +47,7 @@ public class ProductQuerySyncListener {
 
             productEsSyncPort.syncSave(event);
         } catch (Exception e) {
+            log.error("ES Save Failed", e);
             productEsQuerySyncFailedPort.syncSaveEsFailedEvent(event);
         }
     }
@@ -53,10 +57,10 @@ public class ProductQuerySyncListener {
     @TransactionalEventListener
     public void syncUpdateProductMongo(ProductUpdateEventDto event) {
         try {
-
+            log.info("Mongo Update Event Received: {}", event);
             productMongoSyncPort.syncUpdate(event);
         } catch (Exception e) {
-
+            log.error("Mongo Update Failed", e);
             productMongoQuerySyncFailedPort.syncUpdateFailedMongoEvent(event);
         }
     }
@@ -66,10 +70,10 @@ public class ProductQuerySyncListener {
     @TransactionalEventListener
     public void syncUpdateProductEs(ProductUpdateEventDto event) {
         try {
-
+            log.info("ES Update Event Received: {}", event);
             productEsSyncPort.syncUpdate(event);
         } catch (Exception e) {
-
+            log.error("ES Update Failed", e);
             productEsQuerySyncFailedPort.syncUpdateEsFailedEvent(event);
         }
     }
@@ -82,7 +86,7 @@ public class ProductQuerySyncListener {
 
             productMongoSyncPort.syncDelete(event);
         } catch (Exception e) {
-
+            log.error("Mongo Delete Failed", e);
             productMongoQuerySyncFailedPort.syncDeleteMongoFailedEvent(event);
         }
     }
@@ -95,7 +99,7 @@ public class ProductQuerySyncListener {
 
             productEsSyncPort.syncDelete(event);
         } catch (Exception e) {
-
+            log.error("ES Delete Failed", e);
             productEsQuerySyncFailedPort.syncDeleteEsFailedEvent(event);
         }
     }

@@ -33,7 +33,7 @@ public class OutboxPublishScheduler {
     @Transactional
     public void publishPendingEvents() {
         List<ProductOutbox> pendingEvents = productOutboxRepository
-                .findByStatusOrderByCreatedAtAsc(OutboxStatus.PENDING);
+                .findTop1000ByStatusOrderByCreatedAtAsc(OutboxStatus.PENDING);
 
         if(pendingEvents.isEmpty()) {
             return;
@@ -59,7 +59,7 @@ public class OutboxPublishScheduler {
     @Transactional
     public void publishFailedEvents() {
         List<ProductOutbox> failedEvent = productOutboxRepository
-                .findByStatusOrderByCreatedAtAsc(OutboxStatus.FAILED);
+                .findTop1000ByStatusOrderByCreatedAtAsc(OutboxStatus.FAILED);
 
         if(failedEvent.isEmpty()) {
             return;
@@ -73,7 +73,7 @@ public class OutboxPublishScheduler {
                 productOutboxRepository.save(outbox);
 
             } catch (Exception e) {
-
+                log.warn(e.getMessage());
                 outbox.changeFailedStatus();
                 productOutboxRepository.save(outbox);
             }

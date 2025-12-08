@@ -1,12 +1,15 @@
 package com.space.munova.product.infra.redis.command;
 
 import com.space.munova.product.application.product.command.exception.ProductException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collections;
 
+
+@Slf4j
 @Repository
 public class ProductStatsRedisDataCommandRepoImpl implements ProductStatsRedisDataCommandRepo {
 
@@ -22,7 +25,11 @@ public class ProductStatsRedisDataCommandRepoImpl implements ProductStatsRedisDa
    private static final String UPDATE_FIELD_SCRIPT =
            "local statsKey = KEYS[1]; " +                                                                 // 레디스 키 -> product-stats: {productId}
                    "local field = ARGV[1]; " +                                                            // 업데이트 필드명 -> likeCount, viewCount 등등.
-                   "local input = tonumber(ARGV[2]); " +                                                  // 인풋값 -> 1 or -1
+                   "local inputValue = ARGV[2]; " +                                                       // 인풋값 문자열
+                   "local input = 0; " +                                                                  // 기본값 0
+                   "if inputValue ~= nil and inputValue ~= '' then " +                                   // nil이 아니고 빈 문자열이 아니면
+                   "  input = tonumber(inputValue) or 0; " +                                              // 숫자로 변환, 실패하면 0
+                   "end; " +
                    "if redis.call('EXISTS', statsKey) == 0 then " +                                       // 키값 존재 확인 -> 1있음 0없음
                    "redis.call('HSET', statsKey, 'likeCount', 0, 'viewCount', 0, 'salesCount', 0); " +    // 해쉬에 초기값을 저장.  product-stats: {productId}
                                                                                                           //  map {likecount : 0, viewCount:0, salesCount:0}
@@ -54,7 +61,7 @@ public class ProductStatsRedisDataCommandRepoImpl implements ProductStatsRedisDa
 
     @Override
     public Long incrementLikeCount(Long productId, int input) {
-
+        log.info("좋아요 증가 {} ", input);
         return updateField(productId, "likeCount", input);
     }
 

@@ -3,6 +3,7 @@ package com.space.munova.product.infra.mongo;
 
 import com.space.munova.product.application.product.command.dto.SavedDetailAndOptionInfoDto;
 import com.space.munova.product.application.product.command.dto.UpdateQuantityDto;
+import com.space.munova.product.application.product.command.event.ProductImageEventDto;
 import com.space.munova.product.domain.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -156,9 +157,12 @@ public class ProductMongoDocument {
     public static ProductMongoDocument fromUpdate(
             ProductMongoDocument existingDoc,
             Long productId,
-            ProductImage updatedMainImg,
-            List<ProductImage> addSideImages,
-            List<ProductImage> removeSideImages,
+            String productName,
+            String info,
+            Long price,
+            ProductImageEventDto updatedMainImg,
+            List<ProductImageEventDto> addSideImages,
+            List<ProductImageEventDto> removeSideImages,
             SavedDetailAndOptionInfoDto savedDetailAndOptionInfoDto,
             List<UpdateQuantityDto> updateQuantityDtos,
             List<Long> deleteDetailIds) {
@@ -166,11 +170,22 @@ public class ProductMongoDocument {
         // 기존 문서를 기반으로 빌더 생성 (name, info, price, brand, category 등 유지)
         ProductMongoDocument.ProductMongoDocumentBuilder builder = existingDoc.toBuilder();
 
+        // 이름, 설명, 가격 업데이트
+        if (productName != null) {
+            builder.name(productName);
+        }
+        if (info != null) {
+            builder.info(info);
+        }
+        if (price != null) {
+            builder.price(price);
+        }
+
         // mainImage 있으면 업데이트
-        if (updatedMainImg != null && !updatedMainImg.isDeleted()) {
+        if (updatedMainImg != null && !Boolean.TRUE.equals(updatedMainImg.isDeleted())) {
             ProductImageMongoDocument mainImageObj = ProductImageMongoDocument.builder()
-                    .productImageId(updatedMainImg.getId())
-                    .imageUrl(updatedMainImg.getImgUrl())
+                    .productImageId(updatedMainImg.id())
+                    .imageUrl(updatedMainImg.imgUrl())
                     .build();
             builder.mainImage(mainImageObj);
         }
@@ -183,22 +198,22 @@ public class ProductMongoDocument {
         // 삭제할 이미지 제거
         if (removeSideImages != null && !removeSideImages.isEmpty()) {
             List<Long> removeImageIds = removeSideImages.stream()
-                    .map(ProductImage::getId)
+                    .map(com.space.munova.product.application.product.command.event.ProductImageEventDto::id)
                     .toList();
             sideImagesList.removeIf(img -> removeImageIds.contains(img.getProductImageId()));
         }
 
         // 추가할 이미지 추가
         if (addSideImages != null && !addSideImages.isEmpty()) {
-            for (ProductImage img : addSideImages) {
-                if (!img.isDeleted()) {
+            for (com.space.munova.product.application.product.command.event.ProductImageEventDto img : addSideImages) {
+                if (!Boolean.TRUE.equals(img.isDeleted())) {
                     ProductImageMongoDocument imgDoc = ProductImageMongoDocument.builder()
-                            .productImageId(img.getId())
-                            .imageUrl(img.getImgUrl())
+                            .productImageId(img.id())
+                            .imageUrl(img.imgUrl())
                             .build();
                     // 중복 체크 (같은 ID가 이미 있으면 추가 안 함)
                     if (sideImagesList.stream().noneMatch(existing ->
-                            existing.getProductImageId().equals(img.getId()))) {
+                            existing.getProductImageId().equals(img.id()))) {
                         sideImagesList.add(imgDoc);
                     }
                 }
@@ -247,22 +262,29 @@ public class ProductMongoDocument {
         );
 
         if (savedDetailAndOptionInfoDto != null && savedDetailAndOptionInfoDto.savedProductDetails() != null) {
-            // OptionMapping을 DetailId별로 그룹화
+            // OptionMapping을 DetailId별로 그룹화 (productDetail null 안전 처리)
             Map<Long, List<ProductOptionMapping>> optionMappingsByDetailId = savedDetailAndOptionInfoDto
                     .savedProductOptionMappings()
                     .stream()
-                    .filter(mapping -> !mapping.isDeleted())
+                    .filter(mapping -> mapping != null
+                            && !mapping.isDeleted()
+                            && mapping.getProductDetail() != null
+                            && mapping.getProductDetail().getId() != null)
                     .collect(Collectors.groupingBy(
                             mapping -> mapping.getProductDetail().getId()
                     ));
 
             for (ProductDetail detail : savedDetailAndOptionInfoDto.savedProductDetails()) {
+                if (detail == null || detail.getId() == null) {
+                    continue; // detail이나 id가 없으면 스킵
+                }
                 List<OptionMongoDocument> optionDocuments = new ArrayList<>();
 
                 // 해당 ProductDetail의 옵션 매핑 가져오기
                 List<ProductOptionMapping> mappings = optionMappingsByDetailId.get(detail.getId());
                 if (mappings != null) {
                     for (ProductOptionMapping mapping : mappings) {
+                        if (mapping == null) continue;
                         Option option = mapping.getOption();
                         if (option != null) {
                             OptionMongoDocument optDoc = OptionMongoDocument.builder()

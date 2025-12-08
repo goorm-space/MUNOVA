@@ -1,6 +1,7 @@
 package com.space.munova.product.domain;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.space.munova.core.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -15,6 +16,7 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Table(name = "product_option_mapping")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 public class ProductOptionMapping extends BaseEntity {
 
     @Id
@@ -28,6 +30,7 @@ public class ProductOptionMapping extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "product_detail_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    @JsonIgnore
     private ProductDetail productDetail;
 
     @ColumnDefault("0")

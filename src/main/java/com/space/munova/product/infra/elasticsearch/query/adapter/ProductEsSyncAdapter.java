@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class ProductEsSyncAdapter implements ProductEsSyncPort {
 
     private final ProductEsSyncRepo productEsSyncRepo;
@@ -19,7 +20,12 @@ public class ProductEsSyncAdapter implements ProductEsSyncPort {
     public void syncDelete(ProductDocDeleteEventDto dto) {
 
         if(dto.isDeleted()) {
-            productEsSyncRepo.deleteAllById(dto.productIds());
+            try {
+                productEsSyncRepo.deleteAllById(dto.productIds());
+            } catch (org.springframework.dao.OptimisticLockingFailureException e) {
+                // Elasticsearch _delete_by_query can throw version_conflict when the doc is already gone; ignore and continue.
+                log.warn("ES delete version conflict ignored. productIds={}", dto.productIds(), e);
+            }
         }
     }
 
@@ -33,7 +39,9 @@ public class ProductEsSyncAdapter implements ProductEsSyncPort {
         ProductEsDocument updatedDoc = ProductEsDocument.fromUpdate(
                 existingDoc,  // 기존 문서
                 dto.updatedMainImg(),  // 업데이트된 메인 이미지
-                dto.savedDetailAndOptionInfoDto()  // 새로 추가된 옵션 정보
+                dto.savedDetailAndOptionInfoDto(), // 새로 추가된 옵션 정보
+                dto.productName(),
+                dto.price()
         );
 
         productEsSyncRepo.save(updatedDoc);

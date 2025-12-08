@@ -171,10 +171,29 @@ public class ProductCommandFacadeService {
         }
 
         ///  todo - 아웃박스테이블 저장
+        ProductImageEventDto mainImageDto = updatedMainImg == null ? null :
+                new ProductImageEventDto(
+                        updatedMainImg.getId(),
+                        updatedMainImg.getImgUrl(),
+                        updatedMainImg.getImageType(),
+                        updatedMainImg.isDeleted()
+                );
+
+        List<ProductImageEventDto> addSideImageDtos = addSideImages.stream()
+                .map(img -> new ProductImageEventDto(img.getId(), img.getImgUrl(), img.getImageType(), img.isDeleted()))
+                .toList();
+
+        List<ProductImageEventDto> removeSideImageDtos = removeSideImages.stream()
+                .map(img -> new ProductImageEventDto(img.getId(), img.getImgUrl(), img.getImageType(), img.isDeleted()))
+                .toList();
+
         ProductUpdateEventDto productUpdateEventDto = new ProductUpdateEventDto(reqDto.productId(),
-                updatedMainImg,
-                addSideImages,
-                removeSideImages,
+                reqDto.ProductName(),
+                reqDto.price(),
+                reqDto.info(),
+                mainImageDto,
+                addSideImageDtos,
+                removeSideImageDtos,
                 savedDetailAndOptionInfoDto,
                 productDetailUpdateDtos.updateQuantityDtos(),
                 productDetailUpdateDtos.deleteDetailIds()

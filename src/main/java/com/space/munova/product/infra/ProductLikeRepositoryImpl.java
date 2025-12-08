@@ -43,7 +43,7 @@ public class ProductLikeRepositoryImpl implements ProductLikeRepositoryCustom {
                         product.price.as("price"),
                         product.likeCount.as("likeCount"),
                         product.salesCount.as("salesCount"),
-                        productLike.createdAt.as("createAt")
+                        productLike.createAt.as("createAt")
                 ))
                 .from(productLike)
                 .join(product)
@@ -58,7 +58,7 @@ public class ProductLikeRepositoryImpl implements ProductLikeRepositoryCustom {
                 .where(productLike.member.id.eq(memberId)
                         .and(productLike.isDeleted.eq(false))
                         .and(product.isDeleted.eq(false)))
-                .orderBy(productLike.createdAt.desc())
+                .orderBy(productLike.createAt.desc())
                 .limit(pageable.getPageSize())
                 .offset(pageable.getOffset())
                 .fetch();

@@ -2,16 +2,11 @@ package com.space.munova.product.infra.mysql;
 
 import com.space.munova.product.domain.enums.OutboxStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-
 
 import java.util.List;
 
 public interface ProductOutboxRepository extends JpaRepository<ProductOutbox, Long> {
 
-    @Query("SELECT o FROM ProductOutbox o " +
-            "WHERE o.status = :status " +
-            "ORDER BY o.createdAt ASC " +
-            "LIMIT 1000")
-    List<ProductOutbox> findByStatusOrderByCreatedAtAsc(OutboxStatus status);
+    // 상위 1000건까지 조회 (JPQL LIMIT 불가하므로 메서드 쿼리 사용)
+    List<ProductOutbox> findTop1000ByStatusOrderByCreatedAtAsc(OutboxStatus status);
 }

@@ -2,6 +2,7 @@ package com.space.munova.product.infra.elasticsearch;
 
 import com.space.munova.product.application.product.command.dto.SavedDetailAndOptionInfoDto;
 import com.space.munova.product.application.product.command.dto.UpdateQuantityDto;
+import com.space.munova.product.application.product.command.event.ProductImageEventDto;
 import com.space.munova.product.domain.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -72,14 +73,24 @@ public class ProductEsDocument {
     /// 상품 업데이트 정적 팩토리 메서드
     public static ProductEsDocument fromUpdate(
             ProductEsDocument existingDoc,
-            ProductImage updatedMainImg,
-            SavedDetailAndOptionInfoDto savedDetailAndOptionInfoDto) {
+            ProductImageEventDto updatedMainImg,
+            SavedDetailAndOptionInfoDto savedDetailAndOptionInfoDto,
+            String productName,
+            Long price) {
 
         ProductEsDocument.ProductEsDocumentBuilder builder = existingDoc.toBuilder();
 
+        // 이름/가격 업데이트
+        if (productName != null) {
+            builder.name(productName);
+        }
+        if (price != null) {
+            builder.price(price);
+        }
+
         // mainImageUrl 업데이트
-        if (updatedMainImg != null && !updatedMainImg.isDeleted()) {
-            builder.mainImageUrl(updatedMainImg.getImgUrl());
+        if (updatedMainImg != null && !Boolean.TRUE.equals(updatedMainImg.isDeleted())) {
+            builder.mainImageUrl(updatedMainImg.imgUrl());
         }
 
         // ptionNames, optionIds 업데이트 (새로 추가된 옵션만 추가)

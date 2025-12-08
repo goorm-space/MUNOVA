@@ -25,7 +25,7 @@ public class Cart extends BaseEntity {
     private boolean isDeleted;
 
     @ManyToOne
-    @JoinColumn(name = "member_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Member member;
 
     @ManyToOne

@@ -6,14 +6,20 @@ import com.space.munova.product.application.like.command.exception.LikeException
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Table(name = "product_like")
+@EntityListeners(AuditingEntityListener.class)
 @Builder
-public class ProductLike extends BaseEntity {
+public class ProductLike {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,12 +30,19 @@ public class ProductLike extends BaseEntity {
     private boolean isDeleted;
 
     @ManyToOne
-    @JoinColumn(name = "member_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Member member;
 
     @ManyToOne
     @JoinColumn(name = "product_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Product product;
+
+    @CreatedDate
+    @Column(updatable = false)
+    private LocalDateTime createAt;
+
+    @LastModifiedDate
+    private LocalDateTime updateAt;
 
     public static ProductLike createDefaultProductLike(Product product, Member member) {
 
@@ -51,5 +64,6 @@ public class ProductLike extends BaseEntity {
         }
 
         this.isDeleted = true;
+        this.updateAt = LocalDateTime.now();
     }
 }

@@ -2,8 +2,7 @@ package com.space.munova.product.domain;
 
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.entity.Member;
-import com.space.munova.product.application.like.exception.LikeException;
-import com.space.munova.product.application.product.command.exception.ProductException;
+import com.space.munova.product.application.like.command.exception.LikeException;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;

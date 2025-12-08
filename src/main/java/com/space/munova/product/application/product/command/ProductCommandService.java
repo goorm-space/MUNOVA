@@ -1,23 +1,15 @@
 package com.space.munova.product.application.product.command;
 
 import com.space.munova.member.entity.Member;
-import com.space.munova.product.application.event.ProductDeleteEvenForLikeDto;
-import com.space.munova.product.application.event.ProductDeleteEventForCartDto;
 import com.space.munova.product.application.product.command.dto.AddProductRequestDto;
 import com.space.munova.product.application.product.command.exception.ProductException;
 import com.space.munova.product.domain.Brand;
 import com.space.munova.product.domain.Category;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.Repository.ProductRepository;
-import com.space.munova.product.infra.elasticsearch.command.ProductEsCommandRepo;
-import com.space.munova.product.infra.mongo.command.ProductMongoCommandRepo;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 
 @Service

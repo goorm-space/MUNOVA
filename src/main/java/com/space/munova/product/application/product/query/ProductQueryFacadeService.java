@@ -2,10 +2,12 @@ package com.space.munova.product.application.product.query;
 
 
 import com.space.munova.core.dto.PagingResponse;
+import com.space.munova.product.application.product.command.port.ProductRedisCommandPort;
 import com.space.munova.product.application.product.query.dto.*;
 import com.space.munova.product.application.product.query.exception.ProductQueryException;
 import com.space.munova.product.application.product.query.port.ProductDetailsPort;
 import com.space.munova.product.application.product.query.port.ProductListPort;
+import com.space.munova.product.application.product.query.port.ProductRedisQueryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,13 +23,15 @@ public class ProductQueryFacadeService {
     /// 포트 의존성주입
     private final List<ProductListPort>  productSearchPorts;
     private final ProductDetailsPort productDetailsPort;
-
+    private final ProductRedisQueryPort productRedisQueryPort;
     /// 레포 의존성 주입.
     private final ProductQueryOptionService productQueryOptionService;
     private final ProductQueryCategoryService productQueryCategoryService;
     private final ProductQueryDetailService productQueryDetailService;
     private final ProductQueryService productQueryService;
     private final ProductQueryImageService productQueryImageService;
+
+
 
 
     ///  키워드 유무 상품목록조회.
@@ -89,4 +93,15 @@ public class ProductQueryFacadeService {
         return new ProductDetailResponseDto(productInfoDto, productImageDto, productDetailInfoDtoByProductId);
     }
 
+    /// 상품 좋아요수 조회.
+    public Integer findProductLikeCount(Long productId) {
+
+        return productRedisQueryPort.findProductLikeCount(productId);
+    }
+
+    /// 상품 조회수 조회
+    public Integer findProductViewCount(Long productId) {
+
+        return productRedisQueryPort.findProductViewCount(productId);
+    }
 }

@@ -3,9 +3,11 @@ package com.space.munova.product.application.like.command;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
-import com.space.munova.product.application.event.ProductLikeEventDto;
-import com.space.munova.product.application.like.exception.LikeException;
+import com.space.munova.product.application.like.command.port.ProductLikeCommandPort;
+import com.space.munova.product.application.product.command.event.ProductLikeEventDto;
+import com.space.munova.product.application.like.command.exception.LikeException;
 import com.space.munova.product.application.product.command.exception.ProductException;
+import com.space.munova.product.application.product.command.port.ProductRedisCommandPort;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.ProductLike;
 import com.space.munova.product.domain.Repository.ProductLikeRepository;
@@ -24,17 +26,17 @@ import java.util.Map;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Transactional
 public class ProductLikeCommandService {
 
+    private final ProductLikeCommandPort productLikeCommandPort;
     private final ProductLikeRepository productLikeRepository;
     private final ProductRepository productRepository;
     private final MemberRepository memberRepository;
     private final RecommendService recommendService;
-    private final ApplicationEventPublisher eventPublisher;
     private final RedisStreamProducer logProducer;
 
-    @Transactional(readOnly = false)
+
     public void deleteProductLikeByProductId(Long productId, Long memberId) {
 
         ///  멤버의 좋아요리스트 제거후 영향받은 로우카운드 리턴받음.
@@ -43,13 +45,11 @@ public class ProductLikeCommandService {
             throw LikeException.badRequestException("취소한 상품을 찾을수 없습니다.");
         }
 
-        ///  삭제메시지 발행
-        ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
-        eventPublisher.publishEvent(eventDto);
+        /// 레디스 업데이트
+        productLikeCommandPort.dislike(productId, -1);
         upsertUserAction(productId,false);
     }
 
-    @Transactional(readOnly = false)
     public void addLike(Long productId, Long memberId) {
 
         Member member = memberRepository.findById(memberId).orElseThrow(MemberException::invalidMemberException);
@@ -60,7 +60,6 @@ public class ProductLikeCommandService {
 
         /// 좋아요 한 상풍인데 또 좋아요 눌렀을 경우 disLike
         if(isLiked) {
-
 
             ///  사용자 좋아요 리스트 제거
             productLikeRepository.deleteAllByProductIdsAndMemberId(productId, memberId);
@@ -75,9 +74,7 @@ public class ProductLikeCommandService {
             );
             logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
 
-            /// 좋아요 취소 메시지 발행
-            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
-            eventPublisher.publishEvent(eventDto);
+            productLikeCommandPort.dislike(productId, -1);
 
         } else {
             /// 사용자 좋아요 리스트 추가
@@ -94,16 +91,13 @@ public class ProductLikeCommandService {
             );
             logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
 
-            ///  좋아요 메시지 발행
-            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, false);
-            eventPublisher.publishEvent(eventDto);
+            productLikeCommandPort.like(productId, 1);
         }
     }
 
 
 
     /// 판매자가 상품 삭제시 좋아요리스트에서 상품제거.
-    @Transactional(readOnly = false)
     public void deleteProductLikeByProductIds(List<Long> productIds) {
 
         productLikeRepository.deleteAllByProductIds(productIds);

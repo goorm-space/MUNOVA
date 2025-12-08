@@ -186,4 +186,21 @@ class ProductController {
         List<ProductDetailInfoDto> respDto = productQueryFacadeService.findProductOptionsByProductId(productId);
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
+
+    /// 상품상세페이지 좋아요수조회.
+    @GetMapping("/product/like/{productId}")
+    public ResponseEntity<ResponseApi<Integer>> findProductLikeCount(@PathVariable(value = "productId") Long productId) {
+
+        Integer likeCount = productQueryFacadeService.findProductLikeCount(productId);
+        return ResponseEntity.ok().body(ResponseApi.ok(likeCount));
+    }
+
+    /// 상품상세페이지 조회수 조회
+    @GetMapping("/product/view/{productId}")
+    public ResponseEntity<ResponseApi<Integer>> findProductViewCount(@PathVariable(value = "productId") Long productId) {
+
+        Integer viewCount = productQueryFacadeService.findProductViewCount(productId);
+        return ResponseEntity.ok().body(ResponseApi.ok(viewCount));
+    }
+
 }

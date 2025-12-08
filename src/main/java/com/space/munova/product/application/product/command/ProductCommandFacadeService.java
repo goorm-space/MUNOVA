@@ -3,21 +3,21 @@ package com.space.munova.product.application.product.command;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
-import com.space.munova.product.application.event.ProductDeleteEvenForLikeDto;
-import com.space.munova.product.application.event.ProductDeleteEventForCartDto;
+import com.space.munova.product.application.product.command.event.*;
 import com.space.munova.product.application.product.command.dto.AddProductRequestDto;
 import com.space.munova.product.application.product.command.dto.ProductDetailUpdateDtos;
 import com.space.munova.product.application.product.command.dto.SavedDetailAndOptionInfoDto;
 import com.space.munova.product.application.product.command.dto.UpdateProductRequestDto;
+import com.space.munova.product.application.product.command.port.OutboxCommandPort;
+import com.space.munova.product.application.product.command.port.ProductRedisCommandPort;
 import com.space.munova.product.domain.Brand;
 import com.space.munova.product.domain.Category;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.ProductImage;
-import com.space.munova.product.infra.elasticsearch.command.ProductEsCommandRepo;
-import com.space.munova.product.infra.mongo.command.ProductMongoCommandRepo;
+import com.space.munova.product.infra.elasticsearch.ProductEsDocument;
+import com.space.munova.product.infra.mongo.ProductMongoDocument;
 import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,8 +31,8 @@ import java.util.List;
 @Transactional(readOnly = false)
 public class ProductCommandFacadeService {
 
-    private final ProductMongoCommandRepo productMongoCommandRepo;
-    private final ProductEsCommandRepo productEsCommandRepo;
+    private final ProductRedisCommandPort productRedisCommandPort;
+    private final OutboxCommandPort outboxCommandPort;
 
     private final ProductImageCommandService productImageCommandService;
     private final ProductDetailService productDetailService;
@@ -41,21 +41,11 @@ public class ProductCommandFacadeService {
     private final ProductCommandService productCommandService;
     private final MemberRepository memberRepository;
     private final RecommendService recommendService;
-    private final ApplicationEventPublisher eventPublisher;
 
-
-    public void plusLikeCountByProductId(Long productId) {
-        productCommandService.plusLikeCountByProductId(productId);
-    }
-
-
-    public void minusLikeCountInProductIds(Long productId) {
-       productCommandService.minusLikeCountInProductIds(productId);
-    }
 
 
     public void updateProductViewCountLogin(Long productId) {
-        productCommandService.updateProductViewCount(productId);
+        productRedisCommandPort.updateViewCount(productId, 1);
         recommendService.updateUserAction(productId, 1, null, null, null);
     }
 
@@ -82,9 +72,24 @@ public class ProductCommandFacadeService {
         /// 상품 디테일 옵션 저장.
         SavedDetailAndOptionInfoDto savedDetailAndOptionInfoDto = productDetailService.saveProductDetailAndOption(savedProduct, reqDto.shoeOptionDtos());
 
-        /// 아웃박스 테이블저장 todo
+        /// 몽고상품문서 .
+        ProductMongoDocument productMongoDocument = ProductMongoDocument.from(savedProduct,
+                brand,
+                category,
+                mainImg,
+                sideImgs,
+                savedDetailAndOptionInfoDto);
 
-        /// 상품저장 이벤트 발행 todo
+        /// 엘라스틱 상품문서
+        ProductEsDocument productEsDocument = ProductEsDocument.from(savedProduct,
+                brand,
+                category,
+                mainImg,
+                savedDetailAndOptionInfoDto);
+
+        /// 아웃박스 테이블저장 todo
+        outboxCommandPort.syncSaveEsEvent(productEsDocument);
+        outboxCommandPort.syncSaveMongoEvent(productMongoDocument);
     }
 
 
@@ -106,14 +111,13 @@ public class ProductCommandFacadeService {
         /// 비동기로 장바구니, 좋아요에 상품 삭제 메시지 발행
         ProductDeleteEventForCartDto deleteCartMessage = new ProductDeleteEventForCartDto(deletedDetailIds, true);
         ProductDeleteEvenForLikeDto deleteLikeMessage = new ProductDeleteEvenForLikeDto(deleteProductIds, true);
-        /// 라이크 제거 메세지 발행
-        eventPublisher.publishEvent(deleteLikeMessage);
-        ///  장바구니 제거 메세지 발행
-        eventPublisher.publishEvent(deleteCartMessage);
+        ProductDocDeleteEventDto deleteProductMessage = new ProductDocDeleteEventDto(deleteProductIds, true);
 
         /// 아웃박스 테이블저장 todo
-
-        /// 상품삭제 이벤트 발행 todo
+        outboxCommandPort.deleteCartEvent(deleteCartMessage);
+        outboxCommandPort.deleteLikeEvent(deleteLikeMessage);
+        outboxCommandPort.syncDeleteEsEvent(deleteProductMessage);
+        outboxCommandPort.syncDeleteMongoEvent(deleteProductMessage);
     }
 
 
@@ -166,10 +170,18 @@ public class ProductCommandFacadeService {
             productDetailService.deleteProductDetailByIds(productDetailUpdateDtos.deleteDetailIds());
         }
 
-
         ///  todo - 아웃박스테이블 저장
+        ProductUpdateEventDto productUpdateEventDto = new ProductUpdateEventDto(reqDto.productId(),
+                updatedMainImg,
+                addSideImages,
+                removeSideImages,
+                savedDetailAndOptionInfoDto,
+                productDetailUpdateDtos.updateQuantityDtos(),
+                productDetailUpdateDtos.deleteDetailIds()
+        );
 
-        ///  todo - 업데이트 메시지 추가
+        outboxCommandPort.syncUpdateEsEvent(productUpdateEventDto);
+        outboxCommandPort.syncUpdateMongoEvent(productUpdateEventDto);
 
     }
 

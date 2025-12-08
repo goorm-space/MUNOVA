@@ -4,7 +4,7 @@ import com.space.munova.core.config.ResponseApi;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.product.application.product.query.dto.FindProductResponseDto;
 import com.space.munova.product.application.like.command.ProductLikeCommandService;
-import com.space.munova.product.application.like.dto.ProductLikeRequestDto;
+import com.space.munova.product.application.like.command.dto.ProductLikeRequestDto;
 import com.space.munova.product.application.like.query.ProductLikeQueryService;
 import com.space.munova.security.jwt.JwtHelper;
 import jakarta.validation.constraints.NotNull;

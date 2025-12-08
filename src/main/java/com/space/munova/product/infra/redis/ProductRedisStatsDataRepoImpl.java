@@ -16,8 +16,8 @@ public class ProductRedisStatsDataRepoImpl implements ProductRedisStatsDataRepo 
    /// 버전별 상품 통계 관리위한 레디스 키 (맵으로 관리)
    private static final String PRODUCT_STATS = "product-stats";
 
-   /// 루아스크립트로 원자적으로 연산처리  -> 하나의 동시성 보장을 위해서 필요할 경우 작성. -> 데이터를 한번에 처리하기위해
-   /// ex) get -> update -> set 이럴경우.
+   /// 루아스크립트로 원자적으로 연산처리
+
 
     /// 증가
     @Override

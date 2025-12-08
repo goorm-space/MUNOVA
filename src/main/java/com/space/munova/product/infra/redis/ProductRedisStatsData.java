@@ -22,6 +22,4 @@ public class ProductRedisStatsData {
     private Integer salesCount;
 
     private Integer likeCount;
-
-
 }

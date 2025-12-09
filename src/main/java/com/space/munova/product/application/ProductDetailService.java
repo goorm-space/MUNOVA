@@ -1,13 +1,16 @@
 package com.space.munova.product.application;
 
-import com.space.munova.product.application.dto.*;
+import com.space.munova.product.application.dto.ProductDetailInfoDto;
+import com.space.munova.product.application.dto.ProductDetailOptions;
+import com.space.munova.product.application.dto.ShoeOptionDto;
+import com.space.munova.product.application.dto.UpdateQuantityDto;
+import com.space.munova.product.application.exception.ProductDetailException;
 import com.space.munova.product.application.exception.ProductException;
 import com.space.munova.product.domain.Option;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.ProductOptionMapping;
 import com.space.munova.product.domain.Repository.ProductDetailRepository;
-import com.space.munova.product.application.exception.ProductDetailException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,7 +27,6 @@ public class ProductDetailService {
     private final ProductDetailRepository productDetailRepository;
     private final OptionService optionService;
     private final ProductOptionMappingService productOptionMappingService;
-
 
 
     public void saveProductDetailAndOption(Product product, List<ShoeOptionDto> dtos) {
@@ -49,7 +51,7 @@ public class ProductDetailService {
         ///  1급 컬랙션으로 만들어버림.
         ProductDetailOptions productDetailOptions = new ProductDetailOptions(productDetailRepository.findProductDetailAndOptionsByProductId(productId));
 
-        return  productDetailOptions.toProductDetailInfoList();
+        return productDetailOptions.toProductDetailInfoList();
     }
 
 
@@ -73,23 +75,14 @@ public class ProductDetailService {
         return productDetailRepository.findById(detailId).orElseThrow(ProductException::badRequestException);
     }
 
-    public ProductDetail getProductDetailWithPessimisticLock(Long productDetailId) {
-
-        return productDetailRepository.findByIdWithPessimisticLock(productDetailId)
-                .orElseThrow(ProductDetailException::notFoundException);
-    }
-
-    @Transactional(readOnly = false)
-    public ProductDetail deductStock(Long productDetailId, int quantity) {
-        ProductDetail productDetail = getProductDetailWithPessimisticLock(productDetailId);
+    public ProductDetail getStock(Long productDetailId, int quantity) {
+        ProductDetail productDetail = findById(productDetailId);
 
         if (productDetail.getQuantity() == 0) {
             throw ProductDetailException.noStockException("product_detail_id: " + productDetailId);
         } else if (productDetail.getQuantity() < quantity) {
             throw ProductDetailException.stockInsufficientException("product_detail_id: " + productDetailId + ", 요청: " + quantity + ", 재고: " + productDetail.getQuantity());
         }
-
-        productDetail.deductStock(quantity);
 
         return productDetail;
     }
@@ -102,17 +95,15 @@ public class ProductDetailService {
 
     @Transactional
     public void increaseStock(Long productDetailId, int cancelQuantity) {
-        ProductDetail productDetail = getProductDetailWithPessimisticLock(productDetailId);
+        ProductDetail productDetail = findById(productDetailId);
 
         productDetail.increaseStock(cancelQuantity);
     }
 
 
-
-
     public void updateQuantity(List<UpdateQuantityDto> updateQuantityDtos) {
 
-        for(UpdateQuantityDto updateQuantityDto : updateQuantityDtos) {
+        for (UpdateQuantityDto updateQuantityDto : updateQuantityDtos) {
             productDetailRepository.updateQuantity(updateQuantityDto.detailId(), updateQuantityDto.quantity());
         }
     }
@@ -120,7 +111,6 @@ public class ProductDetailService {
     public void deleteProductDetailByIds(List<Long> deleteDetailIds) {
         productDetailRepository.deleteProductDetailByIds(deleteDetailIds);
     }
-
 
 
     private void createOptionMappings(ProductDetail savedProductDetail, Long colorId, Long sizeId) {

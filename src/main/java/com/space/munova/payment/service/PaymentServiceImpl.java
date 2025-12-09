@@ -9,7 +9,7 @@ import com.space.munova.notification.service.NotificationService;
 import com.space.munova.order.dto.CancelOrderItemRequest;
 import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.order.entity.Order;
-import com.space.munova.order.service.OrderQueryServiceImpl;
+import com.space.munova.order.service.RedisService;
 import com.space.munova.payment.client.TossApiClient;
 import com.space.munova.payment.dto.CancelDto;
 import com.space.munova.payment.dto.CancelPaymentRequest;
@@ -34,7 +34,7 @@ import static com.space.munova.payment.dto.PaymentNotification.PAYMENT_CONFIRM;
 @Transactional(readOnly = true)
 public class PaymentServiceImpl implements PaymentService {
 
-    private final OrderQueryServiceImpl orderQueryService;
+    //    private final OrderService orderService;
     private final AuthService authService;
     private final TossApiClient tossApiClient;
     private final PaymentRepository paymentRepository;
@@ -43,11 +43,12 @@ public class PaymentServiceImpl implements PaymentService {
     private final CartService cartService;
     private final NotificationService notificationService;
     private final ApplicationEventPublisher eventPublisher;
+    private final RedisService redisService;
 
     @Transactional
     @Override
     public void confirmPaymentAndSavePayment(ConfirmPaymentRequest request, Long memberId) {
-        Order order = orderQueryService.getOrderByOrderNum(request.orderId());
+        Order order = redisService.getTemporaryOrder(request.orderId());
 
         authService.verifyAuthorization(order.getMember().getId(), memberId);
         validateAmount(request.amount(), order.getTotalPrice());
@@ -69,6 +70,8 @@ public class PaymentServiceImpl implements PaymentService {
         if (order.getCouponId() != null) {
             couponService.useCoupon(order.getCouponId());
         }
+
+//        orderService.saveOrder(order);
 
         Payment payment = Payment.create(order.getId(), response);
         paymentRepository.save(payment);

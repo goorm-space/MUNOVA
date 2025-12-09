@@ -5,7 +5,10 @@ import com.space.munova.auth.service.AuthService;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.service.MemberService;
-import com.space.munova.order.dto.*;
+import com.space.munova.order.dto.CreateOrderRequest;
+import com.space.munova.order.dto.OrderItemRequest;
+import com.space.munova.order.dto.OrderStatus;
+import com.space.munova.order.dto.OrderSummaryDto;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.exception.OrderException;
@@ -82,6 +85,7 @@ public class OrderServiceTest {
     private CreateOrderRequest couponRequest;
     private CreateOrderRequest noCouponRequest;
     private Payment mockPayment;
+
     private List<Order> createMockOrders(int count, Long memberId) {
         return IntStream.range(0, count)
                 .mapToObj(i -> {
@@ -149,7 +153,7 @@ public class OrderServiceTest {
 
         try (MockedStatic<Order> staticMockOrder = mockStatic(Order.class)) {
             staticMockOrder.when(
-                    () -> Order.createOrder(any(Member.class), anyString())
+                    () -> Order.createOrder(anyString())
             ).thenReturn(mockOrder);
 
             // WHEN
@@ -157,7 +161,7 @@ public class OrderServiceTest {
 
             // THEN
             assertThat(result).isSameAs(mockOrder);
-            staticMockOrder.verify(()  -> Order.createOrder(eq(mockMember), eq(noCouponRequest.userRequest())), times(1));
+            staticMockOrder.verify(() -> Order.createOrder(eq(noCouponRequest.userRequest())), times(1));
 
             // 1. 프로세서 호출 검증
             verify(noCouponProcessor, times(1)).process(
@@ -167,7 +171,6 @@ public class OrderServiceTest {
 
             // 2. 핵심 로직 호출 검증
             verify(memberService, times(1)).getMemberEntity(TEST_MEMBER_ID);
-            verify(orderRepository, times(1)).save(result);
 
             // 3. UserActionSummary 로직 호출 검증
             verify(recommendService, times(1)).updateUserAction(TEST_PRODUCT_ID, 0, null, null, true);
@@ -199,7 +202,7 @@ public class OrderServiceTest {
 
         try (MockedStatic<Order> staticMockOrder = mockStatic(Order.class)) {
             staticMockOrder.when(
-                    () -> Order.createOrder(any(Member.class), anyString())
+                    () -> Order.createOrder(anyString())
             ).thenReturn(mockOrder);
             // WHEN
             Order result = orderService.createOrder(couponRequest, TEST_MEMBER_ID);
@@ -207,7 +210,7 @@ public class OrderServiceTest {
             // THEN
             assertThat(result).isSameAs(mockOrder);
 
-            staticMockOrder.verify(() -> Order.createOrder(eq(mockMember), eq(couponRequest.userRequest())), times(1));
+            staticMockOrder.verify(() -> Order.createOrder(eq(couponRequest.userRequest())), times(1));
 
             // 1. 프로세서 호출 검증
             verify(couponAppliedProcessor, times(1)).process(
@@ -337,7 +340,7 @@ public class OrderServiceTest {
                 .thenReturn(Optional.of(mockOrder));
 
         // 2. AuthService.verifyAuthorization은 예외 없이 통과한다고 설정 (doNothing()이 기본 동작)
-         doNothing().when(authService).verifyAuthorization(eq(OWNER_MEMBER_ID), anyLong()); // 명시적으로 작성해도 됨
+        doNothing().when(authService).verifyAuthorization(eq(OWNER_MEMBER_ID), anyLong()); // 명시적으로 작성해도 됨
 
         // 3. Payment 조회 성공
         when(paymentService.getPaymentByOrderId(TEST_ORDER_ID))

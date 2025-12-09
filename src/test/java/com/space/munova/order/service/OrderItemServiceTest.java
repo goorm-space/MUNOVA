@@ -3,7 +3,10 @@ package com.space.munova.order.service;
 import com.space.munova.auth.exception.AuthException;
 import com.space.munova.auth.service.AuthService;
 import com.space.munova.member.entity.Member;
-import com.space.munova.order.dto.*;
+import com.space.munova.order.dto.CancelOrderItemRequest;
+import com.space.munova.order.dto.CancelType;
+import com.space.munova.order.dto.OrderItemRequest;
+import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.exception.OrderItemException;
@@ -20,7 +23,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -31,7 +37,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.when;
 
 @DisplayName("OrderItem_Service_Test")
 @ExtendWith(MockitoExtension.class)
@@ -99,7 +104,7 @@ public class OrderItemServiceTest {
         OrderItem mockOrderItem1 = mock(OrderItem.class);
         OrderItem mockOrderItem2 = mock(OrderItem.class);
 
-        when(productDetailService.deductStock(anyLong(), anyInt())).thenReturn(mockProductDetail);
+        when(productDetailService.getStock(anyLong(), anyInt())).thenReturn(mockProductDetail);
 
         try (MockedStatic<OrderItem> orderItemMockedStatic = Mockito.mockStatic(OrderItem.class)) {
 
@@ -120,8 +125,8 @@ public class OrderItemServiceTest {
             assertThat(createdItems).containsExactly(mockOrderItem1, mockOrderItem2);
 
             // 2. ProductDetailService 호출 검증 (재고 차감 책임 확인)
-            verify(productDetailService, times(1)).deductStock(DETAIL_ID_1, QUANTITY_1);
-            verify(productDetailService, times(1)).deductStock(DETAIL_ID_2, QUANTITY_2);
+            verify(productDetailService, times(1)).getStock(DETAIL_ID_1, QUANTITY_1);
+            verify(productDetailService, times(1)).getStock(DETAIL_ID_2, QUANTITY_2);
 
             // 3. OrderItem.create 호출 검증 (OrderItem 생성 책임 확인)
             orderItemMockedStatic.verify(() -> OrderItem.create(any(), any(), anyInt()), times(2));
@@ -135,14 +140,14 @@ public class OrderItemServiceTest {
         // GIVEN
         // ProductDetailService의 첫 번째 호출에서 RuntimeException을 던지도록 Mock 설정 (재고 부족 등)
         doThrow(ProductDetailException.stockInsufficientException()).when(productDetailService)
-                .deductStock(DETAIL_ID_1, QUANTITY_1);
+                .getStock(DETAIL_ID_1, QUANTITY_1);
 
         // WHEN & THEN
         assertThatThrownBy(() -> orderItemService.deductStockAndCreateOrderItems(itemRequests, mockOrder))
                 .isInstanceOf(ProductDetailException.class);
 
         // 1. 두 번째 재고 차감은 호출되지 않아야 함 (루프 중단)
-        verify(productDetailService, never()).deductStock(DETAIL_ID_2, QUANTITY_2);
+        verify(productDetailService, never()).getStock(DETAIL_ID_2, QUANTITY_2);
 
         // 2. OrderItem 생성은 호출되지 않아야 함
         try (MockedStatic<OrderItem> orderItemMockedStatic = mockStatic(OrderItem.class)) {

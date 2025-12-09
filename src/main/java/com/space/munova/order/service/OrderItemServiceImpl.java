@@ -14,12 +14,12 @@ import com.space.munova.order.service.cancel.ReturnRefundStrategy;
 import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.ProductDetailService;
 import com.space.munova.product.domain.ProductDetail;
-import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +29,6 @@ public class OrderItemServiceImpl implements OrderItemService {
     private final OrderItemRepository orderItemRepository;
     private final ProductDetailService productDetailService;
     private final PaymentService paymentService;
-    private final RecommendService recommendService;
     private final AuthService authService;
     private final OrderCancelStrategy orderCancelStrategy;
     private final ReturnRefundStrategy returnRefundStrategy;
@@ -37,7 +36,7 @@ public class OrderItemServiceImpl implements OrderItemService {
     @Override
     public List<OrderItem> deductStockAndCreateOrderItems(List<OrderItemRequest> itemRequests, Order order) {
         List<OrderItem> orderItems = new ArrayList<>();
-        for(OrderItemRequest orderItemRequest : itemRequests) {
+        for (OrderItemRequest orderItemRequest : itemRequests) {
             ProductDetail detail = productDetailService.deductStock(orderItemRequest.productDetailId(), orderItemRequest.quantity());
 
             OrderItem orderItem = OrderItem.create(order, detail, orderItemRequest.quantity());
@@ -70,10 +69,6 @@ public class OrderItemServiceImpl implements OrderItemService {
         productDetailService.increaseStock(orderItem.getProductDetail().getId(), orderItem.getQuantity());
 
         strategy.updateOrderItemStatus(orderItem);
-
-        List<Long> singleOrderItemId= List.of(orderItemId);
-        List<Long> productDetailId=orderItemRepository.findProductDetailIdsByOrderItemIds(singleOrderItemId);
-        Long productId=productDetailService.findProductIdByDetailId(productDetailId.get(0));
-        recommendService.updateUserAction(productId,0,null,null,false);
+        
     }
 }

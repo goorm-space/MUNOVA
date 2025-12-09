@@ -3,9 +3,13 @@ package com.space.munova.order.service;
 import com.space.munova.auth.exception.AuthException;
 import com.space.munova.auth.service.AuthService;
 import com.space.munova.core.dto.PagingResponse;
+import com.space.munova.log.service.RecommendService;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.service.MemberService;
-import com.space.munova.order.dto.*;
+import com.space.munova.order.dto.CreateOrderRequest;
+import com.space.munova.order.dto.OrderItemRequest;
+import com.space.munova.order.dto.OrderStatus;
+import com.space.munova.order.dto.OrderSummaryDto;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.exception.OrderException;
@@ -17,7 +21,6 @@ import com.space.munova.payment.entity.Payment;
 import com.space.munova.payment.exception.PaymentException;
 import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.ProductDetailService;
-import com.space.munova.recommend.service.RecommendService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -82,6 +85,7 @@ public class OrderServiceTest {
     private CreateOrderRequest couponRequest;
     private CreateOrderRequest noCouponRequest;
     private Payment mockPayment;
+
     private List<Order> createMockOrders(int count, Long memberId) {
         return IntStream.range(0, count)
                 .mapToObj(i -> {
@@ -157,7 +161,7 @@ public class OrderServiceTest {
 
             // THEN
             assertThat(result).isSameAs(mockOrder);
-            staticMockOrder.verify(()  -> Order.createOrder(eq(mockMember), eq(noCouponRequest.userRequest())), times(1));
+            staticMockOrder.verify(() -> Order.createOrder(eq(mockMember), eq(noCouponRequest.userRequest())), times(1));
 
             // 1. 프로세서 호출 검증
             verify(noCouponProcessor, times(1)).process(
@@ -337,7 +341,7 @@ public class OrderServiceTest {
                 .thenReturn(Optional.of(mockOrder));
 
         // 2. AuthService.verifyAuthorization은 예외 없이 통과한다고 설정 (doNothing()이 기본 동작)
-         doNothing().when(authService).verifyAuthorization(eq(OWNER_MEMBER_ID), anyLong()); // 명시적으로 작성해도 됨
+        doNothing().when(authService).verifyAuthorization(eq(OWNER_MEMBER_ID), anyLong()); // 명시적으로 작성해도 됨
 
         // 3. Payment 조회 성공
         when(paymentService.getPaymentByOrderId(TEST_ORDER_ID))

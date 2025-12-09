@@ -126,12 +126,14 @@ class ProductController {
     @GetMapping("/api/product/{productId}")
     @Operation(summary = "상품상세 조회", description = "상품상세조회")
     public ResponseEntity<ResponseApi<ProductDetailResponseDto>> findProductDetailLogin(@PathVariable(name = "productId") Long productId) {
-        ProductDetailResponseDto respDto = productService.findProductDetails(productId);
-        /// 상품 상세조회 시 로그
+        // 부하 테스트용: DB 쿼리 주석처리
+        // ProductDetailResponseDto respDto = productService.findProductDetails(productId);
+        /// 상품 상세조회 시 로그 (Kafka 메시지 전송만)
         productService.saveProductClickLog(productId);
-        /// 조회수 카운트 증가.
-        productService.updateProductViewCountLogin(productId);
-        return ResponseEntity.ok().body(ResponseApi.ok(respDto));
+        /// 조회수 카운트 증가 (주석처리)
+        // productService.updateProductViewCountLogin(productId);
+        // 더미 응답 반환
+        return ResponseEntity.ok().body(ResponseApi.ok(null));
     }
 
     /// 상품상세 조회

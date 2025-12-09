@@ -3,6 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'jacoco'
+    id 'com.google.protobuf' version '0.9.4'
 }
 
 group = 'com.space'
@@ -126,6 +127,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation "org.redisson:redisson-spring-boot-starter:${REDISSON_VERSION}"
 
+    // Kafka
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // Protobuf (3.25.5 이상 권장 - 보안 취약점 CVE-2024-7254 패치 포함)
+    implementation 'com.google.protobuf:protobuf-java:3.25.5'
+    implementation 'com.google.protobuf:protobuf-java-util:3.25.5'
+    compileOnly 'com.google.protobuf:protoc:3.25.5'
+
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0'
 
@@ -173,8 +182,15 @@ dependencies {
 def querydslDir = layout.buildDirectory.dir("generated/querydsl").get().asFile
 sourceSets {
     main.java.srcDirs += [querydslDir]
+    main {
+        proto {
+            srcDirs = ['src/main/java/com/space/munova/log/infra/proto']
+        }
+        java {
+            srcDirs += ['build/generated/source/proto/main/java']
+        }
+    }
 }
-
 
 tasks.withType(JavaCompile).configureEach {
     options.getGeneratedSourceOutputDirectory().set(file(querydslDir))
@@ -184,7 +200,6 @@ clean.doLast {
     file(querydslDir).deleteDir()
 }
 
-
 clean {
     delete file('src/main/generated')
 }
@@ -192,3 +207,22 @@ clean {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// Protobuf 설정
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.5"
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {
+                    option 'lite'
+                }
+            }
+        }
+    }
+}
+
+// compileJava가 generateProto 후에 실행되도록 명시적 의존성 선언
+compileJava.dependsOn generateProto

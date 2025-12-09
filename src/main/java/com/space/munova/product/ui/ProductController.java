@@ -105,7 +105,7 @@ class ProductController {
     }
 
 
-    /// 상품 로그 + 조회 (로그인 한 경우)
+    /// 상품 조회 (로그인 한 경우)
     @GetMapping("/api/product")
     @Operation(summary = "상품 조회", description = "조건에 맞는 상품 조회")
     public ResponseEntity<ResponseApi<PagingResponse<FindProductResponseDto>>> findProductLogin(

@@ -181,13 +181,13 @@ dependencies {
 /// 큐 객체 저장될 루트내용
 def querydslDir = layout.buildDirectory.dir("generated/querydsl").get().asFile
 sourceSets {
-    main.java.srcDirs += [querydslDir]
     main {
+        java {
+            srcDirs += [querydslDir]
+            srcDirs += ['build/generated/source/proto/main/java']
+        }
         proto {
             srcDirs = ['src/main/java/com/space/munova/log/infra/proto']
-        }
-        java {
-            srcDirs += ['build/generated/source/proto/main/java']
         }
     }
 }

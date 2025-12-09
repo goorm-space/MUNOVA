@@ -4,6 +4,6 @@ public record PaymentCompensationEvent(
         String paymentKey,
         String orderNum,
         Long amount
-
 ) {
 }
+

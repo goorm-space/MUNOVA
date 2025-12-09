@@ -12,15 +12,15 @@ import java.util.concurrent.CompletableFuture;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class SaveInitOrderService {
+public class AsyncOrderService {
 
     private final OrderRepository orderRepository;
 
     @Async
     public CompletableFuture<Void> saveOrderAsync(Order order) {
-        log.error("rdb 시작");
+        log.info("rdb 시작");
         orderRepository.save(order);
-        log.error("rdb 완료");
+        log.info("rdb 완료");
         return CompletableFuture.completedFuture(null);
     }
 }

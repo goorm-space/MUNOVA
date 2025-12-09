@@ -16,7 +16,7 @@ import com.space.munova.payment.entity.Payment;
 import com.space.munova.payment.entity.Refund;
 import com.space.munova.payment.repository.PaymentRepository;
 import com.space.munova.payment.repository.RefundRepository;
-import com.space.munova.product.application.CartService;
+import com.space.munova.product.application.cart.command.CartCommandService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -38,7 +38,7 @@ public class PaymentEventListener {
     private final OrderService orderService;
     private final PaymentRepository paymentRepository;
     private final CouponService couponService;
-    private final CartService cartService;
+    private final CartCommandService cartService;
     private final NotificationService notificationService;
 
     /**

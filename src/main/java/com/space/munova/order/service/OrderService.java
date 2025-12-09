@@ -14,8 +14,6 @@ public interface OrderService {
 
     GetOrderDetailResponse getOrderDetail(Long orderId, Long memberId, String username, String address);
 
-    void saveOrder(Order order);
-
     Order getOrderByOrderNum(String orderNum);
 
     Order getOrderWithItems(String orderNum);

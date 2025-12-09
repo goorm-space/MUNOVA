@@ -1,17 +1,12 @@
 package com.space.munova.product.application;
 
 import com.space.munova.core.dto.PagingResponse;
-import com.space.munova.member.entity.Member;
-import com.space.munova.member.exception.MemberException;
+import com.space.munova.log.infra.UserActionKafkaProducer;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.application.dto.FindProductResponseDto;
 import com.space.munova.product.application.event.ProductLikeEventDto;
 import com.space.munova.product.application.exception.LikeException;
-import com.space.munova.product.domain.Product;
-import com.space.munova.product.domain.ProductLike;
 import com.space.munova.product.domain.Repository.ProductLikeRepository;
-import com.space.munova.recommend.infra.RedisStreamProducer;
-import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -33,9 +28,8 @@ public class ProductLikeService {
     private final ProductService productService;
     private final MemberRepository memberRepository;
     private final ProductImageService productImageService;
-    private final RecommendService recommendService;
     private final ApplicationEventPublisher eventPublisher;
-    private final RedisStreamProducer logProducer;
+    private final UserActionKafkaProducer kafkaProducer;
 
     @Transactional(readOnly = false)
     public void deleteProductLikeByProductId(Long productId, Long memberId) {
@@ -49,53 +43,55 @@ public class ProductLikeService {
         ///  삭제메시지 발행
         ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
         eventPublisher.publishEvent(eventDto);
-        upsertUserAction(productId, false);
     }
 
     @Transactional(readOnly = false)
     public void addLike(Long productId, Long memberId) {
-        Member member = memberRepository.findById(memberId).orElseThrow(MemberException::invalidMemberException);
-        Product product = productService.findByIdAndIsDeletedFalse(productId);
-        boolean isLiked = productLikeRepository.existsByProductIdAndMemberIdAndIsDeletedFalse(productId, memberId);
+        // 부하 테스트용: DB 쿼리 및 비즈니스 로직 주석처리
+        // Member member = memberRepository.findById(memberId).orElseThrow(MemberException::invalidMemberException);
+        // Product product = productService.findByIdAndIsDeletedFalse(productId);
+        // boolean isLiked = productLikeRepository.existsByProductIdAndMemberIdAndIsDeletedFalse(productId, memberId);
 
-        /// 좋아요 한 상풍인데 또 좋아요 눌렀을 경우 disLike
-        if (isLiked) {
-            ///  사용자 좋아요 리스트 제거
-            productLikeRepository.deleteAllByProductIdsAndMemberId(productId, memberId);
+        // 부하 테스트용: 항상 좋아요 추가로 처리 (Kafka 메시지 전송만)
+        // /// 좋아요 한 상풍인데 또 좋아요 눌렀을 경우 disLike
+        // if (isLiked) {
+        //     ///  사용자 좋아요 리스트 제거
+        //     productLikeRepository.deleteAllByProductIdsAndMemberId(productId, memberId);
+        //
+        //     Map<String, Object> logData = Map.of(
+        //             "event_type", "cancel_product_like",
+        //             "service", "product",
+        //             "member_id", memberId,
+        //             "data", Map.of(
+        //                     "product_id", productId
+        //             )
+        //     );
+        //     kafkaProducer.sendLog(logData);
+        //
+        //     /// 좋아요 취소 메시지 발행
+        //     ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
+        //     eventPublisher.publishEvent(eventDto);
+        //
+        // } else {
+        //     /// 사용자 좋아요 리스트 추가
+        //     ProductLike productLike = ProductLike.createDefaultProductLike(product, member);
+        //     productLikeRepository.save(productLike);
 
-            Map<String, Object> logData = Map.of(
-                    "event_type", "cancel_product_like",
-                    "service", "product",
-                    "member_id", memberId,
-                    "data", Map.of(
-                            "product_id", productId
-                    )
-            );
-            logProducer.sendLogAsync(logData);
+        // Kafka 메시지 전송만 수행
+        Map<String, Object> logData = Map.of(
+                "event_type", "product_like",
+                "service", "product",
+                "member_id", memberId,
+                "data", Map.of(
+                        "product_id", productId
+                )
+        );
+        kafkaProducer.sendLog(logData);
 
-            /// 좋아요 취소 메시지 발행
-            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, true);
-            eventPublisher.publishEvent(eventDto);
-
-        } else {
-            /// 사용자 좋아요 리스트 추가
-            ProductLike productLike = ProductLike.createDefaultProductLike(product, member);
-            productLikeRepository.save(productLike);
-
-            Map<String, Object> logData = Map.of(
-                    "event_type", "product_like",
-                    "service", "product",
-                    "member_id", memberId,
-                    "data", Map.of(
-                            "product_id", productId
-                    )
-            );
-            logProducer.sendLogAsync(logData);
-
-            ///  좋아요 메시지 발행
-            ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, false);
-            eventPublisher.publishEvent(eventDto);
-        }
+        // ///  좋아요 메시지 발행
+        // ProductLikeEventDto eventDto = new ProductLikeEventDto(productId, false);
+        // eventPublisher.publishEvent(eventDto);
+        // }
     }
 
     public PagingResponse<FindProductResponseDto> findLikeProducts(Pageable pageable, Long memberId) {
@@ -109,10 +105,4 @@ public class ProductLikeService {
 
         productLikeRepository.deleteAllByProductIds(productIds);
     }
-
-    private void upsertUserAction(Long productId, Boolean liked) {
-        recommendService.updateUserAction(productId, 0, liked, null, null);
-    }
-
-
 }

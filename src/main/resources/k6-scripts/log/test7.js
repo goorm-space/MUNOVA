@@ -10,7 +10,6 @@ export const options = {
     stages: [
         { duration: '2s', target: 5000 },   // 2초간 5,000 VUs로 증가 (램프업)
         { duration: '3s', target: 10000 },   // 3초간 10,000 VUs로 증가 (램프업)
-        { duration: '2s', target: 20000 },   // 2초간 20,000 VUs로 증가 (램프업)
         { duration: '10s', target: 20000 },  // 10초간 20,000 VUs 유지 (실제 부하 테스트)
     ],
     thresholds: {

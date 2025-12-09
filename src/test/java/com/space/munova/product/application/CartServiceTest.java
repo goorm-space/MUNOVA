@@ -1,14 +1,17 @@
 package com.space.munova.product.application;
 
 import com.space.munova.core.dto.PagingResponse;
+import com.space.munova.log.service.RecommendService;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.repository.MemberRepository;
-import com.space.munova.product.application.dto.cart.*;
+import com.space.munova.product.application.dto.cart.AddCartItemRequestDto;
+import com.space.munova.product.application.dto.cart.FindCartInfoResponseDto;
+import com.space.munova.product.application.dto.cart.ProductInfoForCartDto;
+import com.space.munova.product.application.dto.cart.UpdateCartRequestDto;
 import com.space.munova.product.domain.Cart;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.Repository.CartRepository;
-import com.space.munova.recommend.service.RecommendService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;

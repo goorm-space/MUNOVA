@@ -1,5 +1,6 @@
 package com.space.munova.product.application;
 
+import com.space.munova.log.service.RecommendService;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.product.application.dto.*;
@@ -10,7 +11,6 @@ import com.space.munova.product.domain.Repository.ProductClickLogRepository;
 import com.space.munova.product.domain.Repository.ProductRepository;
 import com.space.munova.product.domain.Repository.ProductSearchLogRepository;
 import com.space.munova.product.domain.enums.ProductCategory;
-import com.space.munova.recommend.service.RecommendService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
@@ -36,34 +36,34 @@ class ProductServiceTest {
 
     @Mock
     private ProductClickLogRepository productClickLogRepository;
-    
+
     @Mock
     private ProductRepository productRepository;
-    
+
     @Mock
     private ProductImageService productImageService;
-    
+
     @Mock
     private ProductDetailService productDetailService;
-    
+
     @Mock
     private BrandService brandService;
-    
+
     @Mock
     private CategoryService categoryService;
-    
+
     @Mock
     private MemberRepository memberRepository;
-    
+
     @Mock
     private ProductOptionService productOptionService;
-    
+
     @Mock
     private ProductSearchLogRepository productSearchLogRepository;
-    
+
     @Mock
     private RecommendService recommendService;
-    
+
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
@@ -164,7 +164,7 @@ class ProductServiceTest {
         Member seller = createMember();
         Brand brand = createBrand();
         Category category = createCategory();
-        
+
         Product existingProduct = Product.builder()
                 .id(productId)
                 .name("기존 상품명")
@@ -178,7 +178,7 @@ class ProductServiceTest {
 
         MultipartFile mainImgFile = mock(MultipartFile.class);
         when(mainImgFile.isEmpty()).thenReturn(false);
-        
+
         List<MultipartFile> sideImgFiles = new ArrayList<>();
         MultipartFile sideImgFile1 = mock(MultipartFile.class);
         sideImgFiles.add(sideImgFile1);
@@ -228,7 +228,7 @@ class ProductServiceTest {
         verify(productDetailService, times(1)).saveProductDetailAndOption(any(Product.class), anyList());
         verify(productDetailService, times(1)).updateQuantity(anyList());
         verify(productDetailService, times(1)).deleteProductDetailByIds(anyList());
-        
+
         // 상품 정보가 수정되었는지 확인
         assertEquals("수정된 상품명", existingProduct.getName());
         assertEquals("수정된 상품 정보입니다. 최소 10자 이상입니다.", existingProduct.getInfo());

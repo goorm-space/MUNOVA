@@ -1,18 +1,17 @@
 package com.space.munova.product.application;
 
 import com.space.munova.core.dto.PagingResponse;
-import com.space.munova.member.entity.Member;
-import com.space.munova.member.exception.MemberException;
+import com.space.munova.log.infra.UserActionKafkaProducer;
 import com.space.munova.member.repository.MemberRepository;
-
 import com.space.munova.order.entity.OrderItem;
-import com.space.munova.product.application.dto.cart.*;
+import com.space.munova.product.application.dto.cart.AddCartItemRequestDto;
+import com.space.munova.product.application.dto.cart.FindCartInfoResponseDto;
+import com.space.munova.product.application.dto.cart.ProductInfoForCartDto;
+import com.space.munova.product.application.dto.cart.UpdateCartRequestDto;
 import com.space.munova.product.application.exception.CartException;
 import com.space.munova.product.domain.Cart;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.Repository.CartRepository;
-import com.space.munova.recommend.infra.RedisStreamProducer;
-import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -35,8 +34,7 @@ public class CartService {
     private final CartRepository cartRepository;
     private final MemberRepository memberRepository;
     private final ProductDetailService productDetailService;
-    private final RecommendService recommendService;
-    private final RedisStreamProducer logProducer;
+    private final UserActionKafkaProducer kafkaProducer;
 
     @Transactional(readOnly = false)
     public void deleteByProductDetailIds(List<Long> productDetailIds) {
@@ -46,22 +44,27 @@ public class CartService {
     ///  카트 생성 메서드
     @Transactional(readOnly = false)
     public void addCartItem(AddCartItemRequestDto reqDto, Long memberId) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(MemberException::notFoundException);
-        ProductDetail productDetail = productDetailService.findById((reqDto.productDetailId()));
-        productDetail.validAddToCart(reqDto.quantity());
-        boolean isExist = cartRepository.existsByMemberIdAndProductDetailId(memberId, productDetail.getId());
-        if(isExist) {
-            Cart cart = cartRepository.findByProductDetailIdAndMemberId(productDetail.getId(), memberId)
-                    .orElseThrow(CartException::badRequestCartException);
-            cart.updateQuantity(reqDto.quantity());
-        } else {
-            Cart cart = Cart.createDefaultCart(member, productDetail, reqDto.quantity());
-            cartRepository.save(cart);
-        }
-        Long productId = productDetailService.findProductIdByDetailId(reqDto.productDetailId());
+        // 부하 테스트용: DB 쿼리 및 비즈니스 로직 주석처리
+        // Member member = memberRepository.findById(memberId)
+        //         .orElseThrow(MemberException::notFoundException);
+        // ProductDetail productDetail = productDetailService.findById((reqDto.productDetailId()));
+        // productDetail.validAddToCart(reqDto.quantity());
+        // boolean isExist = cartRepository.existsByMemberIdAndProductDetailId(memberId, productDetail.getId());
+        // if(isExist) {
+        //     Cart cart = cartRepository.findByProductDetailIdAndMemberId(productDetail.getId(), memberId)
+        //             .orElseThrow(CartException::badRequestCartException);
+        //     cart.updateQuantity(reqDto.quantity());
+        // } else {
+        //     Cart cart = Cart.createDefaultCart(member, productDetail, reqDto.quantity());
+        //     cartRepository.save(cart);
+        // }
+        // Long productId = productDetailService.findProductIdByDetailId(reqDto.productDetailId());
+
+        // 부하 테스트용: 더미 값 사용 (Kafka 메시지 전송만)
+        Long productId = 1L; // 더미 productId
         int quantity = reqDto.quantity();
 
+        // Kafka 메시지 전송만 수행
         Map<String, Object> logData = Map.of(
                 "event_type", "product_add_cart",
                 "service", "product",
@@ -71,7 +74,7 @@ public class CartService {
                         "quantity", quantity
                 )
         );
-        logProducer.sendLogAsync(logData);
+        kafkaProducer.sendLog(logData);
     }
 
 
@@ -87,18 +90,8 @@ public class CartService {
     /// 유저의 장바구니 카트 상품제거
     @Transactional(readOnly = false)
     public void deleteByCartIds(List<Long> cartIds, Long memberId) {
-
-        upsertUserAction(cartIds);
         cartRepository.deleteByCartIdsAndMemberId(cartIds, memberId);
     }
-
-    private void upsertUserAction(List<Long> cartIds) {
-        List<Long> productIdsByCartIds = cartRepository.findProductIdsByCartIds(cartIds);
-        for (Long productId : productIdsByCartIds) {
-            recommendService.updateUserAction(productId, 0, null, false, null);
-        }
-    }
-
 
     public PagingResponse<FindCartInfoResponseDto> findCartItemByMember(Pageable pageable, Long memberId) {
 

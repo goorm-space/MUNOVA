@@ -2,8 +2,12 @@ package com.space.munova.order.service;
 
 import com.space.munova.auth.exception.AuthException;
 import com.space.munova.auth.service.AuthService;
+import com.space.munova.log.service.RecommendService;
 import com.space.munova.member.entity.Member;
-import com.space.munova.order.dto.*;
+import com.space.munova.order.dto.CancelOrderItemRequest;
+import com.space.munova.order.dto.CancelType;
+import com.space.munova.order.dto.OrderItemRequest;
+import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.exception.OrderItemException;
@@ -15,12 +19,14 @@ import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.ProductDetailService;
 import com.space.munova.product.application.exception.ProductDetailException;
 import com.space.munova.product.domain.ProductDetail;
-import com.space.munova.recommend.service.RecommendService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -31,7 +37,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.when;
 
 @DisplayName("OrderItem_Service_Test")
 @ExtendWith(MockitoExtension.class)

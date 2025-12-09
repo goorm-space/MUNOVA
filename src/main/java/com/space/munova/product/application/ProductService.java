@@ -2,6 +2,7 @@ package com.space.munova.product.application;
 
 
 import com.space.munova.core.dto.PagingResponse;
+import com.space.munova.log.infra.UserActionKafkaProducer;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
@@ -14,8 +15,6 @@ import com.space.munova.product.domain.Category;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.Repository.ProductRepository;
 import com.space.munova.product.domain.enums.ProductCategory;
-import com.space.munova.recommend.infra.RedisStreamProducer;
-import com.space.munova.recommend.service.RecommendService;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,8 +44,7 @@ public class ProductService {
     private final CategoryService categoryService;
     private final MemberRepository memberRepository;
     private final ProductOptionService productOptionService;
-    private final RecommendService recommendService;
-    private final RedisStreamProducer logProducer;
+    private final UserActionKafkaProducer kafkaProducer;
 
     ///  스프린 내부 이벤트 발행 인터페이스 추가
     private final ApplicationEventPublisher eventPublisher;
@@ -118,7 +116,6 @@ public class ProductService {
     @Transactional(readOnly = false)
     public void updateProductViewCountLogin(Long productId) {
         productRepository.updateProductViewCount(productId);
-        recommendService.updateUserAction(productId, 1, null, null, null);
     }
 
     @Transactional(readOnly = false)
@@ -132,7 +129,7 @@ public class ProductService {
                         "product_id", productId
                 )
         );
-        logProducer.sendLogAsync(logData);
+        kafkaProducer.sendLog(logData);
 
     }
 
@@ -185,7 +182,7 @@ public class ProductService {
                         "keyword", keyword != null ? keyword : ""
                 )
         );
-        logProducer.sendLogAsync(logData);
+        kafkaProducer.sendLog(logData);
     }
 
     // 상품옵션 조회

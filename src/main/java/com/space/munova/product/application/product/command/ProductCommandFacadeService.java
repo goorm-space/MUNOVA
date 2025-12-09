@@ -46,7 +46,7 @@ public class ProductCommandFacadeService {
 
     public void updateProductViewCountLogin(Long productId) {
         productRedisCommandPort.updateViewCount(productId, 1);
-        recommendService.updateUserAction(productId, 1, null, null, null);
+      
     }
 
     public void saveProduct(MultipartFile mainImgFile,

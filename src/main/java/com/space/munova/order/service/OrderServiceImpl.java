@@ -17,7 +17,6 @@ import com.space.munova.payment.entity.Payment;
 import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.product.command.ProductDetailService;
 import com.space.munova.product.domain.ProductDetail;
-import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -80,40 +79,7 @@ public class OrderServiceImpl implements OrderService {
         TmpOrderDto tmpOrder = TmpOrderDto.from(memberId, order);
         redisService.saveTemporaryOrder(tmpOrder);
 
-        // Todo: rdb에 저장 후에 불러와야 합니다
-        // UserActionSummary 저장 로직
-        saveRecommendFromOrder(order);
-
         return order;
-    }
-
-    @Transactional
-    public void saveRecommendFromOrder(Order order) {
-        List<Long> orderItemIds = order.getOrderItems().stream()
-                .map(OrderItem::getId)
-                .toList();
-        List<Long> productDetailIds = orderItemRepository.findProductDetailIdsByOrderItemIds(orderItemIds);
-        for (Long productDetailId : productDetailIds) {
-            Long productId = productDetailService.findProductIdByDetailId(productDetailId);
-            recommendService.updateUserAction(productId, 0, null, null, true);
-        }
-    }
-
-    @Transactional
-    @Override
-    public void saveOrderLog(Long memberId, Order order) {
-        for (OrderItem item : order.getOrderItems()) {
-            Long productId = item.getProductDetail().getProduct().getId();
-            Integer quantity = item.getQuantity();
-            OrderProductLog log = OrderProductLog.builder()
-                    .memberId(memberId)
-                    .productId(productId)
-                    .quantity(quantity)
-                    .price(item.getPriceSnapshot())
-                    .orderStatus(item.getStatus())
-                    .build();
-            orderProductLogRepository.save(log);
-        }
     }
 
     @Override

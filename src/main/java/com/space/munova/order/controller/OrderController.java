@@ -32,7 +32,6 @@ public class OrderController {
         String userName = JwtHelper.getMemberName();
 
         Order order = orderService.saveTmpOrder(request, memberId);
-        orderService.saveOrderLog(memberId, order);
         PaymentPrepareResponse paymentResponse = PaymentPrepareResponse.from(userName, order);
         return ResponseApi.created(response, paymentResponse);
     }

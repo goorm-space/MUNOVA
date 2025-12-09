@@ -3,11 +3,11 @@ package com.space.munova.product.application.product.command;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
-import com.space.munova.product.application.product.command.event.*;
 import com.space.munova.product.application.product.command.dto.AddProductRequestDto;
 import com.space.munova.product.application.product.command.dto.ProductDetailUpdateDtos;
 import com.space.munova.product.application.product.command.dto.SavedDetailAndOptionInfoDto;
 import com.space.munova.product.application.product.command.dto.UpdateProductRequestDto;
+import com.space.munova.product.application.product.command.event.*;
 import com.space.munova.product.application.product.command.port.OutboxCommandPort;
 import com.space.munova.product.application.product.command.port.ProductRedisCommandPort;
 import com.space.munova.product.domain.Brand;
@@ -16,7 +16,6 @@ import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.ProductImage;
 import com.space.munova.product.infra.elasticsearch.ProductEsDocument;
 import com.space.munova.product.infra.mongo.ProductMongoDocument;
-import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,13 +39,11 @@ public class ProductCommandFacadeService {
     private final CategoryCommandService categoryCommandService;
     private final ProductCommandService productCommandService;
     private final MemberRepository memberRepository;
-    private final RecommendService recommendService;
-
 
 
     public void updateProductViewCountLogin(Long productId) {
         productRedisCommandPort.updateViewCount(productId, 1);
-      
+
     }
 
     public void saveProduct(MultipartFile mainImgFile,
@@ -135,18 +132,18 @@ public class ProductCommandFacadeService {
 
         /// 이미지 수정
         /// 메인이미지가 넘어왔을경우 메인이미지 업데이트
-        if(mainImgFile != null && !mainImgFile.isEmpty())  {
+        if (mainImgFile != null && !mainImgFile.isEmpty()) {
             updatedMainImg = productImageCommandService.updateMainImg(mainImgFile, product);
         }
 
         /// 사이드 이미지가 넘어왔을경우 업데이틑
-        if(sideImgFile != null &&  !sideImgFile.isEmpty())  {
+        if (sideImgFile != null && !sideImgFile.isEmpty()) {
             List<ProductImage> productImages = productImageCommandService.saveSideImg(sideImgFile, product);
             addSideImages.addAll(productImages);
         }
 
 
-        if(reqDto.deletedImgIds() != null || !reqDto.deletedImgIds().isEmpty()) {
+        if (reqDto.deletedImgIds() != null || !reqDto.deletedImgIds().isEmpty()) {
             removeSideImages = productImageCommandService.deleteImagesByImgIds(reqDto.deletedImgIds(), product.getId());
         }
 
@@ -156,17 +153,17 @@ public class ProductCommandFacadeService {
         /// 삭제아이템과 업데이트아이템이 겹칠경우 업데이트아이템에서 삭제된아이템제거
         productDetailUpdateDtos.removeDeletedItemsFromUpdateList();
 
-        if(!productDetailUpdateDtos.addShoeOptionDtos().isEmpty()) {
-             savedDetailAndOptionInfoDto = productDetailService.saveProductDetailAndOption(product,
-                     productDetailUpdateDtos.addShoeOptionDtos());
+        if (!productDetailUpdateDtos.addShoeOptionDtos().isEmpty()) {
+            savedDetailAndOptionInfoDto = productDetailService.saveProductDetailAndOption(product,
+                    productDetailUpdateDtos.addShoeOptionDtos());
 
         }
 
-        if(!productDetailUpdateDtos.updateQuantityDtos().isEmpty()) {
+        if (!productDetailUpdateDtos.updateQuantityDtos().isEmpty()) {
             productDetailService.updateQuantity(productDetailUpdateDtos.updateQuantityDtos());
         }
 
-        if(!productDetailUpdateDtos.deleteDetailIds().isEmpty()) {
+        if (!productDetailUpdateDtos.deleteDetailIds().isEmpty()) {
             productDetailService.deleteProductDetailByIds(productDetailUpdateDtos.deleteDetailIds());
         }
 

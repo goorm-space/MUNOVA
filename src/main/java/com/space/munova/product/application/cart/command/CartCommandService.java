@@ -1,13 +1,14 @@
 package com.space.munova.product.application.cart.command;
 
+import com.space.munova.log.infra.UserActionKafkaProducer;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.exception.MemberException;
 import com.space.munova.member.repository.MemberRepository;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.product.application.cart.command.dto.AddCartItemRequestDto;
 import com.space.munova.product.application.cart.command.dto.UpdateCartRequestDto;
-import com.space.munova.product.application.product.command.ProductDetailService;
 import com.space.munova.product.application.cart.command.exception.CartException;
+import com.space.munova.product.application.product.command.ProductDetailService;
 import com.space.munova.product.domain.Cart;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.Repository.CartRepository;
@@ -16,8 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -52,7 +53,7 @@ public class CartCommandService {
         ///  사용자의 장바구니에 상품디테일이 있는지 확인.
         boolean isExist = cartRepository.existsByMemberIdAndProductDetailId(memberId, productDetail.getId());
 
-        if(isExist) { ///  있으면 수량확인후 업데이트
+        if (isExist) { ///  있으면 수량확인후 업데이트
 
             Cart cart = cartRepository.findByProductDetailIdAndMemberId(productDetail.getId(), memberId)
                     .orElseThrow(CartException::badRequestCartException);
@@ -64,7 +65,7 @@ public class CartCommandService {
             cartRepository.save(cart);
         }
 
-        Long productId=productDetailService.findProductIdByDetailId(reqDto.productDetailId());
+        Long productId = productDetailService.findProductIdByDetailId(reqDto.productDetailId());
         Map<String, Object> logData = Map.of(
                 "event_type", "product_add_cart",
                 "service", "product",
@@ -89,10 +90,8 @@ public class CartCommandService {
 
     /// 유저의 장바구니 카트 상품제거
     @Transactional(readOnly = false)
-    public void deleteByCartIds(List<Long> cartIds,  Long memberId) {
-
-        upsertUserAction(cartIds);
-        cartRepository.deleteByCartIdsAndMemberId(cartIds,memberId);
+    public void deleteByCartIds(List<Long> cartIds, Long memberId) {
+        cartRepository.deleteByCartIdsAndMemberId(cartIds, memberId);
     }
 
 
@@ -102,15 +101,8 @@ public class CartCommandService {
                 .map(orderItem -> orderItem.getProductDetail().getId())
                 .toList();
 
-        cartRepository.deleteByProductDetailIdsAndMemberId(productDetailIds,memberId);
+        cartRepository.deleteByProductDetailIdsAndMemberId(productDetailIds, memberId);
     }
 
-
-    private void upsertUserAction(List<Long> cartIds) {
-        List<Long> productIdsByCartIds = cartRepository.findProductIdsByCartIds(cartIds);
-        for(Long productId:productIdsByCartIds){
-            recommendService.updateUserAction(productId,0,null,false,null);
-        }
-    }
 
 }

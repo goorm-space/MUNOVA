@@ -69,10 +69,5 @@ public class OrderItemServiceImpl implements OrderItemService {
         productDetailService.increaseStock(orderItem.getProductDetail().getId(), orderItem.getQuantity());
 
         strategy.updateOrderItemStatus(orderItem);
-
-        List<Long> singleOrderItemId = List.of(orderItemId);
-        List<Long> productDetailId = orderItemRepository.findProductDetailIdsByOrderItemIds(singleOrderItemId);
-        Long productId = productDetailService.findProductIdByDetailId(productDetailId.get(0));
-        recommendService.updateUserAction(productId, 0, null, null, false);
     }
 }

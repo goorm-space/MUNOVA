@@ -15,6 +15,4 @@ public interface OrderService {
     GetOrderDetailResponse getOrderDetail(Long orderId, Long memberId);
 
     void saveOrder(Order order);
-
-    void saveOrderLog(Long memberId, Order order);
 }

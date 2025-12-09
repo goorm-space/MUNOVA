@@ -3,9 +3,7 @@ package com.space.munova.product.ui;
 import com.space.munova.core.config.ResponseApi;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.product.application.product.command.ProductCommandFacadeService;
-import com.space.munova.product.application.shared.ProductLogService;
 import com.space.munova.product.application.product.command.dto.AddProductRequestDto;
-import com.space.munova.product.application.product.query.dto.CreateProductConditionsResponseDto;
 import com.space.munova.product.application.product.command.dto.UpdateProductRequestDto;
 import com.space.munova.product.application.product.query.ProductQueryFacadeService;
 import com.space.munova.product.application.product.query.dto.*;
@@ -22,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -31,7 +30,6 @@ import java.util.List;
 @Tag(name = "상품", description = "상품 관련 API")
 class ProductController {
 
-    private final ProductLogService productLogService;
     private final ProductCommandFacadeService productCommandFacadeService;
     private final ProductQueryFacadeService productQueryFacadeService;
 
@@ -47,7 +45,7 @@ class ProductController {
 
     /// 판매자의 수정 페이지 조회
     @GetMapping("/api/seller/product/{productId}/edit")
-    public ResponseEntity<ResponseApi<ProductDetailResponseDto>> editProductView(@PathVariable("productId") Long productId){
+    public ResponseEntity<ResponseApi<ProductDetailResponseDto>> editProductView(@PathVariable("productId") Long productId) {
 
         Long memberId = JwtHelper.getMemberId();
         ProductDetailResponseDto respDto = productQueryFacadeService.findProductDetailsBySeller(productId, memberId);
@@ -56,13 +54,12 @@ class ProductController {
 
     /// 상품등록 페이지 카테고리, 옵션 조회 메서드
     @GetMapping("/api/seller/product/create")
-    public ResponseEntity<ResponseApi<CreateProductConditionsResponseDto>> createProductView(){
+    public ResponseEntity<ResponseApi<CreateProductConditionsResponseDto>> createProductView() {
 
-        CreateProductConditionsResponseDto respDto =  productQueryFacadeService.findCreateProductConditions();
+        CreateProductConditionsResponseDto respDto = productQueryFacadeService.findCreateProductConditions();
 
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
-
 
 
     ///  판매자의 등록상품 리스트 조회
@@ -108,7 +105,6 @@ class ProductController {
     }
 
 
-
     /// 상품 로그 + 조회 (로그인 한 경우)
     @GetMapping("/api/product")
     @Operation(summary = "상품 조회", description = "조건에 맞는 상품 조회")
@@ -118,11 +114,6 @@ class ProductController {
         PagingResponse<FindProductResponseDto> respDto =
                 productQueryFacadeService.findProducts(productSearchRequestDto, pageable);
 
-        if ((productSearchRequestDto.getCategoryId() != null
-                || (productSearchRequestDto.getKeyword() != null && !productSearchRequestDto.getKeyword().isEmpty())
-                || (productSearchRequestDto.getOptionIds() != null && !productSearchRequestDto.getOptionIds().isEmpty()))) {
-            productLogService.saveSearchLog(productSearchRequestDto.getCategoryId(), productSearchRequestDto.getKeyword());
-        }
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
 
@@ -145,7 +136,6 @@ class ProductController {
 
         ProductDetailResponseDto respDto = productQueryFacadeService.findProductDetails(productId);
         /// 상품 상세조회 시 로그
-        productLogService.saveProductClickLog(productId);
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
 
@@ -157,7 +147,6 @@ class ProductController {
 
         return ResponseEntity.ok().body(ResponseApi.ok(respDto));
     }
-
 
 
     @PatchMapping("/product/view/{productId}")

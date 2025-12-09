@@ -12,7 +12,11 @@ public interface OrderService {
 
     PagingResponse<OrderSummaryDto> getOrderList(int page, Long memberId);
 
-    GetOrderDetailResponse getOrderDetail(Long orderId, Long memberId);
+    GetOrderDetailResponse getOrderDetail(Long orderId, Long memberId, String username, String address);
 
     void saveOrder(Order order);
+
+    Order getOrderByOrderNum(String orderNum);
+
+    Order getOrderWithItems(String orderNum);
 }

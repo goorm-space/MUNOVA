@@ -15,13 +15,12 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 public class OrderQueryServiceImplTest {
 
     @InjectMocks
-    private OrderQueryServiceImpl orderQueryService;
+    private AsyncOrderService orderQueryService;
 
     @Mock
     private OrderRepository orderRepository;

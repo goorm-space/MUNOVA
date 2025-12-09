@@ -7,7 +7,7 @@ import com.space.munova.payment.entity.PaymentMethod;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record GetOrderDetailResponse (
+public record GetOrderDetailResponse(
         Long orderId,
         String orderNum,
         String username,
@@ -23,7 +23,7 @@ public record GetOrderDetailResponse (
         List<OrderItemDto> orderItems
 
 ) {
-    public static GetOrderDetailResponse from(Order order, Payment payment) {
+    public static GetOrderDetailResponse from(Order order, Payment payment, String username, String address) {
         List<OrderItemDto> orderItems = order.getOrderItems().stream()
                 .map(OrderItemDto::from)
                 .toList();
@@ -31,8 +31,8 @@ public record GetOrderDetailResponse (
         return new GetOrderDetailResponse(
                 order.getId(),
                 order.getOrderNum(),
-                order.getMember().getUsername(),
-                order.getMember().getAddress(),
+                username,
+                address,
                 order.getUserRequest(),
                 order.getStatus(),
                 order.getOriginPrice(),

@@ -1,6 +1,6 @@
 package com.space.munova.payment.event;
 
-public record PaymentCompensationEvent(
+public record PaymentFailureEvent(
         String paymentKey,
         String orderNum,
         Long amount

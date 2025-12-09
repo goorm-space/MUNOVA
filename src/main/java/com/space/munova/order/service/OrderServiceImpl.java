@@ -2,7 +2,6 @@ package com.space.munova.order.service;
 
 import com.space.munova.auth.service.AuthService;
 import com.space.munova.core.dto.PagingResponse;
-import com.space.munova.member.service.MemberService;
 import com.space.munova.order.dto.*;
 import com.space.munova.order.dto.redis.TmpOrderDto;
 import com.space.munova.order.entity.Order;
@@ -18,6 +17,7 @@ import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.product.command.ProductDetailService;
 import com.space.munova.product.domain.ProductDetail;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +28,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class OrderServiceImpl implements OrderService {
 
     private static final int PAGE_SIZE = 5;
@@ -35,9 +36,9 @@ public class OrderServiceImpl implements OrderService {
     private final CouponAppliedProcessor couponAppliedProcessor;
     private final NoCouponProcessor noCouponProcessor;
     private final ProductDetailService productDetailService;
+    private final AsyncOrderService asyncOrderService;
     private final OrderItemService orderItemService;
     private final PaymentService paymentService;
-    private final MemberService memberService;
     private final AuthService authService;
     private final RedisService redisService;
 
@@ -45,39 +46,37 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
 
     @Override
+    @Transactional
     public Order saveTmpOrder(CreateOrderRequest request, Long memberId) {
-        // 1. 재고 검증 후 선점
-        redisService.validateAndDecreaseStock(request.orderItems());
+        // 1. 재고 검증
+        for (OrderItemRequest orderItem : request.orderItems()) {
+            redisService.validateStock(orderItem.productDetailId(), orderItem.quantity());
+        }
 
         // 2. 초기 주문 생성
-        Order order = Order.createOrder(request.userRequest());
-
-        List<OrderItem> orderItems = new ArrayList<>();
-        for (OrderItemRequest orderItemRequest : request.orderItems()) {
-            ProductDetail detail = productDetailService.findById(orderItemRequest.productDetailId());
-
-            OrderItem orderItem = OrderItem.create(order, detail, orderItemRequest.quantity());
-            orderItems.add(orderItem);
-        }
+        Order order = Order.createOrder(request.userRequest(), memberId);
+        List<OrderItem> orderItems = orderItemService.createOrderItems(request.orderItems(), order);
         orderItems.forEach(order::addOrderItem);
 
-        // 2. 총액 계산
+        // 3. 총액 계산
         long totalProductAmount = order.getOrderItems().stream()
                 .mapToLong(OrderItem::calculateAmount)
                 .sum();
 
-        // 3. 쿠폰 유무에 따라 금액 계산
+        // 4. 쿠폰 유무에 따라 금액 계산
         OrderAmountProcessor processor;
         if (request.orderCouponId() != null) {
             processor = couponAppliedProcessor;
         } else {
             processor = noCouponProcessor;
         }
-
         processor.process(order, request, totalProductAmount);
 
         TmpOrderDto tmpOrder = TmpOrderDto.from(memberId, order);
         redisService.saveTemporaryOrder(tmpOrder);
+
+        orderRepository.save(order);
+//        asyncOrderService.saveOrderAsync(order);
 
         return order;
     }
@@ -90,7 +89,7 @@ public class OrderServiceImpl implements OrderService {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<Order> orderPage = orderRepository.findAllByMember_IdAndStatus(memberId, OrderStatus.PAID, pageable);
+        Page<Order> orderPage = orderRepository.findAllByMemberIdAndStatus(memberId, OrderStatus.PAID, pageable);
 
         if (orderPage.getContent().isEmpty()) {
             return PagingResponse.from(Page.empty(pageable));
@@ -110,22 +109,27 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public GetOrderDetailResponse getOrderDetail(Long orderId, Long memberId) {
+    public GetOrderDetailResponse getOrderDetail(Long orderId, Long memberId, String username, String address) {
 
         Order order = orderRepository.findOrderDetailsById(orderId)
                 .orElseThrow(OrderException::notFoundException);
 
-        authService.verifyAuthorization(order.getMember().getId(), memberId);
+        authService.verifyAuthorization(order.getMemberId(), memberId);
 
         Payment payment = paymentService.getPaymentByOrderId(orderId);
 
-        return GetOrderDetailResponse.from(order, payment);
+        return GetOrderDetailResponse.from(order, payment, username, address);
     }
 
-    @Transactional
     @Override
-    public void saveOrder(Order order) {
-        orderRepository.save(order);
-        redisService.deleteTmpOrder(order.getOrderNum());
+    public Order getOrderByOrderNum(String orderNum) {
+        return orderRepository.findByOrderNum(orderNum)
+                .orElseThrow(OrderException::notFoundException);
+    }
+
+    @Override
+    public Order getOrderWithItems(String orderNum) {
+        return orderRepository.findByOrderNumWithItems(orderNum)
+                .orElseThrow(OrderException::notFoundException);
     }
 }

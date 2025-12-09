@@ -6,6 +6,8 @@ import com.space.munova.payment.entity.Payment;
 
 public interface PaymentService {
     void confirmPaymentAndSavePayment(ConfirmPaymentRequest requestBody, Long memberId);
+
     Payment getPaymentByOrderId(Long orderId);
+
     void cancelPaymentAndSaveRefund(Long orderItemId, Long orderId, CancelOrderItemRequest request);
 }

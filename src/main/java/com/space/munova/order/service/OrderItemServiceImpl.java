@@ -34,13 +34,13 @@ public class OrderItemServiceImpl implements OrderItemService {
     private final ReturnRefundStrategy returnRefundStrategy;
 
     @Override
-    public List<OrderItem> deductStockAndCreateOrderItems(List<OrderItemRequest> itemRequests, Order order) {
+    public List<OrderItem> createOrderItems(List<OrderItemRequest> itemRequests, Order order) {
         List<OrderItem> orderItems = new ArrayList<>();
+        // Todo: 조회를 벌크로 하자
         for (OrderItemRequest orderItemRequest : itemRequests) {
-            ProductDetail detail = productDetailService.getStock(orderItemRequest.productDetailId(), orderItemRequest.quantity());
+            ProductDetail detail = productDetailService.findById(orderItemRequest.productDetailId());
 
             OrderItem orderItem = OrderItem.create(order, detail, orderItemRequest.quantity());
-
             orderItems.add(orderItem);
         }
 

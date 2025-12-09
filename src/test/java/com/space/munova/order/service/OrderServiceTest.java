@@ -141,7 +141,7 @@ public class OrderServiceTest {
 
         // 공통 성공 Mock 설정
         when(memberService.getMemberEntity(TEST_MEMBER_ID)).thenReturn(mockMember);
-        when(orderItemService.deductStockAndCreateOrderItems(anyList(), any(Order.class)))
+        when(orderItemService.createOrderItems(anyList(), any(Order.class)))
                 .thenReturn(mockOrderItems);
 
         // UserActionSummary Mock
@@ -153,7 +153,7 @@ public class OrderServiceTest {
 
         try (MockedStatic<Order> staticMockOrder = mockStatic(Order.class)) {
             staticMockOrder.when(
-                    () -> Order.createOrder(anyString())
+                    () -> Order.createOrder(anyString(), )
             ).thenReturn(mockOrder);
 
             // WHEN
@@ -161,7 +161,7 @@ public class OrderServiceTest {
 
             // THEN
             assertThat(result).isSameAs(mockOrder);
-            staticMockOrder.verify(() -> Order.createOrder(eq(noCouponRequest.userRequest())), times(1));
+            staticMockOrder.verify(() -> Order.createOrder(eq(noCouponRequest.userRequest()), ), times(1));
 
             // 1. 프로세서 호출 검증
             verify(noCouponProcessor, times(1)).process(
@@ -190,7 +190,7 @@ public class OrderServiceTest {
 
         // 공통 성공 Mock 설정
         when(memberService.getMemberEntity(TEST_MEMBER_ID)).thenReturn(mockMember);
-        when(orderItemService.deductStockAndCreateOrderItems(anyList(), any(Order.class)))
+        when(orderItemService.createOrderItems(anyList(), any(Order.class)))
                 .thenReturn(mockOrderItems);
 
         // UserActionSummary Mock
@@ -202,7 +202,7 @@ public class OrderServiceTest {
 
         try (MockedStatic<Order> staticMockOrder = mockStatic(Order.class)) {
             staticMockOrder.when(
-                    () -> Order.createOrder(anyString())
+                    () -> Order.createOrder(anyString(), )
             ).thenReturn(mockOrder);
             // WHEN
             Order result = orderService.createOrder(couponRequest, TEST_MEMBER_ID);
@@ -210,7 +210,7 @@ public class OrderServiceTest {
             // THEN
             assertThat(result).isSameAs(mockOrder);
 
-            staticMockOrder.verify(() -> Order.createOrder(eq(couponRequest.userRequest())), times(1));
+            staticMockOrder.verify(() -> Order.createOrder(eq(couponRequest.userRequest()), ), times(1));
 
             // 1. 프로세서 호출 검증
             verify(couponAppliedProcessor, times(1)).process(
@@ -347,7 +347,7 @@ public class OrderServiceTest {
                 .thenReturn(mockPayment);
 
         // WHEN
-        orderService.getOrderDetail(TEST_ORDER_ID, OWNER_MEMBER_ID);
+        orderService.getOrderDetail(TEST_ORDER_ID, OWNER_MEMBER_ID, , );
 
         // THEN
         // 1. OrderRepository와 PaymentService 호출 검증
@@ -370,7 +370,7 @@ public class OrderServiceTest {
                 .thenReturn(Optional.empty());
 
         // WHEN & THEN
-        assertThatThrownBy(() -> orderService.getOrderDetail(TEST_ORDER_ID, OWNER_MEMBER_ID))
+        assertThatThrownBy(() -> orderService.getOrderDetail(TEST_ORDER_ID, OWNER_MEMBER_ID, , ))
                 .isInstanceOf(OrderException.class);
 
         // AuthService와 PaymentService는 호출되지 않아야 함
@@ -398,7 +398,7 @@ public class OrderServiceTest {
                 );
 
         // WHEN & THEN
-        assertThatThrownBy(() -> orderService.getOrderDetail(TEST_ORDER_ID, OTHER_MEMBER_ID))
+        assertThatThrownBy(() -> orderService.getOrderDetail(TEST_ORDER_ID, OTHER_MEMBER_ID, , ))
                 .isInstanceOf(AuthException.class);
 
         // PaymentService는 권한 검증 실패 후 호출되지 않아야 함
@@ -426,7 +426,7 @@ public class OrderServiceTest {
                 .when(paymentService).getPaymentByOrderId(TEST_ORDER_ID);
 
         // WHEN & THEN
-        assertThatThrownBy(() -> orderService.getOrderDetail(TEST_ORDER_ID, OTHER_MEMBER_ID))
+        assertThatThrownBy(() -> orderService.getOrderDetail(TEST_ORDER_ID, OTHER_MEMBER_ID, , ))
                 .isInstanceOf(PaymentException.class);
 
         verify(orderRepository, times(1)).findOrderDetailsById(TEST_ORDER_ID);

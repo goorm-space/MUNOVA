@@ -8,6 +8,7 @@ import com.space.munova.order.entity.OrderItem;
 import java.util.List;
 
 public interface OrderItemService {
-    List<OrderItem> deductStockAndCreateOrderItems(List<OrderItemRequest> orderItems, Order order);
+    List<OrderItem> createOrderItems(List<OrderItemRequest> orderItems, Order order);
+
     void cancelOrderItem(Long orderItemId, CancelOrderItemRequest request, Long memberId);
 }

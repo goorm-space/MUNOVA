@@ -6,8 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.CompletableFuture;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -16,11 +15,9 @@ public class AsyncOrderService {
 
     private final OrderRepository orderRepository;
 
-    @Async
-    public CompletableFuture<Void> saveOrderAsync(Order order) {
-        log.info("rdb 시작");
+    @Async("orderExecutor")
+    @Transactional
+    public void saveOrderAsync(Order order) {
         orderRepository.save(order);
-        log.info("rdb 완료");
-        return CompletableFuture.completedFuture(null);
     }
 }

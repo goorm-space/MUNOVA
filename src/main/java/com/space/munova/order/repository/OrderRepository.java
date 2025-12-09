@@ -18,12 +18,11 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT o FROM Order o " +
-            "JOIN FETCH o.member m " +
             "LEFT JOIN FETCH o.orderItems oi " +
             "WHERE o.id = :orderId")
     Optional<Order> findOrderDetailsById(@Param("orderId") Long orderId);
 
-    Page<Order> findAllByMember_IdAndStatus(Long memberId, OrderStatus status, Pageable pageable);
+    Page<Order> findAllByMemberIdAndStatus(Long memberId, OrderStatus status, Pageable pageable);
 
     @Query("SELECT DISTINCT o FROM Order o WHERE o.id IN :orderIds ORDER BY o.createdAt DESC")
     @EntityGraph(attributePaths = {
@@ -36,4 +35,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByOrderNum(String orderNum);
 
     List<Order> findByStatusInAndCreatedAtBefore(List<OrderStatus> statuses, LocalDateTime before);
+
+    @Query("SELECT o FROM Order o " +
+            "LEFT JOIN FETCH o.orderItems oi " +
+            "WHERE o.orderNum = :orderNum")
+    Optional<Order> findByOrderNumWithItems(@Param("orderNum") String orderNum);
 }

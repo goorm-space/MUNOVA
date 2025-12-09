@@ -19,7 +19,7 @@ public class OrderTest {
     @BeforeEach
     void setUp() {
         mockMember = mock(Member.class);
-        order = Order.createOrder(null);
+        order = Order.createOrder(null, );
 
         mockOrderItem1 = mock(OrderItem.class);
         mockOrderItem2 = mock(OrderItem.class);
@@ -36,7 +36,7 @@ public class OrderTest {
         final OrderStatus EXPECTED_STATUS = OrderStatus.CREATED;
 
         // when
-        Order initOrder = Order.createOrder(userRequest);
+        Order initOrder = Order.createOrder(userRequest, );
 
         // then
         assertThat(initOrder).isNotNull();
@@ -59,7 +59,7 @@ public class OrderTest {
         final OrderStatus EXPECTED_STATUS = OrderStatus.CREATED;
 
         // when
-        Order initOrder = Order.createOrder(null);
+        Order initOrder = Order.createOrder(null, );
 
         // then
         assertThat(initOrder).isNotNull();

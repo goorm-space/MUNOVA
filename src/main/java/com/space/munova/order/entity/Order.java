@@ -1,7 +1,6 @@
 package com.space.munova.order.entity;
 
 import com.space.munova.core.entity.BaseEntity;
-import com.space.munova.member.entity.Member;
 import com.space.munova.order.dto.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -25,9 +24,8 @@ public class Order extends BaseEntity {
     @Column(name = "order_id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id")
-    private Member member;
+    @Column(name = "user_id")
+    private Long memberId;
 
     @Column(nullable = false, unique = true)
     private String orderNum;
@@ -49,17 +47,19 @@ public class Order extends BaseEntity {
     @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
 
-    public static Order createOrder(String userRequest) {
+    public static Order createOrder(String userRequest, Long memberId) {
         return Order.builder()
+                .memberId(memberId)
                 .orderNum(generateOrderNum())
                 .userRequest(userRequest)
+                .status(OrderStatus.CREATED)
                 .build();
     }
 
     public static String generateOrderNum() {
         String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-        return (date + uuid).toUpperCase();
+        String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        return date + uuid;
     }
 
     public void addOrderItem(OrderItem orderItem) {

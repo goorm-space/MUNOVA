@@ -1,16 +1,13 @@
 package com.space.munova.payment.entity;
 
 import com.space.munova.core.entity.BaseEntity;
-import com.space.munova.order.entity.Order;
-import com.space.munova.payment.dto.TossPaymentResponse;
+import com.space.munova.payment.event.PaymentSuccessEvent;
 import com.space.munova.payment.exception.PaymentException;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -48,7 +45,7 @@ public class Payment extends BaseEntity {
     @Column(length = 64)
     private String lastTransactionKey;
 
-    public static Payment create(Long orderId, TossPaymentResponse response) {
+    public static Payment create(Long orderId, PaymentSuccessEvent response) {
         Instant requestedAt = response.requestedAt().toInstant();
         Instant approvedAt = response.approvedAt() != null ?
                 response.approvedAt().toInstant() : null;

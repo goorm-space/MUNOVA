@@ -117,7 +117,7 @@ public class OrderItemServiceTest {
                     .thenReturn(mockOrderItem2);
 
             // WHEN
-            List<OrderItem> createdItems = orderItemService.deductStockAndCreateOrderItems(itemRequests, mockOrder);
+            List<OrderItem> createdItems = orderItemService.createOrderItems(itemRequests, mockOrder);
 
             // THEN
             // 1. 반환된 리스트 검증
@@ -143,7 +143,7 @@ public class OrderItemServiceTest {
                 .getStock(DETAIL_ID_1, QUANTITY_1);
 
         // WHEN & THEN
-        assertThatThrownBy(() -> orderItemService.deductStockAndCreateOrderItems(itemRequests, mockOrder))
+        assertThatThrownBy(() -> orderItemService.createOrderItems(itemRequests, mockOrder))
                 .isInstanceOf(ProductDetailException.class);
 
         // 1. 두 번째 재고 차감은 호출되지 않아야 함 (루프 중단)
@@ -151,7 +151,7 @@ public class OrderItemServiceTest {
 
         // 2. OrderItem 생성은 호출되지 않아야 함
         try (MockedStatic<OrderItem> orderItemMockedStatic = mockStatic(OrderItem.class)) {
-            orderItemService.deductStockAndCreateOrderItems(itemRequests, mockOrder);
+            orderItemService.createOrderItems(itemRequests, mockOrder);
             orderItemMockedStatic.verify(() -> OrderItem.create(any(), any(), anyInt()), never());
         } catch (RuntimeException ignored) {
             // 예외가 발생했으므로 무시

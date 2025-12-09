@@ -49,8 +49,11 @@ public class OrderController {
     @GetMapping("/{orderId}")
     public ResponseApi<?> getOrderDetail(@PathVariable("orderId") Long orderId) {
         Long memberId = JwtHelper.getMemberId();
+        String username = JwtHelper.getMemberName();
+        // Todo: JwtHelper에 주소 가져오는 로직을 추가합니다.
+        String address = "유저 집 주소";
 
-        GetOrderDetailResponse response = orderService.getOrderDetail(orderId, memberId);
+        GetOrderDetailResponse response = orderService.getOrderDetail(orderId, memberId, username, address);
         return ResponseApi.ok(response);
     }
 }

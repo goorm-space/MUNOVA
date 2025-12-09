@@ -2,9 +2,8 @@ package com.space.munova.product.domain;
 
 import com.space.munova.core.entity.BaseEntity;
 import com.space.munova.member.entity.Member;
-import com.space.munova.product.application.exception.CartException;
+import com.space.munova.product.application.cart.command.exception.CartException;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
@@ -26,7 +25,7 @@ public class Cart extends BaseEntity {
     private boolean isDeleted;
 
     @ManyToOne
-    @JoinColumn(name = "member_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Member member;
 
     @ManyToOne

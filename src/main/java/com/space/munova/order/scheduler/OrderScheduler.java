@@ -4,7 +4,7 @@ import com.space.munova.order.dto.OrderStatus;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
 import com.space.munova.order.repository.OrderRepository;
-import com.space.munova.product.application.ProductDetailService;
+import com.space.munova.product.application.product.command.ProductDetailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

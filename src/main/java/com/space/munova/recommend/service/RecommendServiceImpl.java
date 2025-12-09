@@ -1,17 +1,13 @@
 package com.space.munova.recommend.service;
 
-import com.space.munova.core.config.ResponseApi;
 import com.space.munova.core.dto.PagingResponse;
 import com.space.munova.member.repository.MemberRepository;
-import com.space.munova.product.application.dto.FindProductResponseDto;
-import com.space.munova.product.domain.Category;
 import com.space.munova.product.domain.Product;
 import com.space.munova.product.domain.Repository.ProductRepository;
 import com.space.munova.product.domain.enums.ProductCategory;
 import com.space.munova.recommend.domain.ProductRecommendation;
 import com.space.munova.recommend.domain.UserActionSummary;
 import com.space.munova.recommend.domain.UserRecommendation;
-import com.space.munova.recommend.dto.RecommendProductResponseDto;
 import com.space.munova.recommend.dto.RecommendReasonResponseDto;
 import com.space.munova.recommend.dto.RecommendationsProductResponseDto;
 import com.space.munova.recommend.dto.RecommendationsUserResponseDto;
@@ -22,11 +18,8 @@ import com.space.munova.recommend.repository.UserRecommendationRepository;
 import com.space.munova.security.jwt.JwtHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -35,7 +28,6 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -104,98 +96,98 @@ public class RecommendServiceImpl implements RecommendService {
         return PagingResponse.from(dtoPage);
     }
 
-    //비슷한 상품 4개와 추천 4개로 총 16개 추천
-    @Override
-    @Transactional
-    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateUserProductRecommend( Long productId) {
-//        String url ="http://localhost:8001/api/recommend/user/"+productId;
-//        ResponseEntity<String> response=restTemplate.exchange(url, HttpMethod.PUT,null,String.class);
-//        ResponseApi<String> apiResponse = ResponseApi.ok(response.getBody());
+//    //비슷한 상품 4개와 추천 4개로 총 16개 추천
+//    @Override
+//    @Transactional
+//    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateUserProductRecommend( Long productId) {
+////        String url ="http://localhost:8001/api/recommend/user/"+productId;
+////        ResponseEntity<String> response=restTemplate.exchange(url, HttpMethod.PUT,null,String.class);
+////        ResponseApi<String> apiResponse = ResponseApi.ok(response.getBody());
+////
+////        return ResponseEntity.ok((ResponseApi) apiResponse);
 //
-//        return ResponseEntity.ok((ResponseApi) apiResponse);
-
-        Long memberId = JwtHelper.getMemberId();
-
-        userRecommendRepository.deleteByMemberId(memberId);
-        List<UserActionSummary> summaries= summaryRepository.findByMemberId(memberId);
-        if (summaries.isEmpty()) {
-            return ResponseEntity.ok(ResponseApi.ok(Collections.emptyList()));
-        }
-        // 점수 계산
-        List<Long> topProductIds = summaries.stream()
-                .sorted(Comparator.comparingDouble(
-                        s -> -getRecommendationScore(s.getMemberId(), s.getProductId())
-                ))
-                .limit(8)
-                .map(UserActionSummary::getProductId)
-                .toList();
-        // 유사 상품 조회
-        List<FindProductResponseDto> recommendations = topProductIds.stream()
-                .map(productRepository::findProductSummaryById)
-                .filter(Objects::nonNull)
-                .toList();
-
-        recommendations.forEach(r->{
-            UserRecommendation ur=UserRecommendation.builder()
-                    .member(memberRepository.getReferenceById(memberId))
-                    .product(Product.builder().id(r.productId()).build())
-                    .score(getRecommendationScore(memberId,r.productId()))
-                    .build();
-            userRecommendRepository.save(ur);
-        });
-
-        return ResponseEntity.ok(ResponseApi.ok(recommendations));
-    }
-
-    @Override
-    @Transactional
-    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateSimilarProductRecommend(Long productId) {
-//        String url = "http://localhost:8001/recommend/" + productId;
-//        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, null, String.class);
-//        ResponseApi<String> apiResponse = ResponseApi.ok(response.getBody());
+//        Long memberId = JwtHelper.getMemberId();
 //
-//        return ResponseEntity.ok((ResponseApi) apiResponse);
+//        userRecommendRepository.deleteByMemberId(memberId);
+//        List<UserActionSummary> summaries= summaryRepository.findByMemberId(memberId);
+//        if (summaries.isEmpty()) {
+//            return ResponseEntity.ok(ResponseApi.ok(Collections.emptyList()));
+//        }
+//        // 점수 계산
+//        List<Long> topProductIds = summaries.stream()
+//                .sorted(Comparator.comparingDouble(
+//                        s -> -getRecommendationScore(s.getMemberId(), s.getProductId())
+//                ))
+//                .limit(8)
+//                .map(UserActionSummary::getProductId)
+//                .toList();
+//        // 유사 상품 조회
+//        List<FindProductResponseDto> recommendations = topProductIds.stream()
+//                .map(productRepository::findProductSummaryById)
+//                .filter(Objects::nonNull)
+//                .toList();
 //
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> RecommendException.productNotFound("id=" + productId));
+//        recommendations.forEach(r->{
+//            UserRecommendation ur=UserRecommendation.builder()
+//                    .member(memberRepository.getReferenceById(memberId))
+//                    .product(Product.builder().id(r.productId()).build())
+//                    .score(getRecommendationScore(memberId,r.productId()))
+//                    .build();
+//            userRecommendRepository.save(ur);
+//        });
+//
+//        return ResponseEntity.ok(ResponseApi.ok(recommendations));
+//    }
 
-        productRecommendRepository.deleteBySourceProduct(product);
+//    @Override
+//    @Transactional
+//    public ResponseEntity<ResponseApi<List<FindProductResponseDto>>> updateSimilarProductRecommend(Long productId) {
+////        String url = "http://localhost:8001/recommend/" + productId;
+////        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, null, String.class);
+////        ResponseApi<String> apiResponse = ResponseApi.ok(response.getBody());
+////
+////        return ResponseEntity.ok((ResponseApi) apiResponse);
+////
+//        Product product = productRepository.findById(productId)
+//                .orElseThrow(() -> RecommendException.productNotFound("id=" + productId));
+//
+//        productRecommendRepository.deleteBySourceProduct(product);
+//
+//        List<FindProductResponseDto> recommendations = findSimilarProductsByCategory(productId, 4);
+//
+//        if (recommendations.isEmpty()) {
+//            return ResponseEntity.ok(ResponseApi.ok(Collections.emptyList()));
+//        }
+//
+//        recommendations.forEach(r->{
+//            ProductRecommendation pr = ProductRecommendation.builder()
+//                    .sourceProduct(product)
+//                    .targetProduct(Product.builder().id(r.productId()).build())
+//                    .build();
+//            productRecommendRepository.save(pr);
+//        });
+//
+//        return ResponseEntity.ok(ResponseApi.ok(recommendations));
+//    }
 
-        List<FindProductResponseDto> recommendations = findSimilarProductsByCategory(productId, 4);
-
-        if (recommendations.isEmpty()) {
-            return ResponseEntity.ok(ResponseApi.ok(Collections.emptyList()));
-        }
-
-        recommendations.forEach(r->{
-            ProductRecommendation pr = ProductRecommendation.builder()
-                    .sourceProduct(product)
-                    .targetProduct(Product.builder().id(r.productId()).build())
-                    .build();
-            productRecommendRepository.save(pr);
-        });
-
-        return ResponseEntity.ok(ResponseApi.ok(recommendations));
-    }
-
-    private List<FindProductResponseDto> findSimilarProductsByCategory(Long productId, int limit) {
-        Product base = productRepository.findById(productId)
-                .orElseThrow(() -> RecommendException.productNotFound("id=" + productId));
-
-        Category category = base.getCategory();
-        if (category == null) {
-            throw RecommendException.categoryNotFound("productId=" + productId);
-        }
-        Long refCategoryId = (category.getRefCategory() != null)
-                ? category.getRefCategory().getId()
-                : category.getId();
-
-        return productRepository.findSimilarProductsByCategory(
-                refCategoryId,
-                base.getId(),
-                PageRequest.of(0, limit)
-        );
-    }
+//    private List<FindProductResponseDto> findSimilarProductsByCategory(Long productId, int limit) {
+//        Product base = productRepository.findById(productId)
+//                .orElseThrow(() -> RecommendException.productNotFound("id=" + productId));
+//
+//        Category category = base.getCategory();
+//        if (category == null) {
+//            throw RecommendException.categoryNotFound("productId=" + productId);
+//        }
+//        Long refCategoryId = (category.getRefCategory() != null)
+//                ? category.getRefCategory().getId()
+//                : category.getId();
+//
+//        return productRepository.findSimilarProductsByCategory(
+//                refCategoryId,
+//                base.getId(),
+//                PageRequest.of(0, limit)
+//        );
+//    }
 
     @Override
     public List<RecommendReasonResponseDto> getRecommendationReason(Long userId, Long productId) {

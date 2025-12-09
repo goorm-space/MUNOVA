@@ -2,8 +2,7 @@ package com.space.munova.product.infra;
 
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.space.munova.product.application.dto.cart.ProductInfoForCartDto;
-import com.space.munova.product.domain.*;
+import com.space.munova.product.application.cart.query.dto.ProductInfoForCartDto;
 import com.space.munova.product.domain.Repository.CartRepositoryCustom;
 import com.space.munova.product.domain.enums.ProductImageType;
 import lombok.RequiredArgsConstructor;

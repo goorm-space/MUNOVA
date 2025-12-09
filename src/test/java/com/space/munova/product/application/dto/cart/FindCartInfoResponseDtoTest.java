@@ -1,5 +1,8 @@
 package com.space.munova.product.application.dto.cart;
 
+import com.space.munova.product.application.cart.query.dto.CartItemOptionInfoDto;
+import com.space.munova.product.application.cart.query.dto.FindCartInfoResponseDto;
+import com.space.munova.product.application.cart.query.dto.ProductInfoForCartDto;
 import com.space.munova.product.domain.enums.OptionCategory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,10 +16,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class FindCartInfoResponseDtoTest {
 
     private ProductInfoForCartDto createProductInfo(Long productId, Long cartId, Long detailId,
-                                                     String productName, Long productPrice,
-                                                     int productQuantity, int cartItemQuantity,
-                                                     String mainImgSrc, String brandName,
-                                                     Long optionId, OptionCategory optionType, String optionName) {
+                                                    String productName, Long productPrice,
+                                                    int productQuantity, int cartItemQuantity,
+                                                    String mainImgSrc, String brandName,
+                                                    Long optionId, OptionCategory optionType, String optionName) {
         return new ProductInfoForCartDto(
                 productId, cartId, detailId, productName, productPrice,
                 productQuantity, cartItemQuantity, mainImgSrc, brandName,

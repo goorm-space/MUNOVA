@@ -1,8 +1,8 @@
 package com.space.munova.product.domain;
 
 import com.space.munova.member.entity.Member;
-import com.space.munova.product.application.exception.CartException;
-import com.space.munova.product.application.exception.ProductDetailException;
+import com.space.munova.product.application.cart.command.exception.CartException;
+import com.space.munova.product.application.product.command.exception.ProductDetailException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

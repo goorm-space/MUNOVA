@@ -1,9 +1,10 @@
 package com.space.munova.product.domain;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.space.munova.core.entity.BaseEntity;
-import com.space.munova.product.application.exception.CartException;
-import com.space.munova.product.application.exception.ProductDetailException;
+import com.space.munova.product.application.cart.command.exception.CartException;
+import com.space.munova.product.application.product.command.exception.ProductDetailException;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -17,6 +18,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 public class ProductDetail extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,6 +27,7 @@ public class ProductDetail extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "product_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    @JsonIgnore
     private Product product;
 
     private Integer quantity;
@@ -54,10 +57,12 @@ public class ProductDetail extends BaseEntity {
                 .build();
     }
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getNameSnapshot() {
         return this.product.getName();
     }
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public Long getPriceSnapshot() {
         return this.product.getPrice();
     }

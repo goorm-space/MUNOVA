@@ -1,6 +1,7 @@
 package com.space.munova.product.application;
 
-import com.space.munova.product.application.exception.ProductDetailException;
+import com.space.munova.product.application.product.command.exception.ProductDetailException;
+import com.space.munova.product.application.product.command.ProductDetailService;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.Repository.ProductDetailRepository;
 import org.junit.jupiter.api.BeforeEach;

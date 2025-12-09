@@ -2,10 +2,10 @@ package com.space.munova.product.ui;
 
 import com.space.munova.core.config.ResponseApi;
 import com.space.munova.core.dto.PagingResponse;
-import com.space.munova.product.application.ProductLikeService;
-import com.space.munova.product.application.dto.FindProductResponseDto;
-import com.space.munova.product.application.dto.like.ProductLikeRequestDto;
-import com.space.munova.recommend.service.RecommendService;
+import com.space.munova.product.application.product.query.dto.FindProductResponseDto;
+import com.space.munova.product.application.like.command.ProductLikeCommandService;
+import com.space.munova.product.application.like.command.dto.ProductLikeRequestDto;
+import com.space.munova.product.application.like.query.ProductLikeQueryService;
 import com.space.munova.security.jwt.JwtHelper;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -15,20 +15,19 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequiredArgsConstructor
 @Slf4j
 public class LikeController {
 
-    private final ProductLikeService productLikeService;
-    private final RecommendService recommendService;
+    private final ProductLikeQueryService productLikeQueryService;
+    private final ProductLikeCommandService productLikeCommandService;
+
 
     @PostMapping("/api/like")
     public ResponseEntity<ResponseApi<Void>> productLike(@RequestBody ProductLikeRequestDto reqDto) {
         Long memberId = JwtHelper.getMemberId();
-        productLikeService.addLike(reqDto.productId(), memberId);
+        productLikeCommandService.addLike(reqDto.productId(), memberId);
         return  ResponseEntity.ok().body(ResponseApi.ok());
     }
 
@@ -37,7 +36,7 @@ public class LikeController {
     public ResponseEntity<ResponseApi<Void>> deleteProductLike(@PathVariable(name = "productId") @NotNull Long productId) {
 
         Long memberId = JwtHelper.getMemberId();
-        productLikeService.deleteProductLikeByProductId(productId ,memberId);
+        productLikeCommandService.deleteProductLikeByProductId(productId ,memberId);
 
         return ResponseEntity.ok().body(ResponseApi.ok());
     }
@@ -45,7 +44,7 @@ public class LikeController {
     @GetMapping("/api/like")
     public ResponseEntity<ResponseApi<PagingResponse<FindProductResponseDto>>> findProductLike(@PageableDefault Pageable pageable) {
         Long memberId = JwtHelper.getMemberId();
-        PagingResponse<FindProductResponseDto> likeProducts = productLikeService.findLikeProducts(pageable, memberId);
+        PagingResponse<FindProductResponseDto> likeProducts = productLikeQueryService.findLikeProducts(pageable, memberId);
         return ResponseEntity.ok().body(ResponseApi.ok(likeProducts));
     }
 

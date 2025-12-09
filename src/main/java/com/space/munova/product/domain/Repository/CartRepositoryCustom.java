@@ -1,7 +1,7 @@
 package com.space.munova.product.domain.Repository;
 
 
-import com.space.munova.product.application.dto.cart.ProductInfoForCartDto;
+import com.space.munova.product.application.cart.query.dto.ProductInfoForCartDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

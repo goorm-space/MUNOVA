@@ -1,6 +1,6 @@
 package com.space.munova.product.domain.enums;
 
-import com.space.munova.product.application.dto.ProductCategoryResponseDto;
+import com.space.munova.product.application.product.query.dto.ProductCategoryResponseDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

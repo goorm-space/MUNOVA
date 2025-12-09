@@ -21,7 +21,7 @@ import com.space.munova.payment.event.PaymentCompensationEvent;
 import com.space.munova.payment.exception.PaymentException;
 import com.space.munova.payment.repository.PaymentRepository;
 import com.space.munova.payment.repository.RefundRepository;
-import com.space.munova.product.application.CartService;
+import com.space.munova.product.application.cart.command.CartCommandService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -40,7 +40,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final RefundRepository refundRepository;
     private final CouponService couponService;
-    private final CartService cartService;
+    private final CartCommandService cartCommandService;
     private final NotificationService notificationService;
     private final ApplicationEventPublisher eventPublisher;
     private final RedisService redisService;
@@ -76,7 +76,7 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = Payment.create(order.getId(), response);
         paymentRepository.save(payment);
 
-        cartService.deleteByOrderItemsAndMemberId(order.getOrderItems(), memberId);
+        cartCommandService.deleteByOrderItemsAndMemberId(order.getOrderItems(), memberId);
 
         // 알림 발송
         sendPaymentNotification(memberId, order.getOrderNum(), payment.getTotalAmount());

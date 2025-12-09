@@ -14,7 +14,6 @@ import com.space.munova.order.service.cancel.ReturnRefundStrategy;
 import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.product.command.ProductDetailService;
 import com.space.munova.product.domain.ProductDetail;
-import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +29,6 @@ public class OrderItemServiceImpl implements OrderItemService {
     private final OrderItemRepository orderItemRepository;
     private final ProductDetailService productDetailService;
     private final PaymentService paymentService;
-    private final RecommendService recommendService;
     private final AuthService authService;
     private final OrderCancelStrategy orderCancelStrategy;
     private final ReturnRefundStrategy returnRefundStrategy;

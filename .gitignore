@@ -167,3 +167,8 @@ logs/
 docker-data/
 
 mysql-exporter/
+
+*.sh
+*.md
+
+grafana

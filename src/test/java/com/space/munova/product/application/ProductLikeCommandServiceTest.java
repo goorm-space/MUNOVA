@@ -1,6 +1,7 @@
 package com.space.munova.product.application;
 
 import com.space.munova.core.dto.PagingResponse;
+import com.space.munova.log.service.RecommendService;
 import com.space.munova.member.dto.MemberRole;
 import com.space.munova.member.entity.Member;
 import com.space.munova.member.repository.MemberRepository;
@@ -11,7 +12,6 @@ import com.space.munova.product.application.like.command.ProductLikeCommandServi
 import com.space.munova.product.domain.*;
 import com.space.munova.product.domain.Repository.ProductLikeRepository;
 import com.space.munova.product.domain.enums.ProductCategory;
-import com.space.munova.recommend.service.RecommendService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -100,7 +100,7 @@ class ProductLikeCommandServiceTest {
 
     private List<ProductLike> createProductLikes() {
         List<ProductLike> productLikes = new ArrayList<>();
-        for(int i = 1; i < 11; i++) {
+        for (int i = 1; i < 11; i++) {
             ProductLike pl = ProductLike.builder()
                     .id((long) i)
                     .member(createMember())
@@ -136,8 +136,6 @@ class ProductLikeCommandServiceTest {
 //    @Test
 //    void addLike() {
 //    }
-
-
     @DisplayName("좋아요 상품 조회 - 성공")
     @Test
     void findLikeProducts_Success() {

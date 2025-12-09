@@ -96,32 +96,4 @@ public class RedisConfig {
 
         return redisTemplate;
     }
-
-    /*
-    @Bean(name = "clusterRedisConnectionFactory")
-    public RedisConnectionFactory clusterRedisConnectionFactory() {
-        RedisClusterConfiguration clusterConfig = new RedisClusterConfiguration(clusterNodes);
-        if (password != null && !password.isBlank()) {
-            clusterConfig.setPassword(password);
-        }
-        return new LettuceConnectionFactory(clusterConfig);
-    }
-
-
-    @Bean(name = "clusterRedisTemplate")
-    public RedisTemplate<String, Object> clusterRedisTemplate() {
-        ObjectMapper objectMapper = getJsonSerializeObjectMapper();
-
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(clusterRedisConnectionFactory());
-
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer(objectMapper));
-
-        template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer(objectMapper));
-
-        return template;
-    }
-     */
 }

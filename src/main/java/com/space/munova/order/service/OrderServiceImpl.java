@@ -7,10 +7,8 @@ import com.space.munova.order.dto.*;
 import com.space.munova.order.dto.redis.TmpOrderDto;
 import com.space.munova.order.entity.Order;
 import com.space.munova.order.entity.OrderItem;
-import com.space.munova.order.entity.OrderProductLog;
 import com.space.munova.order.exception.OrderException;
 import com.space.munova.order.repository.OrderItemRepository;
-import com.space.munova.order.repository.OrderProductLogRepository;
 import com.space.munova.order.repository.OrderRepository;
 import com.space.munova.order.service.processor.CouponAppliedProcessor;
 import com.space.munova.order.service.processor.NoCouponProcessor;
@@ -39,7 +37,6 @@ public class OrderServiceImpl implements OrderService {
     private final NoCouponProcessor noCouponProcessor;
     private final ProductDetailService productDetailService;
     private final OrderItemService orderItemService;
-    private final RecommendService recommendService;
     private final PaymentService paymentService;
     private final MemberService memberService;
     private final AuthService authService;
@@ -47,7 +44,6 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderItemRepository orderItemRepository;
     private final OrderRepository orderRepository;
-    private final OrderProductLogRepository orderProductLogRepository;
 
     @Override
     public Order saveTmpOrder(CreateOrderRequest request, Long memberId) {

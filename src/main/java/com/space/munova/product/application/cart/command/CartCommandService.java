@@ -11,8 +11,6 @@ import com.space.munova.product.application.cart.command.exception.CartException
 import com.space.munova.product.domain.Cart;
 import com.space.munova.product.domain.ProductDetail;
 import com.space.munova.product.domain.Repository.CartRepository;
-import com.space.munova.recommend.infra.RedisStreamProducer;
-import com.space.munova.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,8 +28,7 @@ public class CartCommandService {
     private final CartRepository cartRepository;
     private final MemberRepository memberRepository;
     private final ProductDetailService productDetailService;
-    private final RecommendService recommendService;
-    private final RedisStreamProducer logProducer;
+    private final UserActionKafkaProducer kafkaProducer;
 
     @Transactional(readOnly = false)
     public void deleteByProductDetailIds(List<Long> productDetailIds) {
@@ -77,7 +74,7 @@ public class CartCommandService {
                         "quantity", productDetail.getQuantity()
                 )
         );
-        logProducer.sendLogAsync(RedisStreamProducer.StreamType.PRODUCT, logData);
+        kafkaProducer.sendLog(logData);
     }
 
 

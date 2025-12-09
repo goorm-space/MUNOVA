@@ -2,6 +2,7 @@ package com.space.munova.order.service;
 
 import com.space.munova.auth.exception.AuthException;
 import com.space.munova.auth.service.AuthService;
+import com.space.munova.log.service.RecommendService;
 import com.space.munova.member.entity.Member;
 import com.space.munova.order.dto.CancelOrderItemRequest;
 import com.space.munova.order.dto.CancelType;
@@ -18,7 +19,6 @@ import com.space.munova.payment.service.PaymentService;
 import com.space.munova.product.application.product.command.ProductDetailService;
 import com.space.munova.product.application.product.command.exception.ProductDetailException;
 import com.space.munova.product.domain.ProductDetail;
-import com.space.munova.recommend.service.RecommendService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

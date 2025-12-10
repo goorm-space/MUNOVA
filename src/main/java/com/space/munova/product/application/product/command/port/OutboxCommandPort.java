@@ -4,6 +4,7 @@ import com.space.munova.product.application.product.command.event.ProductDeleteE
 import com.space.munova.product.application.product.command.event.ProductDeleteEventForCartDto;
 import com.space.munova.product.application.product.command.event.ProductDocDeleteEventDto;
 import com.space.munova.product.application.product.command.event.ProductUpdateEventDto;
+import com.space.munova.product.infra.batch.dto.ProductStatsSyncDto;
 import com.space.munova.product.infra.elasticsearch.ProductEsDocument;
 import com.space.munova.product.infra.mongo.ProductMongoDocument;
 
@@ -19,4 +20,6 @@ public interface OutboxCommandPort {
     void deleteCartEvent(ProductDeleteEventForCartDto event);
     void deleteLikeEvent(ProductDeleteEvenForLikeDto event);
 
+//    void syncUpdateStatsEsFailedEvent(ProductStatsSyncDto dto);
+//    void syncUpdateStatsMongoFailedEvent(ProductStatsSyncDto dto);
 }

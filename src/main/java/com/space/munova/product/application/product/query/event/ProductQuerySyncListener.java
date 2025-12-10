@@ -103,4 +103,10 @@ public class ProductQuerySyncListener {
             productEsQuerySyncFailedPort.syncDeleteEsFailedEvent(event);
         }
     }
+
+
+
+
+
+
 }

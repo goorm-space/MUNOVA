@@ -69,6 +69,11 @@ public class ProductEsDocument {
     @Field(type = FieldType.Date, format = DateFormat.date)
     private LocalDate createdAt;
 
+    public void updateStats(Integer likeCount, Integer viewCount, Integer salesCount) {
+        this.likeCount = likeCount;
+        this.viewCount = viewCount;
+        this.salesCount = salesCount;
+    }
 
     /// 상품 업데이트 정적 팩토리 메서드
     public static ProductEsDocument fromUpdate(

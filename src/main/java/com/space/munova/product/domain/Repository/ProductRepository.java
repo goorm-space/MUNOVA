@@ -110,4 +110,19 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
             "AND p.member.id = :sellerId " +
             "AND p.isDeleted = false")
     List<Product> findAllByIdAndMemberId(List<Long> productIds, Long sellerId);
+
+    @Query("SELECT p.id " +
+            "FROM Product p " +
+            "WHERE p.id > :allocatedProductId " +
+            "AND p.id <= :endProductId " +
+            "ORDER BY p.id asc")
+    List<Long> findProductIdsGtIdLimitBatchSize(Long allocatedProductId, Long endProductId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Product p " +
+            "SET p.likeCount = :likeCount " +
+            ", p.viewCount = :viewCount " +
+            ", p.salesCount = :salesCount " +
+            "WHERE p.id = :productId")
+    void updateProductStats(Long productId, Integer likeCount, Integer viewCount, Integer salesCount);
 }

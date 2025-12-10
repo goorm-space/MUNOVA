@@ -160,6 +160,8 @@ dependencies {
     testAnnotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.projectlombok:lombok'
 
+    // 스프링배치
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
 
 
     // MongoDB 의존성 추가

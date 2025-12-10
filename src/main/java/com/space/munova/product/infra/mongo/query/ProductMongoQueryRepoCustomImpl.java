@@ -43,6 +43,7 @@ public class ProductMongoQueryRepoCustomImpl implements ProductMongoQueryRepoCus
         }
 
 
+
         Criteria resultCriteria = getResultCriteria(sortFlag, cursor, ands, sortFlagName);
 
         Sort sort = Sort.by(

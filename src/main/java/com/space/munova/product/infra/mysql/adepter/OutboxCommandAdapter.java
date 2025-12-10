@@ -9,6 +9,7 @@ import com.space.munova.product.application.product.command.event.ProductDeleteE
 import com.space.munova.product.application.product.command.event.ProductDocDeleteEventDto;
 import com.space.munova.product.application.product.command.event.ProductUpdateEventDto;
 import com.space.munova.product.application.product.command.port.OutboxCommandPort;
+import com.space.munova.product.infra.batch.dto.ProductStatsSyncDto;
 import com.space.munova.product.infra.elasticsearch.ProductEsDocument;
 import com.space.munova.product.domain.enums.EventType;
 import com.space.munova.product.infra.mongo.ProductMongoDocument;
@@ -78,7 +79,17 @@ public class OutboxCommandAdapter implements OutboxCommandPort,
         saveOutbox(EventType.DELETE_PRODUCT_LIKE, event);
     }
 
-    @Override
+//    @Override
+//    public void syncUpdateStatsEsFailedEvent(ProductStatsSyncDto event) {
+//        saveFailedOutbox(EventType.PRODUCT_STATS_SYNC_FAILED_ES, event);
+//    }
+//
+//    @Override
+//    public void syncUpdateStatsMongoFailedEvent(ProductStatsSyncDto event) {
+//        saveFailedOutbox(EventType.PRODUCT_STATS_SYNC_FAILED_MONGO, event);
+//    }
+
+           @Override
     public void deleteLikeFailedEvent(ProductDeleteEvenForLikeDto event) {
         saveFailedOutbox(EventType.DELETE_PRODUCT_LIKE, event);
     }

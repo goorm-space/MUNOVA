@@ -21,7 +21,12 @@ public class ProductStatsRedisDataCommandRepoImpl implements ProductStatsRedisDa
     ///  롱타입으로 반환.
     private final DefaultRedisScript<Long> updateFieldScript;
 
-   /// 루아스크립트로 원자적으로 연산처리  -> 하나의 동시성 보장을 위해서  작성. -> 데이터를 한번에 처리하기위해
+    /// 할당 상품 키.
+    private static final String BATCH_OFFSET_KEY = "product-stats-batch-offset";
+    private static final int BATCH_SIZE = 5000;
+
+
+    /// 루아스크립트로 원자적으로 연산처리  -> 하나의 동시성 보장을 위해서  작성. -> 데이터를 한번에 처리하기위해
    private static final String UPDATE_FIELD_SCRIPT =
            "local statsKey = KEYS[1]; " +                                                                 // 레디스 키 -> product-stats: {productId}
                    "local field = ARGV[1]; " +                                                            // 업데이트 필드명 -> likeCount, viewCount 등등.
@@ -76,6 +81,31 @@ public class ProductStatsRedisDataCommandRepoImpl implements ProductStatsRedisDa
     public Long decrementLikeCount(Long productId, int input) {
 
         return updateField(productId, "likeCount", input);
+    }
+
+
+    @Override
+    public void resetAllocatedProductId() {
+
+        redisTemplate.opsForValue().set(BATCH_OFFSET_KEY, 0);
+    }
+
+    /// 레디스에서 아이디 할당
+    @Override
+    public Long findAllocatedProductId() {
+
+        Long allocatedProductId = redisTemplate.opsForValue().increment(BATCH_OFFSET_KEY, BATCH_SIZE);
+
+        ///  null 일경우 기본 배치 사이즈 할당.
+        if (allocatedProductId == null) {
+
+            redisTemplate.opsForValue().set(BATCH_OFFSET_KEY, BATCH_SIZE);
+            allocatedProductId = (long) BATCH_SIZE;
+        }
+
+        Long startProductId = allocatedProductId - BATCH_SIZE;
+
+        return startProductId;
     }
 
 

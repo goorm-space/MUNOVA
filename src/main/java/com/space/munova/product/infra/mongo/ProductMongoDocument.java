@@ -151,7 +151,14 @@ public class ProductMongoDocument {
         private String imageUrl;
     }
 
+    public void updateStats(Integer likeCount
+            , Integer viewCount
+            , Integer salesCount) {
 
+        this.likeCount = likeCount;
+        this.viewCount = viewCount;
+        this.salesCount = salesCount;
+    }
 
     /// 상품업데이트 정적 팩토리메서드
     public static ProductMongoDocument fromUpdate(
